@@ -1,0 +1,6 @@
+/Users/ulman/DATA/Fluo-N3DH-CE/segmentationAnnotation_1/maskXXX.tif
+/Users/ulman/DATA/Fluo-N3DH-CE/segmentationAnnotation_2/maskXXX.tif
+/Users/ulman/DATA/Fluo-N3DH-CE/segmentationAnnotation_3/maskXXX.tif
+/Users/ulman/DATA/Fluo-N3DH-CE/segmentationAnnotation_4/maskXXX.tif
+/Users/ulman/DATA/Fluo-N3DH-CE/segmentationAnnotation_5/maskXXX.tif
+/Users/ulman/DATA/Fluo-N3DH-CE/trackingAnnotation/man_trackXXX.tif
