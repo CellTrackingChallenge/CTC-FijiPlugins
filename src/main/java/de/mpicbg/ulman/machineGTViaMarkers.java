@@ -376,7 +376,7 @@ public class machineGTViaMarkers implements Command
 		//start up our own ImageJ
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
-		ij.command().run(TextAreaDemo.class, true);
+		ij.command().run(machineGTViaMarkers.class, true);
 
 		//non-head less variant:
 		/*
