@@ -21,7 +21,7 @@
 
   <name>CTC FijiPlugins</name>
   <description>Front-end to the CTC paper related measures implemented in the imagej-ops.</description>
-  <url>https://github.com/imagej/imagej-ops</url>
+  <url>https://github.com/xulman/CTC_FijiPlugins</url>
   <inceptionYear>2017</inceptionYear>
 
   <packaging>jar</packaging>
@@ -56,13 +56,14 @@
 
 
 	<scm>
-		<connection>scm:git:localhost:9999</connection>
+		<connection>scm:git:git://github.com/xulman/CTC_FijiPlugins</connection>
 		<developerConnection>scm:git:localhost:9999</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/[MY-ORG]/[MY-REPO]</url>
+		<url>https://github.com/xulman/CTC_FijiPlugins</url>
 	</scm>
 	<issueManagement>
-		<system>None</system>
+		<system>GitHub Issues</system>
+		<url>http://github.com/xulman/CTC_FijiPlugins/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>
