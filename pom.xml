@@ -91,5 +91,10 @@
       <groupId>net.imagej</groupId>
       <artifactId>imagej-ops</artifactId>
     </dependency>
+    <dependency>
+		<groupId>org.scijava</groupId>
+		<artifactId>scijava-ui-swing</artifactId>
+		<version>0.9.3-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 </project>
