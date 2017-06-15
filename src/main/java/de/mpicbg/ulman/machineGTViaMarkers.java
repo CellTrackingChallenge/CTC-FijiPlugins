@@ -12,32 +12,21 @@ import org.scijava.widget.FileWidget;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.log.LogService;
 import org.scijava.app.StatusService;
+import org.scijava.log.LogService;
+import net.imagej.ops.OpService;
+import net.imagej.ImageJ;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import net.imagej.ImageJ;
-import net.imagej.ops.OpService;
-
-import net.imglib2.IterableInterval;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
-
-import io.scif.config.SCIFIOConfig;
-import io.scif.config.SCIFIOConfig.ImgMode;
 import io.scif.img.ImgIOException;
-import io.scif.img.SCIFIOImgPlus;
-import io.scif.img.ImgOpener;
-import io.scif.img.ImgSaver;
-import net.imglib2.exception.IncompatibleTypeException;
 
 import java.util.List;
-import java.util.Vector;
 import java.io.IOException;
+
+import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
 
 @Plugin(type = Command.class, menuPath = "Plugins>CTC>Annotations Merging Tool")
 public class machineGTViaMarkers implements Command
@@ -348,135 +337,54 @@ public class machineGTViaMarkers implements Command
 		//save the threshold value which is constant all the time
 		args[args.length-2] = argsPattern[args.length-2];
 
-		//iterate over all jobs
-		for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
-		{
-			//first populate/expand to get a particular instance of a job
-			for (int i=0; i < args.length-2; ++i)
-				args[i] = expandFilenamePattern(argsPattern[i],idx);
-			args[args.length-1] = expandFilenamePattern(argsPattern[args.length-1],idx);
+		try {
+			//start up the worker class
+			final machineGTViaMarkers_Worker Worker
+				= new machineGTViaMarkers_Worker(ops,log);
 
-			log.info("new job:");
-			for (int i=0; i < args.length; ++i)
-				log.info(i+": "+args[i]);
+			//iterate over all jobs
+			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
+			{
+				//first populate/expand to get a particular instance of a job
+				for (int i=0; i < args.length-2; ++i)
+					args[i] = expandFilenamePattern(argsPattern[i],idx);
+				args[args.length-1] = expandFilenamePattern(argsPattern[args.length-1],idx);
 
-			try {
-				worker(ops,log,args);
+				log.info("new job:");
+				for (int i=0; i < args.length; ++i)
+					log.info(i+": "+args[i]);
+
+					Worker.work(args);
 			}
-			catch (ImgIOException e) {
-				log.error("machineGTViaMarkers error: "+e);
-			}
+		}
+		catch (ImgIOException e) {
+			log.error("machineGTViaMarkers error: "+e);
 		}
 	}
 
 
 	//the CLI path entry function:
-	public static void main(final String... args) throws ImgIOException
+	public static void main(final String... args)
 	{
-		//start up our own ImageJ
-		final ImageJ ij = new ImageJ();
-		ij.ui().showUI();
-		ij.command().run(machineGTViaMarkers.class, true);
-
-		//non-head less variant:
-		/*
-		System.out.println("cauky");
-		ij.ui().showUI();
-		ij.command().run(machineGTViaMarkers.class, true);
-		*/
-		System.out.println("TBA");
-
-		//worker(ij.op(),ij.log(),args); -- ask Matthias for a workaround
-		//ij.appEvent().quit();
-	}
-
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	void worker(final OpService ops, final LogService log, final String... args) throws ImgIOException
-	{
-		//check the input parameters
-		if (args.length < 4)
-		{
-			//print help
-			log.info("Usage: img1 ... TRAimg threshold outImg");
-			log.info("All img1 (path to an image file) are TRA marker-wise combined into output outImg.");
-			throw new ImgIOException("At least one input image, exactly one marker image and one treshold plus one output image are expected.");
-		}
-
-		//container to store the input images
-		final Vector<RandomAccessibleInterval<?>> inImgs
-			= new Vector<RandomAccessibleInterval<?>>(args.length-3);
-
-		//marker image
-		IterableInterval<UnsignedShortType> markerImg = null;
-
-		//now, try to load the input images
-		final SCIFIOConfig openingRegime = new SCIFIOConfig();
-		openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
-		SCIFIOImgPlus<?> img = null;
-
-		//load all of them
-		for (int i=0; i < args.length-2; ++i)
-		{
-			try {
-				//load the image
-				log.info("Reading file: "+args[i]);
-				ImgOpener imgOpener = new ImgOpener();
-				img = imgOpener.openImgs(args[i],openingRegime).get(0);
-
-				//check the type of the image (the combineGTs plug-in requires RealType<>)
-				//TODO this code does not assure that all input images are of the same type
-				if (!(img.firstElement() instanceof RealType<?>))
-					throw new ImgIOException("Input image voxels must be scalars.");
-
-				//check the dimensions, against the first loaded image
-				//(if processing second or later image already)
-				for (int d=0; i > 0 && d < img.numDimensions(); ++d)
-					if (img.dimension(d) != inImgs.get(0).dimension(d))
-						throw new ImgIOException((i+1)+"th image has different size in the "
-								+d+"th dimension than the first image.");
-
-				//all is fine, add this one into the input list
-				if (i < args.length-3) inImgs.add(img);
-				//or, if loading the last image, remember it as the marker image 
-				else markerImg = (IterableInterval<UnsignedShortType>)img;
-			}
-			catch (ImgIOException e) {
-				log.error("Error reading file: "+args[i]);
-				log.error("Error msg: "+e);
-				throw new ImgIOException("Unable to read input file.");
-			}
-		}
-
-		//parse threshold value
-		final UnsignedShortType threshold
-			= new UnsignedShortType( Integer.parseInt(args[args.length-2]) );
-
-		//create the output image (TODO: need to use copy() of the first input image?)
-		SCIFIOImgPlus<UnsignedShortType> outImg
-			= new SCIFIOImgPlus<UnsignedShortType>(
-					ops.create().img(inImgs.get(0), new UnsignedShortType()));
-
-		//setup the debug image filename
-		String newName = args[args.length-1];
-		final int dotSeparatorIdx = newName.lastIndexOf(".");
-		newName = new String(newName.substring(0, dotSeparatorIdx)+"__DBG"+newName.substring(dotSeparatorIdx));
-
-		//NB: we have checked that images are of RealType<?> in the loading loop,
-		//    so we know we can cast to raw type to be able to call the combineGTs()
-		System.out.println("calling general convenience CombineGTsViaMarkers with threshold="+threshold);
-		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg);
-		ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg, newName);
+		//head less variant:
+		//start up our own ImageJ without GUI
+		final ImageJ ij = new net.imagej.ImageJ();
+		//ij.ui().showUI();
+		//ij.command().run(machineGTViaMarkers.class, true);
 
 		try {
-			log.info("Saving file: "+args[args.length-1]);
-			ImgSaver imgSaver = new ImgSaver();
-			imgSaver.saveImg(args[args.length-1], outImg);
+			//start up the worker class
+			final machineGTViaMarkers_Worker Worker
+				= new machineGTViaMarkers_Worker(ij.op(),ij.log());
+
+			//do the job
+			Worker.work(args);
 		}
-		catch (ImgIOException | IncompatibleTypeException e) {
-			log.error("Error writing file: "+args[args.length-1]);
-			log.error("Error msg: "+e);
-			throw new ImgIOException("Unable to write output file.");
+		catch (ImgIOException e) {
+			ij.log().error("machineGTViaMarkers error: "+e);
 		}
+
+		//and quit
+		ij.appEvent().quit();
 	}
 }
