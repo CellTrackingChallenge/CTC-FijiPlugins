@@ -11,7 +11,6 @@ import org.scijava.log.LogService;
 import net.imagej.ops.OpService;
 
 import net.imglib2.img.Img;
-import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
@@ -130,7 +129,8 @@ public class machineGTViaMarkers_Worker
 		System.out.println("calling general convenience CombineGTsViaMarkers with threshold="+threshold);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg, newName);
-		myOps.compute((Vector)inImgs, markerImg, threshold, outImg, newName);
+		myOps.setParams(threshold, newName);
+		myOps.compute((Vector)inImgs, markerImg, outImg);
 
 		try {
 			log.info("Saving file: "+args[args.length-1]);
