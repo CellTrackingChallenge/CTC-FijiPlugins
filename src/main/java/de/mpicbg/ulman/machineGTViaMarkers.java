@@ -305,7 +305,7 @@ public class machineGTViaMarkers implements Command
 
 		//parses job file (which we know is sane for sure) to prepare an array of strings (an imagej-ops job description)
 		//is there additional column with weights?
-		//final boolean weightAvail = mergeModel.startsWith("Threshold - user"); //TODO
+		final boolean weightAvail = mergeModel.startsWith("Threshold - user");
 
 		//read the whole input file
 		List<String> job = null;
@@ -317,31 +317,30 @@ public class machineGTViaMarkers implements Command
 		}
 
 		//prepare the output array
-		String[] argsPattern = new String[job.size()+2];
+		String[] argsPattern = new String[2*job.size()+1]; //= 2*(job.size()-1) +1 +2
 		
 		//parse the input job specification file (which we know is sane for sure)
 		int lineNo=0;
 		for (String line : job)
 		{
-			++lineNo;
-
 			//read items on the line
 			int partNo=0;
 			for (String part : line.split("\\s+"))
 			{
+				argsPattern[2*lineNo +partNo] = part;
 				++partNo;
-
-				if (partNo == 1) argsPattern[lineNo-1] = part;
-				//if (partNo == 2) storeWeight=(Float.valueOf(part)).floatValue(); //TODO
 			}
-			//if (!weightAvail && lineNo < job.size()) storeWeight=1.0f; //TODO
+			++lineNo;
+
+			//if user-weights not available, provide own ones
+			//(provided we are not parsing the very last line with TRA marker image)
+			if (!weightAvail && lineNo < job.size()) argsPattern[2*(lineNo-1) +1] = "1.0";
 		}
 
 		final float threshold =
 			mergeModel.startsWith("Majority") ? (int)((job.size()-1)/2)+1.0f : mergeThreshold;
-		//argsPattern[lineNo] = Float.toString(threshold); //TODO
-		argsPattern[lineNo] = Integer.toString((int)threshold);
-		argsPattern[lineNo+1] = outputPath.getAbsolutePath();
+		argsPattern[2*lineNo -1] = Float.toString(threshold);
+		argsPattern[2*lineNo +0] = outputPath.getAbsolutePath();
 		//generic job specification is done
 
 		//create an array to hold an "expanded"/instantiated job
@@ -349,6 +348,9 @@ public class machineGTViaMarkers implements Command
 
 		//save the threshold value which is constant all the time
 		args[args.length-2] = argsPattern[args.length-2];
+		//
+		//also weights are constant all the time
+		for (int i=1; i < args.length-3; i+=2) args[i] = argsPattern[i];
 
 		try {
 			//start up the worker class
@@ -359,12 +361,15 @@ public class machineGTViaMarkers implements Command
 			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
 			{
 				//first populate/expand to get a particular instance of a job
-				for (int i=0; i < args.length-2; ++i)
+				for (int i=0; i < args.length-2; i+=2)
 					args[i] = expandFilenamePattern(argsPattern[i],idx);
 				args[args.length-1] = expandFilenamePattern(argsPattern[args.length-1],idx);
 
 				log.info("new job:");
-				for (int i=0; i < args.length; ++i)
+				int i=0;
+				for (; i < args.length-3; i+=2)
+					log.info(i+": "+args[i]+"  "+args[i+1]);
+				for (; i < args.length; ++i)
 					log.info(i+": "+args[i]);
 
 					Worker.work(args);

@@ -78,6 +78,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 //PUTBACK//	implements Ops.Images.CombineGTs
 {
 	@Parameter
+	private Vector<Float> inWeights;
+
+	@Parameter
 	private UnsignedShortType threshold;
 
 	@Parameter
@@ -103,9 +106,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	private final Boolean insertTRAforCollidingOrMissingMarkers = true;
 
 	///sets explicitly the parameters that SciJava normally supplies in its own way...
-	public void setParams(final UnsignedShortType _threshold,
+	public void setParams(final Vector<Float> _inWeights,
+	                      final UnsignedShortType _threshold,
 	                      final String _dbgImgFileName)
 	{
+		inWeights = _inWeights;
 		threshold = _threshold;
 		dbgImgFileName = _dbgImgFileName;
 	}
@@ -134,7 +139,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		//short-cut for increasing voxel values when combining multiple masks
 		final UnsignedShortType ONE = new UnsignedShortType(1);
 
-		//after merging, only voxels above this value as used to form the final mask
+		//after merging, only voxels above this value are used to form the final mask
 		final int THRESHOLD = threshold.getInteger();
 
 		//label for the voxels in the "collision area" of more labels

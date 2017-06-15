@@ -56,18 +56,25 @@ public class machineGTViaMarkers_Worker
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void work(final String... args) throws ImgIOException
 	{
-		//check the input parameters
-		if (args.length < 4)
+		//check the minimum number of input parameters, should be odd number
+		if (args.length < 5 || (args.length&1)==0)
 		{
 			//print help
-			log.info("Usage: img1 ... TRAimg threshold outImg");
+			log.info("Usage: img1 weight1 ... TRAimg threshold outImg");
 			log.info("All img1 (path to an image file) are TRA marker-wise combined into output outImg.");
 			throw new ImgIOException("At least one input image, exactly one marker image and one treshold plus one output image are expected.");
 		}
 
+		//the number of input pairs, the test above enforces it is nicely divisible by 2
+		final int inputImagesCount = (args.length-3) / 2;
+
 		//container to store the input images
 		final Vector<RandomAccessibleInterval<?>> inImgs
-			= new Vector<RandomAccessibleInterval<?>>(args.length-3);
+			= new Vector<RandomAccessibleInterval<?>>(inputImagesCount);
+
+		//container to store the input weights
+		final Vector<Float> inWeights
+			= new Vector<Float>(inputImagesCount);
 
 		//marker image
 		Img<UnsignedShortType> markerImg = null;
@@ -78,13 +85,13 @@ public class machineGTViaMarkers_Worker
 		SCIFIOImgPlus<?> img = null;
 
 		//load all of them
-		for (int i=0; i < args.length-2; ++i)
+		for (int i=0; i < inputImagesCount+1; ++i)
 		{
 			try {
 				//load the image
-				log.info("Reading file: "+args[i]);
+				log.info("Reading pair: "+args[2*i]+" "+args[2*i +1]);
 				ImgOpener imgOpener = new ImgOpener();
-				img = imgOpener.openImgs(args[i],openingRegime).get(0);
+				img = imgOpener.openImgs(args[2*i],openingRegime).get(0);
 
 				//check the type of the image (the combineGTs plug-in requires RealType<>)
 				//TODO this code does not assure that all input images are of the same type
@@ -99,12 +106,16 @@ public class machineGTViaMarkers_Worker
 								+d+"th dimension than the first image.");
 
 				//all is fine, add this one into the input list
-				if (i < args.length-3) inImgs.add(img);
+				if (i < inputImagesCount) inImgs.add(img);
 				//or, if loading the last image, remember it as the marker image 
 				else markerImg = (Img<UnsignedShortType>)img;
+
+				//also parse and store the weight
+				if (i < inputImagesCount)
+					inWeights.add( Float.parseFloat(args[2*i +1]) );
 			}
 			catch (ImgIOException e) {
-				log.error("Error reading file: "+args[i]);
+				log.error("Error reading file: "+args[2*i]);
 				log.error("Error msg: "+e);
 				throw new ImgIOException("Unable to read input file.");
 			}
@@ -129,7 +140,7 @@ public class machineGTViaMarkers_Worker
 		System.out.println("calling general convenience CombineGTsViaMarkers with threshold="+threshold);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg, newName);
-		myOps.setParams(threshold, newName);
+		myOps.setParams(inWeights, threshold, newName);
 		myOps.compute((Vector)inImgs, markerImg, outImg);
 
 		try {
