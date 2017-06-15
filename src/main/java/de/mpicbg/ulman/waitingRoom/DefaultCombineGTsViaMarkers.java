@@ -44,6 +44,7 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
+import net.imglib2.type.numeric.real.FloatType;
 
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -63,10 +64,11 @@ import java.util.HashMap;
  * <p>
  * If the input images were to represent the segmentation (labelled) masks,
  * the output image can be then understood as a voting map of how likely every
- * voxel should be part of the segmentation result. One can then threshold the
- * output and obtain consensus binary segmentation mask.
+ * voxel should be part of the segmentation result. Every input image has its
+ * associated weight for this voting, which also a parameter to this class.
+ * One can then threshold the output and obtain consensus binary segmentation mask.
  *
- * Inputs: Collection of labelled masks, TRA mask (3rd param: threshold parameter)
+ * Inputs: Collection of labelled masks + weights, TRA mask (3rd param: threshold parameter)
  * Output: Combined image
  *
  * @author Vladimír Ulman
@@ -81,7 +83,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	private Vector<Float> inWeights;
 
 	@Parameter
-	private UnsignedShortType threshold;
+	private float threshold;
 
 	@Parameter
 	private String dbgImgFileName;
@@ -107,7 +109,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 	///sets explicitly the parameters that SciJava normally supplies in its own way...
 	public void setParams(final Vector<Float> _inWeights,
-	                      final UnsignedShortType _threshold,
+	                      final float _threshold,
 	                      final String _dbgImgFileName)
 	{
 		inWeights = _inWeights;
@@ -123,6 +125,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	{
 		System.out.println("Default CombineGTsViaMarkers plug-in version");
 
+		if (inImgs.size() != inWeights.size())
+			throw new RuntimeException("Arrays with input images and weights are of different lengths.");
+
 		//da plan:
 		//iterate over all voxels of the input marker image and look for not
 		//yet found marker, and for every such new discovered, do:
@@ -137,10 +142,10 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//some constants to be used:
 		//short-cut for increasing voxel values when combining multiple masks
-		final UnsignedShortType ONE = new UnsignedShortType(1);
+		final FloatType ONE = new FloatType(1);
 
 		//after merging, only voxels above this value are used to form the final mask
-		final int THRESHOLD = threshold.getInteger();
+		final float THRESHOLD = threshold;
 
 		//label for the voxels in the "collision area" of more labels
 		final int INTERSECTION = (int)ONE.getMaxValue();
@@ -161,12 +166,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//third, create a temporary image...
 		markerImg.dimensions(maxBound);
-		final Img<UnsignedShortType> tmpImg
-			= (new ArrayImgFactory<UnsignedShortType>()).create(
-					maxBound, new UnsignedShortType());
+		final Img<FloatType> tmpImg
+			= (new ArrayImgFactory<FloatType>()).create(maxBound, new FloatType());
 
 		//...and prepare its cursor
-		final RandomAccess<UnsignedShortType> tmpCursor
+		final RandomAccess<FloatType> tmpCursor
 			= tmpImg.randomAccess(mInterval);
 
 		//finally, init the output image
@@ -240,6 +244,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					{
 						//extract this label into a temporary image
 						//(from which we will threshold it and insert into the output image)
+						//
+						//change the "adding constant" to the weight of this image
+						ONE.set(inWeights.get(i));
 
 						//sweep the _entire_ input image and "copy" the bestLabel to the tmp image
 						//NB: output img drives sweeping (as it is the target to be filled)
@@ -296,7 +303,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					outCursor.localize(pos);
 
 					tmpCursor.setPosition(pos);
-					if (tmpCursor.get().getInteger() >= THRESHOLD)
+					if (tmpCursor.get().get() >= THRESHOLD)
 					{
 						//voxel to be inserted into the output final label mask
 						foundAtAll = true;

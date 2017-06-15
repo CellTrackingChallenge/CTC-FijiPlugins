@@ -122,8 +122,7 @@ public class machineGTViaMarkers_Worker
 		}
 
 		//parse threshold value
-		final UnsignedShortType threshold
-			= new UnsignedShortType( Integer.parseInt(args[args.length-2]) );
+		final float threshold = Float.parseFloat(args[args.length-2]);
 
 		//create the output image (TODO: need to use copy() of the first input image?)
 		SCIFIOImgPlus<UnsignedShortType> outImg
