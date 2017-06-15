@@ -14,6 +14,7 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
+import org.scijava.ui.UIService;
 import net.imagej.ops.OpService;
 import net.imagej.ImageJ;
 
@@ -40,6 +41,9 @@ public class machineGTViaMarkers implements Command
 
 	@Parameter
 	private StatusService statusService;
+
+	@Parameter
+	private UIService uiService;
 
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
@@ -169,6 +173,7 @@ public class machineGTViaMarkers implements Command
 		if (name != null && (name.lastIndexOf("X") - name.indexOf("X")) != 2)
 		{
 			statusService.showStatus("Filename "+name+" does not contain XXX pattern.");
+			//uiService.showDialog(    "Filename "+name+" does not contain XXX pattern.");
 			return false;
 		}
 
@@ -177,6 +182,7 @@ public class machineGTViaMarkers implements Command
 		if (path != null && !path.exists())
 		{
 			statusService.showStatus("Parent folder "+path.getAbsolutePath()+" does not exist.");
+			//uiService.showDialog(    "Parent folder "+path.getAbsolutePath()+" does not exist.");
 			return false;
 		}
 
@@ -191,6 +197,7 @@ public class machineGTViaMarkers implements Command
 		if (filePath == null || !filePath.exists())
 		{
 			statusService.showStatus("Job file "+filePath.getAbsolutePath()+" does not exist.");
+			//uiService.showDialog(    "Job file "+filePath.getAbsolutePath()+" does not exist.");
 			return false;
 		}
 
@@ -222,6 +229,7 @@ public class machineGTViaMarkers implements Command
 				if (partNo == 1 && (part.lastIndexOf("X") - part.indexOf("X")) != 2)
 				{
 					statusService.showStatus("Filename "+part+" does not contain XXX pattern on line "+lineNo+".");
+					uiService.showDialog(    "Filename "+part+" does not contain XXX pattern on line "+lineNo+".");
 					return false;
 				}
 			}
@@ -232,11 +240,13 @@ public class machineGTViaMarkers implements Command
 				if (partNo < 2)
 				{
 					statusService.showStatus("Missing column with weights on line "+lineNo+".");
+					uiService.showDialog(    "Missing column with weights on line "+lineNo+".");
 					return false;
 				}
 				if (partNo > 2)
 				{
 					statusService.showStatus("Detected extra column after weights on line "+lineNo+".");
+					uiService.showDialog(    "Detected extra column after weights on line "+lineNo+".");
 					return false;
 				}
 			}
@@ -245,6 +255,7 @@ public class machineGTViaMarkers implements Command
 			if ((!weightAvail || lineNo == job.size()) && partNo != 1)
 			{
 				statusService.showStatus("Detected extra column after filename pattern on line "+lineNo+".");
+				uiService.showDialog(    "Detected extra column after filename pattern on line "+lineNo+".");
 				return false;
 			}
 		}
@@ -281,12 +292,14 @@ public class machineGTViaMarkers implements Command
 		if (!inFileOKAY() || !outFileOKAY())
 		{
 			log.error("machineGTViaMarkers error: Input parameters are wrong.");
+			uiService.showDialog("There is something wrong with either the job file or output file.");
 			return;
 		}
 		if (!mergeModel.startsWith("Threshold - flat")
 		 && !mergeModel.startsWith("Majority"))
 		{
 			log.error("machineGTViaMarkers error: Unsupported merging model.");
+			uiService.showDialog("machineGTViaMarkers error: Unsupported merging model.");
 			return;
 		}
 
