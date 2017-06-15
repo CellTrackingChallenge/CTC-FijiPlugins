@@ -56,7 +56,7 @@ public class machineGTViaMarkers implements Command
 
 	@Parameter(label = "Merging model:",
 			choices = {"Threshold - flat weights",
-			           //"Threshold - user weights",
+			           "Threshold - user weights",
 			           "Majority - flat weights"},
 			           //"SIMPLE","STAPLE"},
 			callback = "mergeModelChanged")
@@ -232,6 +232,18 @@ public class machineGTViaMarkers implements Command
 					uiService.showDialog(    "Filename "+part+" does not contain XXX pattern on line "+lineNo+".");
 					return false;
 				}
+				if (partNo == 2 && weightAvail && lineNo < job.size())
+				{
+					//is the column actually float-parsable number?
+					try {
+						Float.parseFloat(part);
+					}
+					catch (Exception e) {
+						statusService.showStatus("The weight column "+part+" cannot be parsed as a real number on line "+lineNo+".");
+						uiService.showDialog(    "The weight column "+part+" cannot be parsed as a real number on line "+lineNo+".");
+						return false;
+					}
+				}
 			}
 
 			//test for (optional) weight column, if not on the last line
@@ -295,7 +307,7 @@ public class machineGTViaMarkers implements Command
 			uiService.showDialog("There is something wrong with either the job file or output file.");
 			return;
 		}
-		if (!mergeModel.startsWith("Threshold - flat")
+		if (!mergeModel.startsWith("Threshold")
 		 && !mergeModel.startsWith("Majority"))
 		{
 			log.error("machineGTViaMarkers error: Unsupported merging model.");
