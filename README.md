@@ -3,7 +3,7 @@ Fresh Fiji installation:
 1) Download recent version of Fiji from http://fiji.sc/
 2) Install it, and pay attention where (which Folder) it got installed into
 3) Locate the folder where Fiji got installed, say it is folder FIJIROOT
-4) Download CTC_FijiPlugins-1.0-SNAPSHOT.jar from the **release folder** on this web page,
+4) Download CTC_FijiPlugins-1.0-SNAPSHOT.jar from the [**release folder**](https://github.com/xulman/CTC-FijiPlugins/tree/master/release) on this web page,
    and place it into FIJIROOT/plugins
 
 
