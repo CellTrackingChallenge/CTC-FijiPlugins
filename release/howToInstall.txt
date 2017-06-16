@@ -11,10 +11,12 @@ Upgrading existing Fiji installation:
 Proceed only with steps 3 and 4.
 
 
+Notes:
+------
 The merging routines can be called from command line too, suitable for batch processing.
 Contact ulman@mpi-cbg.de for details on how to do it.
 
 6th June, 2017
 Vladimir Ulman
 
-https://github.com/xulman/CTC_FijiPlugins
+https://github.com/xulman/CTC-FijiPlugins

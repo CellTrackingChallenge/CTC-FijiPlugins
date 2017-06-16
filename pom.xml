@@ -11,7 +11,7 @@
 
 
   <groupId>de.mpicbg.ulman</groupId>
-  <artifactId>CTC_FijiPlugins</artifactId>
+  <artifactId>CTC-FijiPlugins</artifactId>
   <version>1.0-SNAPSHOT</version>
 
 	<organization>
@@ -21,7 +21,7 @@
 
   <name>CTC FijiPlugins</name>
   <description>Front-end to the CTC paper related measures implemented in the imagej-ops.</description>
-  <url>https://github.com/xulman/CTC_FijiPlugins</url>
+  <url>https://github.com/xulman/CTC-FijiPlugins</url>
   <inceptionYear>2017</inceptionYear>
 
   <packaging>jar</packaging>
@@ -56,14 +56,14 @@
 
 
 	<scm>
-		<connection>scm:git:git://github.com/xulman/CTC_FijiPlugins</connection>
+		<connection>scm:git:git://github.com/xulman/CTC-FijiPlugins</connection>
 		<developerConnection>scm:git:localhost:9999</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/xulman/CTC_FijiPlugins</url>
+		<url>https://github.com/xulman/CTC-FijiPlugins</url>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>http://github.com/xulman/CTC_FijiPlugins/issues</url>
+		<url>http://github.com/xulman/CTC-FijiPlugins/issues</url>
 	</issueManagement>
 	<ciManagement>
 		<system>None</system>
@@ -72,7 +72,7 @@
 	<properties>
 		<license.licenseName>cc0</license.licenseName>
 		<license.copyrightOwners>N/A</license.copyrightOwners>
-		<license.projectName>CTC_FijiPlugins</license.projectName>
+		<license.projectName>CTC-FijiPlugins</license.projectName>
 	</properties>
 
 
