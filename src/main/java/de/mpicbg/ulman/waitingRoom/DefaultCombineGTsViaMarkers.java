@@ -105,7 +105,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	 * was detected and the merging process was not able to recover them, or the
 	 * marker was not discovered at all.
 	 */
-	private final Boolean insertTRAforCollidingOrMissingMarkers = true;
+	private final Boolean insertTRAforCollidingOrMissingMarkers = false;
 
 	///sets explicitly the parameters that SciJava normally supplies in its own way...
 	public void setParams(final Vector<Float> _inWeights,
@@ -148,7 +148,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		final float THRESHOLD = threshold;
 
 		//label for the voxels in the "collision area" of more labels
-		final int INTERSECTION = (int)ONE.getMaxValue();
+		final int INTERSECTION = (int)outImg.firstElement().getMaxValue();
 
 
 		//(bounded) accessing cursors to read/write values from images:
