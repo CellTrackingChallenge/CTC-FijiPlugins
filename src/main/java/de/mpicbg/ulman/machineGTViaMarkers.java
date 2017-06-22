@@ -19,13 +19,16 @@ import net.imagej.ops.OpService;
 import net.imagej.ImageJ;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import io.scif.img.ImgIOException;
-
 import java.util.List;
-import java.io.IOException;
+
+import javax.swing.JFrame;
+import org.jhotdraw.samples.svg.gui.ProgressIndicator;
+import java.awt.Dimension;
 
 import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
 
@@ -369,9 +372,20 @@ public class machineGTViaMarkers implements Command
 			final machineGTViaMarkers_Worker Worker
 				= new machineGTViaMarkers_Worker(ops,log);
 
+			//prepare a progress bar, init and show it
+			JFrame frame = new JFrame("Progress bar");
+			ProgressIndicator pb = new ProgressIndicator("Time points processed: ", "",
+					0, fileIdxTo-fileIdxFrom+1, false);
+			frame.add(pb);
+			frame.setMinimumSize(new Dimension(300, 100));
+			frame.setLocationByPlatform(true);
+			if (uiService.isVisible()) frame.setVisible(true);
+
 			//iterate over all jobs
 			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
 			{
+				pb.setProgress(idx-fileIdxFrom);
+
 				//first populate/expand to get a particular instance of a job
 				for (int i=0; i < args.length-2; i+=2)
 					args[i] = expandFilenamePattern(argsPattern[i],idx);
@@ -384,8 +398,12 @@ public class machineGTViaMarkers implements Command
 				for (; i < args.length; ++i)
 					log.info(i+": "+args[i]);
 
-					Worker.work(args);
+				Worker.work(args);
 			}
+
+			//hide away the progress bar once the job is done
+			//frame.setVisible(false);
+			frame.dispose();
 		}
 		catch (ImgIOException e) {
 			log.error("machineGTViaMarkers error: "+e);
