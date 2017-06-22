@@ -26,8 +26,13 @@ import java.nio.file.Paths;
 import io.scif.img.ImgIOException;
 import java.util.List;
 
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import java.awt.Button;
 import java.awt.Dimension;
 
 import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
@@ -295,6 +300,20 @@ public class machineGTViaMarkers implements Command
 	}
 
 
+	///a single-purpose, button-event-handler, aux class
+	private class ButtonHandler implements ActionListener
+	{
+		//whitnessed the event already?
+		private boolean buttonPressed = false;
+
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{ buttonPressed = true; }
+
+		public boolean buttonPressed()
+		{ return buttonPressed; }
+	}
+
 	//the GUI path entry function:
 	@Override
 	public void run()
@@ -372,11 +391,20 @@ public class machineGTViaMarkers implements Command
 			final machineGTViaMarkers_Worker Worker
 				= new machineGTViaMarkers_Worker(ops,log);
 
-			//prepare a progress bar, init and show it
-			JFrame frame = new JFrame("Progress bar");
-			ProgressIndicator pb = new ProgressIndicator("Time points processed: ", "",
+			//prepare a progress bar:
+			//init the components of the bar
+			JFrame frame = new JFrame("CTC Merging Progress Bar");
+			ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "",
 					0, fileIdxTo-fileIdxFrom+1, false);
-			frame.add(pb);
+			Button pbtn = new Button("Stop merging");
+			ButtonHandler pbtnHandler = new ButtonHandler();
+			pbtn.setMaximumSize(new Dimension(150, 40));
+			pbtn.addActionListener(pbtnHandler);
+
+			//populate the bar and show it
+			frame.setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+			frame.add(pbar);
+			frame.add(pbtn);
 			frame.setMinimumSize(new Dimension(300, 100));
 			frame.setLocationByPlatform(true);
 			if (uiService.isVisible()) frame.setVisible(true);
@@ -384,7 +412,8 @@ public class machineGTViaMarkers implements Command
 			//iterate over all jobs
 			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
 			{
-				pb.setProgress(idx-fileIdxFrom);
+				pbar.setProgress(idx-fileIdxFrom);
+				if (pbtnHandler.buttonPressed()) break;
 
 				//first populate/expand to get a particular instance of a job
 				for (int i=0; i < args.length-2; i+=2)
@@ -402,7 +431,7 @@ public class machineGTViaMarkers implements Command
 			}
 
 			//hide away the progress bar once the job is done
-			//frame.setVisible(false);
+			pbtn.removeActionListener(pbtnHandler);
 			frame.dispose();
 		}
 		catch (ImgIOException e) {
