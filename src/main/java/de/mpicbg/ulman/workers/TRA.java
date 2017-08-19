@@ -464,8 +464,35 @@ public class TRA
 	}
 
 	//CheckConsistency()
-	//GetGTMatch()
-	//GetResMatch()
+
+	/**
+	 * Returns index of RES label that matches with given GT lbl,
+	 * or -1 if no such label was found.
+	 */
+	private int GetGTMatch(final TemporalLevel level, final int lbl)
+	{
+		return ( level.m_gt_match[level.gt_findLabel(lbl)] );
+	}
+
+	/**
+	 * Returns collection of indices of GT labels that matches with given RES lbl,
+	 * or collection with single item (of -1 value) if no such label was found.
+	 */
+	private Collection<Integer> GetResMatch(final TemporalLevel level, final int lbl)
+	{
+		final int idx = level.res_findLabel(lbl);
+		if (idx != -1)
+		{
+			return (level.m_res_match[idx]);
+		}
+		else
+		{
+			//return "not-found" set
+			HashSet<Integer> tmp = new HashSet<>();
+			tmp.add(-1);
+			return (tmp);
+		}
+	}
 
 	//---------------------------------------------------------------------/
 	//aux data fillers -- merely an edge data classifiers
