@@ -531,7 +531,7 @@ public class TRA
 			if (start_label == end_label)
 			{
 				// the edge connects nodes from the same track,
-				// are the nodes temporal consequent? is it really an edge?
+				// are the nodes temporal consecutive? is it really an edge?
 				if ((start_level + 1) == end_level)
 				{
 					parental = false; //same track, can't be a parental link
@@ -556,6 +556,7 @@ public class TRA
 
 		return (false);
 	}
+
 
 	/**
 	 * Check if there is an edge of a given type between given
@@ -584,7 +585,7 @@ public class TRA
 			if (start_label == end_label)
 			{
 				// the edge connects nodes from the same track,
-				// are the nodes temporal consequent? is it really an edge?
+				// are the nodes temporal consecutive? is it really an edge?
 				return ((start_level + 1) == end_level);
 			}
 			else
@@ -602,8 +603,157 @@ public class TRA
 		return (false);
 	}
 
-	//FindEDAndECEdges()
-	//FindEAEdges()
+
+	/** Find edges in the computed tracks that must be removed or altered. */
+	private void FindEDAndECEdges(final Vector<TemporalLevel> levels,
+		final Map<Integer,Track> gt_tracks,
+		final Map<Integer,Track> res_tracks)
+	{
+		final Boolean parent = false;
+		int start_level, end_level;
+		Collection<Integer> start_match, end_match;
+
+		//over all tracks/labels present in the result data
+		for (Integer res_track_id : res_tracks.keySet())
+		{
+			//short-cut to the track data
+			final Track res_track = res_tracks.get(res_track_id);
+
+			// A) check the edge between the first node of the current track
+			// B) and the last one of the parent track
+			// A):
+			end_level = res_track.m_begin;
+			end_match = GetResMatch(levels.get(end_level), res_track_id);
+
+			//does this track have a parent?
+			if (res_track.m_parent > 0)
+			{
+				//yes, it does
+				// B):
+				start_level = res_tracks.get(res_track.m_parent).m_end;
+				start_match = GetResMatch(levels.get(start_level), res_track.m_parent);
+
+				//*_match contain lists of indices of GT labels that matches
+				if (start_match.size() == 1 && end_match.size() == 1)
+				{
+					//right number of matches, deal with this RES edge:
+					if (ExistGTEdge(levels, start_level, start_match.iterator().next(),
+					                end_level, end_match.iterator().next(), gt_tracks, parent))
+					{
+						//corresponding edge exists in GT, does it connect two different tracks too?
+						if (!parent)
+						{
+							//it does not connect different tracks, that's an error
+							aogm += penalty.m_ec;
+							logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+								start_level, res_track.m_parent, end_level, res_track_id));
+						}
+					}
+					else
+					{
+						//there is no corresponding edge in GT, that's an error
+						aogm += penalty.m_ed;
+						logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+							start_level, res_track.m_parent, end_level, res_track_id));
+					}
+				}
+			}
+
+			// check edges within the current track
+			for (int t = res_track.m_begin; t < res_track.m_end; ++t)
+			{
+				//define temporal consecutive nodes
+				start_level = end_level;
+				start_match = end_match;
+				end_level = t + 1;
+				end_match = GetResMatch(levels.get(end_level), res_track_id);
+
+				//*_match contain lists of indices of GT labels that matches
+				if (start_match.size() == 1 && end_match.size() == 1)
+				{
+					//we have a reasonable edge here, deal with this RES edge:
+					if (ExistGTEdge(levels, start_level, start_match.iterator().next(),
+					                end_level, end_match.iterator().next(), gt_tracks, parent))
+					{
+						//corresponding edge exists in GT, should not be parental link however
+						if (parent)
+						{
+							//it is parental, that's an error
+							aogm += penalty.m_ec;
+							logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+								start_level, res_track_id, end_level, res_track_id));
+						}
+					}
+					else
+					{
+						//there is no corresponding edge in GT, that's an error
+						aogm += penalty.m_ed;
+						logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+							start_level, res_track_id, end_level, res_track_id));
+					}
+				}
+			}
+		}
+	}
+
+
+	/** Find edges in the reference tracks that must be added. */
+	private void FindEAEdges(final Vector<TemporalLevel> levels,
+		final Map<Integer,Track> gt_tracks,
+		final Map<Integer,Track> res_tracks)
+	{
+		int start_level, end_level;
+		int start_index, end_index;
+
+		for (Integer gt_track_id : gt_tracks.keySet())
+		{
+			//short-cut to the track data
+			final Track gt_track = gt_tracks.get(gt_track_id);
+
+			// A) check the edge between the first node of the current track
+			// B) and the last one of the parent track
+			// A):
+			end_level = gt_track.m_begin;
+			end_index = GetGTMatch(levels.get(end_level), gt_track_id);
+
+			//does this track have a parent?
+			if (gt_track.m_parent > 0)
+			{
+				//yes, it does
+				// B):
+				start_level = gt_tracks.get(gt_track.m_parent).m_end;
+				start_index = GetGTMatch(levels.get(start_level), gt_track.m_parent);
+				//*_index contain indices of RES labels that matches ...
+
+				if (!ExistResEdge(levels, start_level, start_index, end_level, end_index, res_tracks))
+				{
+					//... but there is no edge between them, that's an error
+					aogm += penalty.m_ea;
+					logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
+						start_level, gt_track.m_parent, end_level, gt_track_id));
+				}
+			}
+
+			// check edges within the current track
+			for (int t = gt_track.m_begin; t < gt_track.m_end; ++t)
+			{
+				//define temporal consecutive nodes
+				start_level = end_level;
+				start_index = end_index;
+				end_level = t + 1;
+				end_index = GetGTMatch(levels.get(end_level), gt_track_id);
+				//*_index contain indices of RES labels that matches ...
+
+				if (!ExistResEdge(levels, start_level, start_index, end_level, end_index, res_tracks))
+				{
+					//... but there is no edge between them, that's an error
+					aogm += penalty.m_ea;
+					logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
+						start_level, gt_track_id, end_level, gt_track_id));
+				}
+			}
+		}
+	}
 
 	//---------------------------------------------------------------------/
 	///the main TRA calculator/calculation pipeline
@@ -673,9 +823,8 @@ public class TRA
 		if ((max_split - 1) * penalty.m_ns > (penalty.m_fp + max_split * penalty.m_fn))
 			log.info("Warning: The minimality condition broken! (m*="+max_split+")");
 
-		//TODO
-		//FindEDAndECEdges(levels, gt_tracks, res_tracks, penalty, aogm, log);
-		//FindEAEdges(levels, gt_tracks, res_tracks, penalty, aogm, log);
+		FindEDAndECEdges(levels, gt_tracks, res_tracks);
+		FindEAEdges(levels, gt_tracks, res_tracks);
 
 		//now, the (old) TRA between GT and RES is calculated:
 		//the old refers to the un-normalized TRA value, interval [0,infinity)
