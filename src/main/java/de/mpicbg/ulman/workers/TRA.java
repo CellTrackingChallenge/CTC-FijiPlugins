@@ -24,13 +24,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import java.util.Collection;
 import java.util.Vector;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
 
-import java.io.*;
+import java.io.FileReader;
+import java.io.BufferedReader;
 import java.util.Scanner;
 
 public class TRA
@@ -49,7 +52,7 @@ public class TRA
 	}
 
 	// ----------- the TRA essentially starts here -----------
-	//helper classes:
+	//auxiliary data:
 
 	/** Track representation. */
 	private class Track
@@ -133,7 +136,8 @@ public class TRA
 		 */
 		int[] m_gt_match = null;
 
-		/** Sets of indices of computed vertex matching, i.e., it is of the same length
+		/**
+		 * Sets of indices of computed vertex matching, i.e., it is of the same length
 		 * as m_res_lab and it holds sets of indices into the m_gt_lab.
 		 *
 		 * It is initialized with empty sets. After matching is done,
@@ -168,6 +172,27 @@ public class TRA
 		double m_ea;
 		/** The penalty for an edge with wrong semantics. */
 		double m_ec;
+	}
+
+	///the to-be-calculated TRA value (based on the AOGM measure)
+	private double aogm = 0.0;
+
+	///the largest incorrect split detected
+	private int max_split = 1;
+
+	///logs to note discrepancies between GT and RES tracks
+	public List<String> logNS = new LinkedList<>();
+	public List<String> logFN = new LinkedList<>();
+	public List<String> logFP = new LinkedList<>();
+	public List<String> logED = new LinkedList<>();
+	public List<String> logEA = new LinkedList<>();
+	public List<String> logEC = new LinkedList<>();
+
+	///convenience function to report given log -- one of the above
+	public void reportLog(final List<String> log)
+	{
+		for (String msg : log)
+			this.log.info(msg);
 	}
 
 	//---------------------------------------------------------------------/
@@ -213,7 +238,7 @@ public class TRA
 	}
 
 
-	private void LoadTrackFile(final String fname, HashMap<Integer,Track> track_list)
+	private void LoadTrackFile(final String fname, Map<Integer,Track> track_list)
 	throws IOException
 	{
 		Scanner s = null;
@@ -257,26 +282,8 @@ public class TRA
 		log.info("loaded track file: "+fname);
 	}
 
-	///the to-be-calculated TRA value (based on the AOGM measure)
-	private double aogm = 0.0;
-
-	///the largest incorrect split detected
-	private int max_split = 1;
-
-	///logs to note discrepancies between GT and RES tracks
-	public List<String> logNS = new LinkedList<String>();
-	public List<String> logFN = new LinkedList<String>();
-	public List<String> logFP = new LinkedList<String>();
-	public List<String> logED = new LinkedList<String>();
-	public List<String> logEA = new LinkedList<String>();
-	public List<String> logEC = new LinkedList<String>();
-
-	///convenience function to report given log -- one of the above
-	public void reportLog(final List<String> log)
-	{
-		for (String msg : log)
-			this.log.info(msg);
-	}
+	//---------------------------------------------------------------------/
+	//aux data fillers -- merely a node data processors and classifiers
 
 	@SuppressWarnings("unchecked")
 	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
@@ -286,7 +293,7 @@ public class TRA
 		TemporalLevel level = new TemporalLevel(levels.size());
 
 		//helper frequency histogram of discovered labels
-		HashMap<Integer,Integer> hist = new HashMap<Integer,Integer>();
+		HashMap<Integer,Integer> hist = new HashMap<>();
 		//helper variables
 		int label = -1;        //marker value = label
 		Integer count = null;  //marker presence counter
@@ -456,6 +463,18 @@ public class TRA
 		levels.add(level);
 	}
 
+	//CheckConsistency()
+	//GetGTMatch()
+	//GetResMatch()
+
+	//---------------------------------------------------------------------/
+	//aux data fillers -- merely an edge data classifiers
+
+	//ExistGTEdge()
+	//ExistResEdge()
+	//FindEDAndECEdges()
+	//FindEAEdges()
+
 	//---------------------------------------------------------------------/
 	///the main TRA calculator/calculation pipeline
 	public double calculate(final String gtPath, final String resPath)
@@ -475,15 +494,15 @@ public class TRA
 		logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
 
 		//representation of tracks
-		HashMap<Integer,Track> gt_tracks  = new HashMap<Integer,Track>();
-		HashMap<Integer,Track> res_tracks = new HashMap<Integer,Track>();
+		HashMap<Integer,Track> gt_tracks  = new HashMap<>();
+		HashMap<Integer,Track> res_tracks = new HashMap<>();
 
 		//fill the tracks data
 		LoadTrackFile( gtPath+"/TRA/man_track.txt", gt_tracks);
 		LoadTrackFile(resPath+"/res_track.txt", res_tracks);
 
 		//representation of "label coverage" at temporal points
-		Vector<TemporalLevel> levels = new Vector<TemporalLevel>(1000,100);
+		Vector<TemporalLevel> levels = new Vector<>(1000,100);
 
 		//iterate through the GT folder and read files, one by one
 		//find the appropriate file in the RES folder
