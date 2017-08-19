@@ -271,6 +271,13 @@ public class TRA
 	public List<String> logEA = new LinkedList<String>();
 	public List<String> logEC = new LinkedList<String>();
 
+	///convenience function to report given log -- one of the above
+	public void reportLog(final List<String> log)
+	{
+		for (String msg : log)
+			this.log.info(msg);
+	}
+
 	@SuppressWarnings("unchecked")
 	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
 		Vector<TemporalLevel> levels, PenaltyConfig penalty)
@@ -545,9 +552,25 @@ public class TRA
 		final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()) //adding nodes
 		                        + penalty.m_ea * (sum + num_par);         //adding edges
 
+		log.info("AOGM to curate  the  given  result: "+aogm);
+		log.info("AOGM to build a new correct result: "+aogm_empty);
+
 		//if correcting is more expensive than creating, we assume user deletes
 		//the whole result and starts from the scratch, hence aogm = aogm_empty
 		aogm = aogm > aogm_empty ? aogm_empty : aogm;
-		return (1.0 - aogm/aogm_empty);
+
+		//normalization:
+		aogm = 1.0 - aogm/aogm_empty;
+
+		//TODO: the log reports might be trigged by separate flag?
+		reportLog(logNS);
+		reportLog(logFN);
+		reportLog(logFP);
+		reportLog(logED);
+		reportLog(logEA);
+		reportLog(logEC);
+
+		log.info("normalized AOGM: "+aogm);
+		return (aogm);
 	}
 }
