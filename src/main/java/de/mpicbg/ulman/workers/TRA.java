@@ -174,6 +174,10 @@ public class TRA
 		double m_ec;
 	}
 
+	///the default (CellTrackingChallenge) weights used for AOGM/TRA
+	private PenaltyConfig penalty
+		= new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
+
 	///the to-be-calculated TRA value (based on the AOGM measure)
 	private double aogm = 0.0;
 
@@ -287,7 +291,7 @@ public class TRA
 
 	@SuppressWarnings("unchecked")
 	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
-		Vector<TemporalLevel> levels, PenaltyConfig penalty)
+		Vector<TemporalLevel> levels)
 	{
 		//create output TemporalLevel to which we gonna save our findings about both images
 		TemporalLevel level = new TemporalLevel(levels.size());
@@ -463,7 +467,11 @@ public class TRA
 		levels.add(level);
 	}
 
+
 	//CheckConsistency()
+	//{
+	//}
+
 
 	/**
 	 * Returns index of RES label that matches with given GT lbl,
@@ -473,6 +481,7 @@ public class TRA
 	{
 		return ( level.m_gt_match[level.gt_findLabel(lbl)] );
 	}
+
 
 	/**
 	 * Returns collection of indices of GT labels that matches with given RES lbl,
@@ -604,7 +613,6 @@ public class TRA
 		log.info(" GT path: "+gtPath);
 		log.info("RES path: "+resPath);
 
-		PenaltyConfig penalty = new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
 		aogm = 0.0;
 
 		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
@@ -648,7 +656,7 @@ public class TRA
 					throw new IllegalArgumentException("Image pair at time"+time
 						+" does not consist of images of the same size.");
 
-			ClassifyLabels(gt_img, res_img, levels, penalty);
+			ClassifyLabels(gt_img, res_img, levels);
 			++time;
 		}
 
