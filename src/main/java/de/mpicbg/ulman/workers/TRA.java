@@ -10,9 +10,8 @@ package de.mpicbg.ulman.workers;
 import org.scijava.log.LogService;
 
 import net.imglib2.img.Img;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
-import net.imglib2.type.numeric.RealType;
+import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import io.scif.config.SCIFIOConfig;
@@ -28,6 +27,8 @@ import java.nio.file.Files;
 import java.util.Vector;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.List;
+import java.util.LinkedList;
 
 import java.io.*;
 import java.util.Scanner;
@@ -95,6 +96,24 @@ public class TRA
 		int[] m_res_lab = null;
 		/** List of sizes of labels in the computed image. */
 		int[] m_res_size = null;
+
+		///returns index of the input GT label
+		public int gt_findLabel(final int label)
+		{
+			for (int i=0; i < m_gt_lab.length; ++i)
+				if (m_gt_lab[i] == label) return (i);
+
+			throw new IllegalArgumentException("Label not found!");
+		}
+
+		///returns index of the input RES label
+		public int res_findLabel(final int label)
+		{
+			for (int i=0; i < m_res_lab.length; ++i)
+				if (m_res_lab[i] == label) return (i);
+
+			throw new IllegalArgumentException("Label not found!");
+		}
 
 		/**
 		 * Matching matrix, stored as a plain 1D array.
@@ -238,15 +257,21 @@ public class TRA
 		log.info("loaded track file: "+fname);
 	}
 
-	/**
-	 * the un-normalized TRA value, interval [0,infinity)
-	 * (approx. an energy required to correct tracking result)
-	 */
+	///the to-be-calculated TRA value (based on the AOGM measure)
 	private double aogm = 0.0;
 
-	///some helper value...
+	///the largest incorrect split detected
 	private int max_split = 1;
 
+	///logs to note discrepancies between GT and RES tracks
+	public List<String> logNS = new LinkedList<String>();
+	public List<String> logFN = new LinkedList<String>();
+	public List<String> logFP = new LinkedList<String>();
+	public List<String> logED = new LinkedList<String>();
+	public List<String> logEA = new LinkedList<String>();
+	public List<String> logEC = new LinkedList<String>();
+
+	@SuppressWarnings("unchecked")
 	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
 		Vector<TemporalLevel> levels, PenaltyConfig penalty)
 	{
@@ -339,8 +364,86 @@ public class TRA
 		levels.push_back(level);
 		*/
 
+		//init the matching matrix
+		final int m_match_lineSize = level.m_gt_lab.length;
+		level.m_match = new int[m_match_lineSize * level.m_res_lab.length];
 
+		//helper values: the label itself
+		int gtLbl, resLbl;
 
+		//sweep both images simultaneously and calculate intersection sizes
+		c = gt_img.localizingCursor();
+		RandomAccess<UnsignedShortType> c2 = res_img.randomAccess();
+		while (c.hasNext())
+		{
+			c.next();
+			c2.setPosition(c);
+
+			gtLbl  = c.get().getInteger();
+			resLbl = c2.get().getInteger();
+
+			//intersection?
+			if (gtLbl > 0 && resLbl > 0)
+				++level.m_match[ level.gt_findLabel(gtLbl) + m_match_lineSize*level.res_findLabel(resLbl) ];
+		}
+
+		//now that gt_, res_ and "gt_vs_res_" histograms are calculated,
+		//determine the label correspondence attributes (m_gt_match and m_res_match)
+		//(FindMatch())
+
+		//for every gt label, find some res label that overlaps with it "significantly"
+		double overlap;
+		//sweep over all gt labels
+		for (int i=0; i < level.m_gt_lab.length; ++i)
+		{
+			//sweep over all res labels
+			for (int j=0; j < level.m_res_lab.length; ++j)
+			{
+				//check the overlap size
+				overlap = (double)level.m_match[i + m_match_lineSize*j];
+				overlap /= (double)level.m_gt_size[i];
+				if (overlap > 0.5)
+				{
+					//we have significant overlap between i-th gt label and j-th res label
+					level.m_gt_match[i] = j;
+					level.m_res_match[j].add(i);
+
+					//no need to scan further within res overlaps (due to >0.5 test)
+					break;
+				}
+			}
+
+			//check if we have found corresponding res label
+			if (level.m_gt_match[i] == -1)
+			{
+				//no correspondence -> the gt label represents FN (false negative) case
+				aogm += penalty.m_fn;
+				logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
+			}
+		}
+
+		//for every res label, check we have found exactly one corresponding gt label
+		int num;
+		for (int j=0; j < level.m_res_lab.length; ++j)
+		{
+			//number of overlapping gt labels
+			num = level.m_res_match[j].size();
+
+			if (num == 0)
+			{
+				//no label -- too few
+				aogm += penalty.m_fp;
+				logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+			}
+			else if (num > 1)
+			{
+				//to many labels...
+				aogm += (num - 1) * penalty.m_ns;
+				for (int qq=1; qq < num; ++qq)
+					logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+				max_split = num > max_split ? num : max_split;
+			}
+		}
 
 		//finally, "save" the level data
 		levels.add(level);
@@ -356,6 +459,13 @@ public class TRA
 
 		PenaltyConfig penalty = new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
 		aogm = 0.0;
+
+		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
+		logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
+		logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
+		logED.add(String.format("----------Redundant Edges To Be Deleted (Penalty=%g)----------", penalty.m_ed));
+		logEA.add(String.format("----------Edges To Be Added (Penalty=%g)----------", penalty.m_ea));
+		logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
 
 		//representation of tracks
 		HashMap<Integer,Track> gt_tracks  = new HashMap<Integer,Track>();
@@ -395,6 +505,49 @@ public class TRA
 			++time;
 		}
 
-		return (aogm);
+		if (levels.size() == 0)
+			throw new IllegalArgumentException("No reference (GT) image was found!");
+
+		if (gt_tracks.size() == 0)
+			throw new IllegalArgumentException("No reference (GT) track was found!");
+
+		//CheckConsistency(gt_tracks, res_tracks, levels);
+		//NB: disabled also in the original implementation
+
+		// check the minimality condition
+		if ((max_split - 1) * penalty.m_ns > (penalty.m_fp + max_split * penalty.m_fn))
+			log.info("Warning: The minimality condition broken! (m*="+max_split+")");
+
+		//TODO
+		//FindEDAndECEdges(levels, gt_tracks, res_tracks, penalty, aogm, log);
+		//FindEAEdges(levels, gt_tracks, res_tracks, penalty, aogm, log);
+
+		//now, the (old) TRA between GT and RES is calculated:
+		//the old refers to the un-normalized TRA value, interval [0,infinity)
+		// (approx. an energy required to CORRECT tracking result)
+
+		//calculate also the (old) TRA when no result is supplied
+		// (approx. an energy required to CREATE tracking result from the scratch)
+		//
+		//how many parental links to add
+		int num_par = 0;
+		//how many track links (edges) to add
+		int sum = 0;
+
+		for (Integer id : gt_tracks.keySet())
+		{
+			Track t = gt_tracks.get(id);
+			sum += t.m_end - t.m_begin;
+
+			if (t.m_parent > 0) ++num_par;
+		}
+
+		final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()) //adding nodes
+		                        + penalty.m_ea * (sum + num_par);         //adding edges
+
+		//if correcting is more expensive than creating, we assume user deletes
+		//the whole result and starts from the scratch, hence aogm = aogm_empty
+		aogm = aogm > aogm_empty ? aogm_empty : aogm;
+		return (1.0 - aogm/aogm_empty);
 	}
 }
