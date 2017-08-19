@@ -497,8 +497,102 @@ public class TRA
 	//---------------------------------------------------------------------/
 	//aux data fillers -- merely an edge data classifiers
 
-	//ExistGTEdge()
-	//ExistResEdge()
+	/**
+	 * Check if there is an edge of a given type between given
+	 * temporal levels in the reference tracks.
+	 */
+	private Boolean ExistGTEdge(final Vector<TemporalLevel> levels,
+		final int start_level,
+		final int start_index,
+		final int end_level,
+		final int end_index,
+		final Map<Integer,Track> tracks,
+		Boolean parental) //also an output variable
+	{
+		//TODO: test if start_level and end_level are sane...
+
+		//reasonable label indices? existing labels?
+		if (start_index != -1 && end_index != -1)
+		{
+			// get labels at given times at given indices
+			final int start_label = levels.get(start_level).m_gt_lab[start_index];
+			final int end_label = levels.get(end_level).m_gt_lab[end_index];
+
+			//check the type of the edge
+			if (start_label == end_label)
+			{
+				// the edge connects nodes from the same track,
+				// are the nodes temporal consequent? is it really an edge?
+				if ((start_level + 1) == end_level)
+				{
+					parental = false; //same track, can't be a parental link
+					return true;
+				}
+			}
+			else
+			{
+				// the edge connects two tracks, get them...
+				final Track parent = tracks.get(start_label);
+				final Track child = tracks.get(end_label);
+
+				//is the edge correctly connecting two tracks?
+				if (parent.m_end == start_level && child.m_begin == end_level
+				    && child.m_parent == start_label)
+				{
+					parental = true;
+					return true;
+				}
+			}
+		}
+
+		return (false);
+	}
+
+	/**
+	 * Check if there is an edge of a given type between given
+	 * temporal levels in the computed tracks.
+	 */
+	private Boolean ExistResEdge(final Vector<TemporalLevel> levels,
+		final int start_level,
+		final int start_index,
+		final int end_level,
+		final int end_index,
+		final Map<Integer,Track> tracks)
+	{
+		//TODO: test if start_level and end_level are sane...
+
+		//reasonable label indices? existing labels?
+		//do start and end labels/nodes have 1:1 matching?
+		if (start_index != -1 && end_index != -1
+		    && levels.get(start_level).m_res_match[start_index].size() == 1
+			 && levels.get(end_level).m_res_match[end_index].size() == 1)
+		{
+			// get labels at given times at given indices
+			final int start_label = levels.get(start_level).m_res_lab[start_index];
+			final int end_label = levels.get(end_level).m_res_lab[end_index];
+
+			//check the type of the edge
+			if (start_label == end_label)
+			{
+				// the edge connects nodes from the same track,
+				// are the nodes temporal consequent? is it really an edge?
+				return ((start_level + 1) == end_level);
+			}
+			else
+			{
+				// the edge connects two tracks, get them...
+				final Track parent = tracks.get(start_label);
+				final Track child = tracks.get(end_label);
+
+				//is the edge correctly connecting two tracks?
+				return (parent.m_end == start_level && child.m_begin == end_level
+				        && child.m_parent == start_label);
+			}
+		}
+
+		return (false);
+	}
+
 	//FindEDAndECEdges()
 	//FindEAEdges()
 
