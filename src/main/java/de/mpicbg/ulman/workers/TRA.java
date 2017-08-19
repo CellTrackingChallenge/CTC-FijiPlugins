@@ -19,20 +19,14 @@ import io.scif.config.SCIFIOConfig.ImgMode;
 import io.scif.img.ImgIOException;
 import io.scif.img.SCIFIOImgPlus;
 import io.scif.img.ImgOpener;
-import io.scif.img.ImgSaver;
-import net.imglib2.exception.IncompatibleTypeException;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import java.util.Vector;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.HashMap;
-import java.util.List;
 
 import java.io.*;
 import java.util.Scanner;
@@ -40,7 +34,7 @@ import java.util.Scanner;
 public class TRA
 {
 	///shortcuts to some Fiji services
-	final LogService log;
+	private final LogService log;
 
 	///a constructor requiring connection to Fiji report/log services
 	public TRA(final LogService _log)
@@ -78,7 +72,7 @@ public class TRA
 	}
 
 	/** Temporal level representation. */
-	class TemporalLevel
+	private class TemporalLevel
 	{
 		/** Constructor. */
 		TemporalLevel(final int level)
@@ -129,7 +123,7 @@ public class TRA
 	}
 
 	/** Penalty configuration representation. */
-	class PenaltyConfig
+	public class PenaltyConfig
 	{
 		/** Constructor. */
 		PenaltyConfig(final double ns, final double fn, final double fp,
@@ -243,13 +237,31 @@ public class TRA
 		log.info("loaded track file: "+fname);
 	}
 
+	/**
+	 * the un-normalized TRA value, interval [0,infinity)
+	 * (approx. an energy required to correct tracking result)
+	 */
+	private double aogm = 0.0;
+
+	///some helper value...
+	private int max_split = 1;
+
+	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
+		Vector<TemporalLevel> levels, PenaltyConfig penalty)
+	{
+
+	}
+
 	//---------------------------------------------------------------------/
 	///the main TRA calculator/calculation pipeline
-	public float calculate(final String gtPath, final String resPath)
+	public double calculate(final String gtPath, final String resPath)
 	throws IOException, ImgIOException
 	{
 		log.info(" GT path: "+gtPath);
 		log.info("RES path: "+resPath);
+
+		PenaltyConfig penalty = new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
+		aogm = 0.0;
 
 		//representation of tracks
 		HashMap<Integer,Track> gt_tracks  = new HashMap<Integer,Track>();
@@ -275,13 +287,20 @@ public class TRA
 			Img<UnsignedShortType> res_img
 				= ReadImage(String.format("%s/mask%03d.tif",resPath,time));
 
-			//ClassifyLabels()
-			System.out.println("found pair at time "+time);
+			//check the sizes of the images
+			if (gt_img.numDimensions() != res_img.numDimensions())
+				throw new IllegalArgumentException("Image pair at time "+time
+					+" does not consist of images of the same dimensionality.");
+
+			for (int n=0; n < gt_img.numDimensions(); ++n)
+				if (gt_img.dimension(n) != res_img.dimension(n))
+					throw new IllegalArgumentException("Image pair at time"+time
+						+" does not consist of images of the same size.");
+
+			ClassifyLabels(gt_img,res_img, levels, penalty);
 			++time;
 		}
 
-
-
-		return (0.02f);
+		return (aogm);
 	}
 }

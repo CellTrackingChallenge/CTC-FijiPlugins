@@ -40,7 +40,7 @@ public class plugin_TRA implements Command
 				= new TRA(log);
 
 			//do the calculation
-			final float traValue
+			final double traValue
 				= tra.calculate(gtPath,resPath);
 
 			//report the result
@@ -78,7 +78,7 @@ public class plugin_TRA implements Command
 				= new TRA(ij.log());
 
 			//do the calculation
-			final float traValue
+			final double traValue
 				= tra.calculate(args[0],args[1]);
 
 			//report the result
