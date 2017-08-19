@@ -11,6 +11,7 @@ import org.scijava.log.LogService;
 
 import net.imglib2.img.Img;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.Cursor;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 
@@ -249,7 +250,100 @@ public class TRA
 	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img,
 		Vector<TemporalLevel> levels, PenaltyConfig penalty)
 	{
+		//create output TemporalLevel to which we gonna save our findings about both images
+		TemporalLevel level = new TemporalLevel(levels.size());
 
+		//helper frequency histogram of discovered labels
+		HashMap<Integer,Integer> hist = new HashMap<Integer,Integer>();
+		//helper variables
+		int label = -1;        //marker value = label
+		Integer count = null;  //marker presence counter
+
+		//sweep the gt image
+		Cursor<UnsignedShortType> c = gt_img.cursor();
+		while (c.hasNext())
+		{
+			//update the histogram of found value
+			label = c.next().getInteger();
+			count = hist.get(label);
+			hist.put(label, count == null ? 1 : count+1);
+		}
+
+		//copy the histogram to the level data class
+		level.m_gt_lab = new int[hist.size()-1];
+		level.m_gt_size = new int[hist.size()-1];
+		level.m_gt_match = new int[hist.size()-1];
+
+		int idx = 0; //label's index in the arrays
+		for (Integer lbl : hist.keySet())
+		//NB: should be true: hist.get(lbl) > 0
+		if (lbl > 0)
+		{
+			level.m_gt_lab[idx] = lbl;
+			level.m_gt_size[idx] = hist.get(lbl);
+			level.m_gt_match[idx] = -1;
+			++idx;
+		}
+
+		//now, the same for the res image
+		//
+		//sweep the res image
+		hist.clear();
+		c = res_img.cursor();
+		while (c.hasNext())
+		{
+			//update the histogram of found value
+			label = c.next().getInteger();
+			count = hist.get(label);
+			hist.put(label, count == null ? 1 : count+1);
+		}
+
+		//copy the histogram to the level data class
+		level.m_res_lab = new int[hist.size()-1];
+		level.m_res_size = new int[hist.size()-1];
+		level.m_res_match = (HashSet<Integer>[])new HashSet<?>[hist.size()-1];
+
+		idx = 0; //label's index in the arrays
+		for (Integer lbl : hist.keySet())
+		if (lbl > 0)
+		{
+			level.m_res_lab[idx] = lbl;
+			level.m_res_size[idx] = hist.get(lbl);
+			level.m_res_match[idx] = new HashSet<Integer>();
+			++idx;
+		}
+
+		if (level.m_gt_lab.length == 0)
+			throw new IllegalArgumentException("GT image has no markers!");
+		if (level.m_res_lab.length == 0)
+			throw new IllegalArgumentException("RES image has no markers!");
+
+		//we don't need this one anymore
+		hist.clear();
+		hist = null;
+
+		/*
+		NB: the code so far represented the following passage in the C++ implementation:
+		i3d::Histogram gt_hist, res_hist;
+		i3d::IntensityHist(gt_img, gt_hist);
+		i3d::IntensityHist(res_img, res_hist);
+
+		TemporalLevel<T> level(levels.size());
+		CreateLabels(gt_hist, level.m_gt_lab, levels.size());
+		CreateLabels(res_hist, level.m_res_lab, levels.size());
+
+
+		NB: the code that follows maps this original:
+		CreateMatch(gt_img, res_img, level.m_gt_lab, level.m_res_lab, level.m_match);
+		FindMatch(level, penalty, aogm, max_split, log);
+		levels.push_back(level);
+		*/
+
+
+
+
+		//finally, "save" the level data
+		levels.add(level);
 	}
 
 	//---------------------------------------------------------------------/
@@ -297,7 +391,7 @@ public class TRA
 					throw new IllegalArgumentException("Image pair at time"+time
 						+" does not consist of images of the same size.");
 
-			ClassifyLabels(gt_img,res_img, levels, penalty);
+			ClassifyLabels(gt_img, res_img, levels, penalty);
 			++time;
 		}
 
