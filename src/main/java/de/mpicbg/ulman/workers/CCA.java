@@ -9,11 +9,6 @@ package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
 
-import net.imglib2.img.Img;
-import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
-
 import io.scif.img.ImgIOException;
 import java.io.IOException;
 
@@ -25,7 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
 
-import de.mpicbg.ulman.workers.TrackDataCache;
+import de.mpicbg.ulman.workers.TrackDataCache.Track;
+import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
 public class CCA
 {
@@ -100,6 +96,11 @@ public class CCA
 		//do the bottom stage
 		log.info("Computing the CCA bottom part...");
 		cca = 0.0;
+
+		//shadows of the/short-cuts to the cache data
+		HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
+		HashMap<Integer,Track> res_tracks = cache.res_tracks;
+		Vector<TemporalLevel> levels = cache.levels;
 
 		//...
 
