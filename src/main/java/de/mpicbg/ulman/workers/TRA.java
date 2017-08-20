@@ -607,7 +607,7 @@ public class TRA
 		final int end_level,
 		final int end_index,
 		final Map<Integer,Track> tracks,
-		Boolean parental) //also an output variable
+		Boolean[] parental) //an output variable...
 	{
 		//TODO: test if start_level and end_level are sane...
 
@@ -625,7 +625,7 @@ public class TRA
 				// are the nodes temporal consecutive? is it really an edge?
 				if ((start_level + 1) == end_level)
 				{
-					parental = false; //same track, can't be a parental link
+					parental[0] = false; //same track, can't be a parental link
 					return true;
 				}
 			}
@@ -639,7 +639,7 @@ public class TRA
 				if (parent.m_end == start_level && child.m_begin == end_level
 				    && child.m_parent == start_label)
 				{
-					parental = true;
+					parental[0] = true;
 					return true;
 				}
 			}
@@ -700,7 +700,7 @@ public class TRA
 		final Map<Integer,Track> gt_tracks,
 		final Map<Integer,Track> res_tracks)
 	{
-		final Boolean parent = false;
+		final Boolean[] parent = new Boolean[1];
 		int start_level, end_level;
 		Collection<Integer> start_match, end_match;
 
@@ -732,7 +732,7 @@ public class TRA
 					                end_level, end_match.iterator().next(), gt_tracks, parent))
 					{
 						//corresponding edge exists in GT, does it connect two different tracks too?
-						if (!parent)
+						if (parent[0] == false)
 						{
 							//it does not connect different tracks, that's an error
 							aogm += penalty.m_ec;
@@ -767,7 +767,7 @@ public class TRA
 					                end_level, end_match.iterator().next(), gt_tracks, parent))
 					{
 						//corresponding edge exists in GT, should not be parental link however
-						if (parent)
+						if (parent[0] == true)
 						{
 							//it is parental, that's an error
 							aogm += penalty.m_ec;
@@ -899,6 +899,10 @@ public class TRA
 
 			ClassifyLabels(gt_img, res_img, levels);
 			++time;
+
+			//to be on safe side (with memory)
+			gt_img = null;
+			res_img = null;
 		}
 
 		if (levels.size() == 0)
