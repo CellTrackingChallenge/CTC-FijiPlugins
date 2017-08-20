@@ -292,7 +292,10 @@ public class TRA
 				track_list.put(id,new Track(id,begin,end,parent));
 			}
 		} catch (IOException e) {
-			log.error("Error reading track with ID="+id);
+			//TRA-related report only if something was read in
+			if (id > -1) log.error("Error reading track with ID="+id);
+
+			//anyway, send the original error message further
 			throw e;
 		} finally {
 			if (s != null)
