@@ -515,9 +515,9 @@ public class TRA
 		logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
 
 		//shadows of the/short-cuts to the cache data
-		HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
-		HashMap<Integer,Track> res_tracks = cache.res_tracks;
-		Vector<TemporalLevel> levels = cache.levels;
+		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
+		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
+		final Vector<TemporalLevel> levels = cache.levels;
 
 		//this is: local ClassifyLabels() -- the part that already does some AOGM checks
 		//this is: the AOGM-specific last portion of the original FindMatch() C++ function:
@@ -618,6 +618,7 @@ public class TRA
 			reportLog(logEC);
 		}
 
+		log.info("---");
 		log.info("normalized AOGM = TRA: "+aogm);
 		return (aogm);
 	}

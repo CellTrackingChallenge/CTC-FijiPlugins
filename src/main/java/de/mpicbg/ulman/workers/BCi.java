@@ -98,11 +98,13 @@ public class BCi
 		bci = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
-		HashMap<Integer,Track> res_tracks = cache.res_tracks;
-		Vector<TemporalLevel> levels = cache.levels;
+		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
+		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
+		final Vector<TemporalLevel> levels = cache.levels;
 
 		//...
+
+		log.info("---");
 
 		log.info("BCi: "+bci);
 		return (bci);

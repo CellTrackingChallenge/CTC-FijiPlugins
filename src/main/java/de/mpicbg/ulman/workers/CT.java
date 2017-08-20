@@ -155,17 +155,18 @@ public class CT
 		ct = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
-		HashMap<Integer,Track> res_tracks = cache.res_tracks;
-		Vector<TemporalLevel> levels = cache.levels;
+		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
+		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
+		final Vector<TemporalLevel> levels = cache.levels;
 
 		//some reports... ;)
 		final int noGT  = gt_tracks.size();
 		final int noRES = res_tracks.size();
 		final int numCorrect = NumCorrectPaths(levels, gt_tracks, res_tracks);
+		log.info("---");
 		log.info("Number of (reference, ground truth) GT tracks: "+noGT);
 		log.info("Number of computed (result) tracks           : "+noRES);
-		log.info("Number of completely reconstructed GT tracks, CT measure: "+numCorrect);
+		log.info("Number of completely reconstructed GT tracks : "+numCorrect);
 
 		//calculate F-score:
 		if (noGT > 0)
