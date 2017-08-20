@@ -486,9 +486,76 @@ public class TRA
 	}
 
 
-	//CheckConsistency()
-	//{
-	//}
+	/**
+	 * Internal test of GT data sanity mainly to alleviate for heavy bound checking etc.
+	 * during the TRA/AOGM calculation.
+	 */
+	private void CheckConsistencyGT(final Vector<TemporalLevel> levels,
+		final Map<Integer,Track> gt_tracks)
+	{
+		//check that all tracks metadata (gt_tracks) are sane and have a counterpart in the images (levels)
+		//therefore, over all GT tracks
+		for (Track gt_track : gt_tracks.values())
+		{
+			//check for track bounds: do they fall within the temporal interval of loaded images
+			if (gt_track.m_begin < 0 || gt_track.m_begin >= levels.size()
+			   || gt_track.m_end < 0 || gt_track.m_end   >= levels.size())
+				throw new IllegalArgumentException("The GT track with label "
+					+gt_track.m_id+" begins or ends outside the image sequence!");
+
+			//check that we have located the track's label in the images in the whole track temporal span
+			for (int t = gt_track.m_begin; t <= gt_track.m_end; ++t)
+			{
+				try {
+					levels.get(t).gt_findLabel(gt_track.m_id);
+					//NB: level.get(t) should work because of the previous test
+				}
+				catch (IllegalArgumentException e) {
+					throw new IllegalArgumentException("The GT track with label "
+						+gt_track.m_id+" was not found in the image at time point "+t+"!");
+				}
+			}
+
+			//do we have a mother?
+			if (gt_track.m_parent > 0)
+			{
+				//yes, is she listed among the available tracks?
+				if (!gt_tracks.containsKey(gt_track.m_parent))
+					throw new IllegalArgumentException("Reference to unavailable parent track "
+						+gt_track.m_parent+" in the GT track with label "+gt_track.m_id+"!");
+
+				//check if daughter track does not start earlier than mother track ends
+				if (gt_track.m_begin <= gt_tracks.get(gt_track.m_parent).m_end)
+					throw new IllegalArgumentException("Invalid parent connection for the "
+						+"GT track with label "+gt_track.m_id+"!");
+			}
+		}
+
+		//check that all labels discovered in images (levels) have a counterpart in tracks metadata (gt_tracks)
+		//therefore, iterate over all time points:
+		for (int t = 0; t < levels.size(); ++t)
+		{
+			//over all GT labels found in an image at that time point
+			for (int i = 0; i < levels.get(t).m_gt_lab.length; ++i)
+			{
+				//the ID of the GT track at index i at time t -- as discovered from the image
+				final int id = levels.get(t).m_gt_lab[i];
+
+				//find it in the track metadata   //if (!gt_tracks.containsKey(id))
+				final Track gt_track = gt_tracks.get(id);
+
+				//do we have such a track at all?
+				if (gt_track == null)
+					throw new IllegalArgumentException("The GT track with label "+id
+						+" found in image at time point "+t+" is not declared (in tracks.txt) at all!");
+
+				//if we do, does the current image fall into the range declared in the metadata?
+				if (t < gt_track.m_begin || t > gt_track.m_end)
+					throw new IllegalArgumentException("The GT track with label "+id
+						+" found in image at time point "+t+" is not declared (in tracks.txt) to be found here!");
+			}
+		}
+	}
 
 
 	/**
@@ -836,7 +903,7 @@ public class TRA
 
 		if (doConsistencyCheck)
 		{
-			//CheckConsistencyGT( levels,  gt_tracks);
+			CheckConsistencyGT( levels,  gt_tracks);
 			//CheckConsistencyRES(levels, res_tracks);
 		}
 
