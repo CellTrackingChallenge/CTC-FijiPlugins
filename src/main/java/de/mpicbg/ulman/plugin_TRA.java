@@ -7,6 +7,7 @@
  */
 package de.mpicbg.ulman;
 
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -15,7 +16,11 @@ import net.imagej.ImageJ;
 
 import de.mpicbg.ulman.workers.TRA;
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>TRA")
+@Plugin(type = Command.class, menuPath = "Plugins>CTC>TRA",
+        name = "CTC_TRA",
+		  description = "Calculates all tracking performance measures from the CTC paper.\n"
+				+"The plugin assumes certain data format, please see\n"
+				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
 public class plugin_TRA implements Command
 {
 
@@ -23,12 +28,17 @@ public class plugin_TRA implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to ground-truth folder: ",
+		columns = 40,
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
 	private String gtPath;
 
 	@Parameter(label = "Path to computed result folder: ",
+		columns = 40,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
 	private String resPath;
+
+	@Parameter(type = ItemIO.OUTPUT)
+	double TRA = -1;
 
 	//the GUI path entry function:
 	@Override
@@ -40,11 +50,10 @@ public class plugin_TRA implements Command
 				= new TRA(log);
 
 			//do the calculation
-			final double traValue
-				= tra.calculate(gtPath,resPath);
+			TRA = tra.calculate(gtPath,resPath);
 
 			//report the result
-			log.info("TRA is: " + traValue);
+			log.info("TRA is: " + TRA);
 		}
 		catch (RuntimeException e) {
 			log.error("TRA problem: "+e.getMessage());

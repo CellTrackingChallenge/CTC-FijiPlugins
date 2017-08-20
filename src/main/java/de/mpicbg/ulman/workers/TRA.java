@@ -67,7 +67,7 @@ public class TRA
 	 * This is helpful for algorithm developers as it shows what, where and when
 	 * was incorrect in their results.
 	 */
-	Boolean doLogReports = true;
+	Boolean doLogReports = false;
 
 	// ----------- the TRA essentially starts here -----------
 	//auxiliary data:
