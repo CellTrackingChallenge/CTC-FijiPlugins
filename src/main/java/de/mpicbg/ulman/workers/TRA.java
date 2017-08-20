@@ -51,6 +51,24 @@ public class TRA
 		log = _log;
 	}
 
+	/**
+	 * Calculation option: do consistency checks before TRA calculation.
+	 * This may prevent from error messages later, e.g.
+	 * from '[ERROR] TRA problem: Array index out of range: 3'
+	 *
+	 * Default CTC papers behaviour was not to do consistency checking.
+	 * But this should be changed soon...
+	 */
+	Boolean doConsistencyCheck = false;
+
+	/**
+	 * Calculation option: do report list of discrepancies between the reference
+	 * and computed tracking result.
+	 * This is helpful for algorithm developers as it shows what, where and when
+	 * was incorrect in their results.
+	 */
+	Boolean doLogReports = true;
+
 	// ----------- the TRA essentially starts here -----------
 	//auxiliary data:
 
@@ -816,8 +834,11 @@ public class TRA
 		if (gt_tracks.size() == 0)
 			throw new IllegalArgumentException("No reference (GT) track was found!");
 
-		//CheckConsistency(gt_tracks, res_tracks, levels);
-		//NB: disabled also in the original implementation
+		if (doConsistencyCheck)
+		{
+			//CheckConsistencyGT( levels,  gt_tracks);
+			//CheckConsistencyRES(levels, res_tracks);
+		}
 
 		// check the minimality condition
 		if ((max_split - 1) * penalty.m_ns > (penalty.m_fp + max_split * penalty.m_fn))
@@ -859,13 +880,16 @@ public class TRA
 		//normalization:
 		aogm = 1.0 - aogm/aogm_empty;
 
-		//TODO: the log reports might be trigged by separate flag?
-		reportLog(logNS);
-		reportLog(logFN);
-		reportLog(logFP);
-		reportLog(logED);
-		reportLog(logEA);
-		reportLog(logEC);
+		//should the log reports be printed?
+		if (doLogReports)
+		{
+			reportLog(logNS);
+			reportLog(logFN);
+			reportLog(logFP);
+			reportLog(logED);
+			reportLog(logEA);
+			reportLog(logEC);
+		}
 
 		log.info("normalized AOGM: "+aogm);
 		return (aogm);
