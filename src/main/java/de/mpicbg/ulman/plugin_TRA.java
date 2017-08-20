@@ -74,6 +74,8 @@ public class plugin_TRA implements Command
 			System.out.println("Parameters: GTpath RESpath\n");
 			System.out.println("GTpath should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt");
 			System.out.println("RESpath should contain result files directly: mask???.tif and res_track.txt");
+			System.out.println("Certain data format is assumed, please see\n"
+				+"http://www.celltrackingchallenge.net/Submission_of_Results.html");
 			return;
 		}
 
