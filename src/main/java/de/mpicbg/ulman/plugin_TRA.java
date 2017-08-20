@@ -18,12 +18,13 @@ import de.mpicbg.ulman.workers.TRA;
 
 @Plugin(type = Command.class, menuPath = "Plugins>CTC>TRA",
         name = "CTC_TRA",
-		  description = "Calculates all tracking performance measures from the CTC paper.\n"
+		  description = "Calculates the TRA tracking performance measure from the AOGM paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
 public class plugin_TRA implements Command
 {
-
+	//------------- GUI stuff -------------
+	//
 	@Parameter
 	private LogService log;
 
@@ -46,14 +47,13 @@ public class plugin_TRA implements Command
 	{
 		try {
 			//start up the worker class
-			final TRA tra
-				= new TRA(log);
+			final TRA tra = new TRA(log);
 
 			//do the calculation
 			TRA = tra.calculate(gtPath,resPath);
 
-			//report the result
-			log.info("TRA is: " + TRA);
+			//do not report anything explicitly (unless special format for parsing is
+			//desired) as ItemIO.OUTPUT will make it output automatically
 		}
 		catch (RuntimeException e) {
 			log.error("TRA problem: "+e.getMessage());
@@ -64,6 +64,8 @@ public class plugin_TRA implements Command
 	}
 
 
+	//------------- command line stuff -------------
+	//
 	//the CLI path entry function:
 	public static void main(final String... args)
 	{
@@ -79,28 +81,14 @@ public class plugin_TRA implements Command
 			return;
 		}
 
-		//head less variant:
+		//parse and store the arguments, if necessary
+		//....
+
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
 
-		try {
-			//start up the worker class
-			final TRA tra
-				= new TRA(ij.log());
-
-			//do the calculation
-			final double traValue
-				= tra.calculate(args[0],args[1]);
-
-			//report the result
-			ij.log().info("TRA is: " + traValue);
-		}
-		catch (RuntimeException e) {
-			ij.log().error("TRA problem: "+e.getMessage());
-		}
-		catch (Exception e) {
-			ij.log().error("TRA error: "+e.getMessage());
-		}
+		//run this class is if from GUI
+		ij.command().run(plugin_TRA.class, true, "gtPath",args[0], "resPath",args[1]);
 
 		//and close the IJ instance...
 		ij.appEvent().quit();
