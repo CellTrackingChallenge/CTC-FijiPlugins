@@ -468,4 +468,33 @@ public class TrackDataCache
 		this.gtPath  = gtPath;
 		this.resPath = resPath;
 	}
+
+
+	///checks whether given two nodes matches 1:1 in the given time point
+	public boolean UniqueMatch(final int gt, final int res, final TemporalLevel level)
+	{
+		//check both nodes exist at the given time
+		int gt_idx, res_idx;
+		try {
+			gt_idx  = level.gt_findLabel(gt);
+			res_idx = level.res_findLabel(res);
+		}
+		catch (IllegalArgumentException e) {
+			//if we got here, means some of the nodes is not available at the time point
+			return false;
+		}
+
+		//both nodes are available, check they have 1:1 matching
+		//see what matches the RES node has
+		HashSet<Integer> match = level.m_res_match[res_idx];
+
+		//check the RES node has exactly 1 match with some GT
+		if (match.size() != 1) return false;
+
+		//check that the one match is the requested GT node
+		if (match.iterator().next() != gt_idx) return false;
+
+		//all test passed, must be unique match then :)
+		return true;
+	}
 }
