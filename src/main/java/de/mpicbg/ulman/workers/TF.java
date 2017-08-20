@@ -53,6 +53,136 @@ public class TF
 	private double tf = 0.0;
 
 
+	///calculate correctly reconstructed fractions of entire tracks
+	public void CalcFRs(final Vector<TemporalLevel> levels,
+		final Map<Integer,Track> gt_tracks,
+		final Map<Integer,Track> res_tracks,
+		final Map<Integer,Float> gt_startingRatio,
+		final Map<Integer,Float> gt_followedRatio)
+	{
+		//init the output data
+		gt_startingRatio.clear();
+		gt_followedRatio.clear();
+
+		//serialization of GT tracks to obtain:
+		//indicator if given GT track has been correctly reconstructed ...
+		final boolean[] gt_correct = new boolean[gt_tracks.size()];
+		//... with its corresponding track ID
+		final int[] gt_ids = new int[gt_tracks.size()];
+
+		int i = 0;
+		for (Integer id : gt_tracks.keySet())
+		{
+			//NB: enumerates GT IDs in some undefined order
+			//NB: (and we need to scan gt_tracks repeatedly, always in the same order)
+			gt_correct[i] = false;
+			gt_ids[i] = id;
+			gt_startingRatio.put(id,0.0f);
+			gt_followedRatio.put(id,0.0f);
+			++i;
+		}
+
+		//now, over all RES tracks and look for appropriate, not yet reconstructed GT track
+		for (Track res_track : res_tracks.values())
+		{
+			//scan over all GT tracks ...
+			for (i = 0; i < gt_correct.length; ++i)
+			{
+				//... to find not yet reconstructed GT track ...
+				if (!gt_correct[i])
+				{
+					//... to see how far we can reconstruct it with this RES track
+					//
+					//so far the best progress
+					float bestStartPos = gt_startingRatio.get(gt_ids[i]);
+					float bestFraction = gt_followedRatio.get(gt_ids[i]);
+
+					//current progress
+					int res_progress = 0;
+
+					//max progress possible
+					final int gt_trackLength = gt_tracks.get(gt_ids[i]).m_end
+					                         - gt_tracks.get(gt_ids[i]).m_begin +1;
+					final int gtStart = gt_tracks.get(gt_ids[i]).m_begin;
+
+					//scan given RES track to see how well it follows the selected GT
+					int j = res_track.m_begin;
+					while (j <= res_track.m_end)
+					{
+						if (cache.UniqueMatch(gt_ids[i], res_track.m_id, levels.get(j)))
+						{
+							//we have a match at time point j
+							++res_progress;
+						}
+						else
+						{
+							//we do not have a match
+							//
+							//check this recent following attempt,
+							//and possibly update with this attempt
+							final float curFraction=(float)res_progress/(float)gt_trackLength;
+							if (curFraction > bestFraction)
+							{
+								//j current time when following got broken, at this moment res_progress frames
+								//were discovered... j-res_progress is thus time we started this discovery
+								//minus further the gtStart gives distance from the GT track beginning,
+								//which is normalized by its (GT) length...
+								bestStartPos=(float)(j-gtStart -res_progress)/(float)gt_trackLength;
+								bestFraction=curFraction;
+
+								//REMOVE ME, DEBUG
+								if (bestStartPos > 1.0f)
+								{
+									//hmm... something is wrong, debug me
+									log.info("m bSP="+bestStartPos+": j="+j
+									        +", rP="+res_progress+", b="+res_track.m_begin
+									        +", e="+res_track.m_end
+									        +", gtLen="+gt_trackLength);
+								}
+							}
+
+							//reset the current progress
+							res_progress=0;
+						}
+
+						++j;
+					}
+
+					//check and possibly update with this attempt
+					final float curFraction=(float)res_progress/(float)gt_trackLength;
+					if (curFraction > bestFraction)
+					{
+						bestStartPos=(float)(j-gtStart -res_progress)/(float)gt_trackLength;
+						bestFraction=curFraction;
+
+						//REMOVE ME, DEBUG
+						if (bestStartPos > 1.0f)
+						{
+							log.info("e bSP="+bestStartPos+": j="+j
+							        +", rP="+res_progress+", b="+res_track.m_begin
+							        +", e="+res_track.m_end
+							        +", gtLen="+gt_trackLength);
+						}
+					}
+
+					if (bestFraction > 0.999f) //just to avoid float-point imprecisions
+					{
+						//save the (updated) so far the best progress
+						gt_startingRatio.put(gt_ids[i],0.f);
+						gt_followedRatio.put(gt_ids[i],1.f);
+						gt_correct[i] = true;
+						break;
+					}
+
+					//save the (updated) so far the best progress
+					gt_startingRatio.put(gt_ids[i],bestStartPos);
+					gt_followedRatio.put(gt_ids[i],bestFraction);
+				}
+			}
+		}
+	}
+
+
 	//---------------------------------------------------------------------/
 	/**
 	 * Measure calculation happens in two stages. The first/upper stage does
@@ -98,11 +228,39 @@ public class TF
 		tf = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
-		HashMap<Integer,Track> res_tracks = cache.res_tracks;
-		Vector<TemporalLevel> levels = cache.levels;
+		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
+		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
+		final Vector<TemporalLevel> levels = cache.levels;
 
-		//...
+		final HashMap<Integer,Float> gt_startingRatio = new HashMap<>();
+		final HashMap<Integer,Float> gt_followedRatio = new HashMap<>();
+		CalcFRs(levels, gt_tracks, res_tracks, gt_startingRatio,gt_followedRatio);
+
+		//scan the discovered ratios and print out (and count how many tracks were detected)
+		int partlyRecoveredCounter=0; //partly recovered tracks (PIT)
+		int tooShortCounter=0; //PIT but unable to follow to the GT track to the very end
+		int correctlyFollowedCounter=0; //PIT and followed exactly the GT track
+		int overlyLongCounter=0; //PIT, followed GT track and did not stop but continued erroneously to follow something
+
+		for (Float gt_fR : gt_followedRatio.values())
+		{
+			if (gt_fR > 0.f)
+			{
+				tf+=gt_fR;
+				++partlyRecoveredCounter;
+				if (gt_fR < 1.0f) ++tooShortCounter;
+			}
+			if (gt_fR == 1.0f) ++correctlyFollowedCounter;
+			if (gt_fR > 1.0f) ++overlyLongCounter;
+		}
+		tf/=(double)partlyRecoveredCounter;
+
+		log.info("---");
+		log.info("Number of partly followed GT tracks    : "+tooShortCounter);
+		log.info("Number of completely followed GT tracks: "+correctlyFollowedCounter);
+		log.info("Number of detected GT tracks           : "+partlyRecoveredCounter);
+		//overlyLongCounter could be reported too...
+		//log.info("Average followed fraction of detected tracks, TF measure: "+tf);
 
 		log.info("TF: "+tf);
 		return (tf);
