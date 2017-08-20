@@ -12,13 +12,9 @@ import org.scijava.log.LogService;
 import io.scif.img.ImgIOException;
 import java.io.IOException;
 
-import java.util.Collection;
 import java.util.Vector;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.LinkedList;
 
 import de.mpicbg.ulman.workers.TrackDataCache.Track;
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
@@ -51,6 +47,67 @@ public class CT
 
 	///the to-be-calculated measure value
 	private double ct = 0.0;
+
+
+	///calculate the number of completely correctly reconstructed tracks
+	public int NumCorrectPaths(final Vector<TemporalLevel> levels,
+		final Map<Integer,Track> gt_tracks,
+		final Map<Integer,Track> res_tracks)
+	{
+		//return value
+		int num_correct = 0;
+
+		//serialization of GT tracks to obtain:
+		//indicator if given GT track has been correctly reconstructed ...
+		final boolean[] gt_correct = new boolean[gt_tracks.size()];
+		//... with its corresponding track ID
+		final int[] gt_ids = new int[gt_tracks.size()];
+
+		int i = 0;
+		for (Integer id : gt_tracks.keySet())
+		{
+			//NB: enumerates GT IDs in some undefined order
+			//NB: (and we need to scan gt_tracks repeatedly, always in the same order)
+			gt_correct[i] = false;
+			gt_ids[i] = id;
+			++i;
+		}
+
+		//helper variable
+		boolean overlap;
+
+		//now, over all RES tracks and look for appropriate, not yet reconstructed GT track
+		for (Track res_track : res_tracks.values())
+		{
+			//scan over all GT tracks ...
+			for (i = 0; i < gt_correct.length; ++i)
+			{
+				//... to find not reconstructed GT track that starts and ends at the same time point
+				if (!gt_correct[i] && gt_tracks.get(gt_ids[i]).m_begin == res_track.m_begin
+				   && gt_tracks.get(gt_ids[i]).m_end == res_track.m_end)
+				{
+					//check spatial overlap at all time points of the track
+					overlap = true;
+					for (int t=res_track.m_begin; t <= res_track.m_end && overlap; ++t)
+						if (!cache.UniqueMatch(gt_ids[i], res_track.m_id, levels.get(t)))
+							overlap = false;
+
+					if (overlap == true)
+					{
+						//overlaps okay in the entire length of the GT track,
+						//thus, mark it as reconstructed
+						gt_correct[i] = true;
+						++num_correct;
+						break;
+						//NB: breaks the "over all GT" cycle as this res_track
+						//    cannot reconstruct another GT track
+					}
+				}
+			}
+		}
+
+		return (num_correct);
+	}
 
 
 	//---------------------------------------------------------------------/
@@ -102,9 +159,23 @@ public class CT
 		HashMap<Integer,Track> res_tracks = cache.res_tracks;
 		Vector<TemporalLevel> levels = cache.levels;
 
-		//...
+		//some reports... ;)
+		final int noGT  = gt_tracks.size();
+		final int noRES = res_tracks.size();
+		final int numCorrect = NumCorrectPaths(levels, gt_tracks, res_tracks);
+		log.info("Number of (reference, ground truth) GT tracks: "+noGT);
+		log.info("Number of computed (result) tracks           : "+noRES);
+		log.info("Number of completely reconstructed GT tracks, CT measure: "+numCorrect);
 
-		log.info("CT: "+ct);
+		//calculate F-score:
+		if (noGT > 0)
+		{
+			ct = (2.0 * numCorrect) / (double)(noRES + noGT);
+			log.info("CT: "+ct);
+		}
+		else
+			log.info("CT: Couldn't calculate F-score because there are no GT tracks.");
+
 		return (ct);
 	}
 
