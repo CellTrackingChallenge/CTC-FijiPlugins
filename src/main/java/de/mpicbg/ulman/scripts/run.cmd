@@ -1,0 +1,3 @@
+# This is a general way of calling specific scripts for FiJi from command line.
+# The command actually only executes the script 'TRA_test.py', which executes FiJi menu command 'TRA', which actually does the job...
+~/Apps/Fiji.app/Contents/MacOS/ImageJ-macosx --headless --run ./TRA_test.py 'gtPath="/Users/ulman/DATA/CTC/ChallgeGT_Annotators/Fluo-N3DH-CE/01_GT/",resPath="/Users/ulman/DATA/CTC/ISBI2015/isbi170/Fluo-N3DH-CE/01_RES"' 2>&1  | grep INFO
