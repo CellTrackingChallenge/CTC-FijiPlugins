@@ -36,6 +36,8 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.Scanner;
 
+import de.mpicbg.ulman.workers.TrackDataCache;
+
 public class TRA
 {
 	///shortcuts to some Fiji services
@@ -50,6 +52,13 @@ public class TRA
 
 		log = _log;
 	}
+
+	///reference on cache that we used recently
+	private TrackDataCache cache = null;
+
+	///to provide the cache to others/to share it with others
+	public TrackDataCache getCache()
+	{ return (cache); }
 
 	/**
 	 * Calculation option: do consistency checks before TRA calculation.
@@ -851,12 +860,27 @@ public class TRA
 
 	//---------------------------------------------------------------------/
 	///the main TRA calculator/calculation pipeline
-	public double calculate(final String gtPath, final String resPath)
+	public double calculate(final String gtPath, final String resPath,
+	                        final TrackDataCache _cache)
 	throws IOException, ImgIOException
 	{
-		log.info(" GT path: "+gtPath);
-		log.info("RES path: "+resPath);
+		//invalidate own cache
+		cache = null;
 
+		//check we got some hint/cache
+		//and if it fits our input, then use it
+		if (_cache != null && _cache.validFor(gtPath,resPath)) cache = _cache;
+
+		//if no cache is available after all, compute it
+		if (cache == null)
+		{
+			//do the upper stage
+			cache = new TrackDataCache(log);
+			cache.calculate(gtPath,resPath);
+		}
+
+		//do the bottom stage
+		log.info("Computing the TRA bottom part...");
 		aogm = 0.0;
 
 		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
@@ -971,7 +995,14 @@ public class TRA
 			reportLog(logEC);
 		}
 
-		log.info("normalized AOGM: "+aogm);
+		log.info("normalized AOGM = TRA: "+aogm);
 		return (aogm);
+	}
+
+	/// This is the wrapper TRA calculator, assuring complete re-calculation.
+	public double calculate(final String gtPath, final String resPath)
+	throws IOException, ImgIOException
+	{
+		return this.calculate(gtPath,resPath,null);
 	}
 }
