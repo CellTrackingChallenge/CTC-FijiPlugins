@@ -53,7 +53,7 @@ public class TRA
 	 * Default CTC papers behaviour was not to do consistency checking.
 	 * But this should be changed soon...
 	 */
-	Boolean doConsistencyCheck = false;
+	boolean doConsistencyCheck = false;
 
 	/**
 	 * Calculation option: do report list of discrepancies between the reference
@@ -61,7 +61,7 @@ public class TRA
 	 * This is helpful for algorithm developers as it shows what, where and when
 	 * was incorrect in their results.
 	 */
-	Boolean doLogReports = false;
+	boolean doLogReports = false;
 
 	// ----------- the TRA essentially starts here -----------
 	//auxiliary data:
@@ -128,7 +128,7 @@ public class TRA
 	 */
 	private void CheckConsistency(final Vector<TemporalLevel> levels,
 		final Map<Integer,Track> tracks,
-		final Boolean isGTcheck)
+		final boolean isGTcheck)
 	{
 		//a helper string for messaging
 		final String DS = isGTcheck? " GT " : " RES ";
@@ -237,13 +237,13 @@ public class TRA
 	 * Check if there is an edge of a given type between given
 	 * temporal levels in the reference tracks.
 	 */
-	private Boolean ExistGTEdge(final Vector<TemporalLevel> levels,
+	private boolean ExistGTEdge(final Vector<TemporalLevel> levels,
 		final int start_level,
 		final int start_index,
 		final int end_level,
 		final int end_index,
 		final Map<Integer,Track> tracks,
-		Boolean[] parental) //an output variable...
+		boolean[] parental) //an output variable...
 	{
 		//TODO: test if start_level and end_level are sane...
 
@@ -289,7 +289,7 @@ public class TRA
 	 * Check if there is an edge of a given type between given
 	 * temporal levels in the computed tracks.
 	 */
-	private Boolean ExistResEdge(final Vector<TemporalLevel> levels,
+	private boolean ExistResEdge(final Vector<TemporalLevel> levels,
 		final int start_level,
 		final int start_index,
 		final int end_level,
@@ -336,7 +336,7 @@ public class TRA
 		final Map<Integer,Track> gt_tracks,
 		final Map<Integer,Track> res_tracks)
 	{
-		final Boolean[] parent = new Boolean[1];
+		final boolean[] parent = new boolean[1];
 		int start_level, end_level;
 		Collection<Integer> start_match, end_match;
 
