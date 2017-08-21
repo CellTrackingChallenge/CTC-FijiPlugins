@@ -10,6 +10,8 @@ package de.mpicbg.ulman.workers;
 import org.scijava.log.LogService;
 
 import net.imglib2.img.Img;
+import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
@@ -290,79 +292,79 @@ public class TrackDataCache
 	//aux data fillers -- merely a node data processors and classifiers
 
 	@SuppressWarnings("unchecked")
-	public void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img)
+	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
+	                           RandomAccessibleInterval<UnsignedShortType> res_img)
 	{
 		//create output TemporalLevel to which we gonna save our findings about both images
 		TemporalLevel level = new TemporalLevel(levels.size());
 
 		//helper frequency histogram of discovered labels
-		HashMap<Integer,Integer> hist = new HashMap<>();
+		HashMap<Integer,Integer> gt_hist = new HashMap<>();
+		HashMap<Integer,Integer> res_hist = new HashMap<>();
 		//helper variables
 		int label = -1;        //marker value = label
 		Integer count = null;  //marker presence counter
 
 		//sweep the gt image
-		Cursor<UnsignedShortType> c = gt_img.cursor();
+		Cursor<UnsignedShortType> c = gt_img.localizingCursor();
+		RandomAccess<UnsignedShortType> c2 = res_img.randomAccess();
 		while (c.hasNext())
 		{
-			//update the histogram of found value
+			//update the GT histogram of found values/labels
 			label = c.next().getInteger();
-			count = hist.get(label);
-			hist.put(label, count == null ? 1 : count+1);
+			count = gt_hist.get(label);
+			gt_hist.put(label, count == null ? 1 : count+1);
+
+			//update the RES histogram of found values/labels
+			c2.setPosition(c);
+			label = c2.get().getInteger();
+			count = res_hist.get(label);
+			res_hist.put(label, count == null ? 1 : count+1);
 		}
 
 		//copy the histogram to the level data class
-		level.m_gt_lab = new int[hist.size()-1];
-		level.m_gt_size = new int[hist.size()-1];
-		level.m_gt_match = new int[hist.size()-1];
+		level.m_gt_lab = new int[gt_hist.size()-1];
+		level.m_gt_size = new int[gt_hist.size()-1];
+		level.m_gt_match = new int[gt_hist.size()-1];
 
 		int idx = 0; //label's index in the arrays
-		for (Integer lbl : hist.keySet())
-		//NB: should be true: hist.get(lbl) > 0
+		for (Integer lbl : gt_hist.keySet())
+		//NB: should be true: gt_hist.get(lbl) > 0
 		if (lbl > 0)
 		{
 			level.m_gt_lab[idx] = lbl;
-			level.m_gt_size[idx] = hist.get(lbl);
+			level.m_gt_size[idx] = gt_hist.get(lbl);
 			level.m_gt_match[idx] = -1;
 			++idx;
 		}
 
 		//now, the same for the res image
-		//
-		//sweep the res image
-		hist.clear();
-		c = res_img.cursor();
-		while (c.hasNext())
-		{
-			//update the histogram of found value
-			label = c.next().getInteger();
-			count = hist.get(label);
-			hist.put(label, count == null ? 1 : count+1);
-		}
-
 		//copy the histogram to the level data class
-		level.m_res_lab = new int[hist.size()-1];
-		level.m_res_size = new int[hist.size()-1];
-		level.m_res_match = (HashSet<Integer>[])new HashSet<?>[hist.size()-1];
+		level.m_res_lab = new int[res_hist.size()-1];
+		level.m_res_size = new int[res_hist.size()-1];
+		level.m_res_match = (HashSet<Integer>[])new HashSet<?>[res_hist.size()-1];
 
 		idx = 0; //label's index in the arrays
-		for (Integer lbl : hist.keySet())
+		for (Integer lbl : res_hist.keySet())
 		if (lbl > 0)
 		{
 			level.m_res_lab[idx] = lbl;
-			level.m_res_size[idx] = hist.get(lbl);
+			level.m_res_size[idx] = res_hist.get(lbl);
 			level.m_res_match[idx] = new HashSet<Integer>();
 			++idx;
 		}
 
+		//check the images are not completely blank
 		if (level.m_gt_lab.length == 0)
 			throw new IllegalArgumentException("GT image has no markers!");
 		if (level.m_res_lab.length == 0)
 			throw new IllegalArgumentException("RES image has no markers!");
 
 		//we don't need this one anymore
-		hist.clear();
-		hist = null;
+		gt_hist.clear();
+		gt_hist = null;
+		res_hist.clear();
+		res_hist = null;
 
 		/*
 		NB: the code so far represented the following passage in the C++ implementation:
@@ -389,8 +391,7 @@ public class TrackDataCache
 		int gtLbl, resLbl;
 
 		//sweep both images simultaneously and calculate intersection sizes
-		c = gt_img.localizingCursor();
-		RandomAccess<UnsignedShortType> c2 = res_img.randomAccess();
+		c.reset();
 		while (c.hasNext())
 		{
 			c.next();
