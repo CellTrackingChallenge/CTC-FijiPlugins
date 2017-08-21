@@ -12,13 +12,9 @@ import org.scijava.log.LogService;
 import io.scif.img.ImgIOException;
 import java.io.IOException;
 
-import java.util.Collection;
 import java.util.Vector;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.LinkedList;
 
 import de.mpicbg.ulman.workers.TrackDataCache.Track;
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
@@ -242,7 +238,7 @@ public class TF
 		int correctlyFollowedCounter=0; //PIT and followed exactly the GT track
 		int overlyLongCounter=0; //PIT, followed GT track and did not stop but continued erroneously to follow something
 
-		for (Float gt_fR : gt_followedRatio.values())
+		for (Float gt_fR : gt_followedRatio.values()) //goes essentially over all tracks, see CalcFRs()
 		{
 			if (gt_fR > 0.f)
 			{
