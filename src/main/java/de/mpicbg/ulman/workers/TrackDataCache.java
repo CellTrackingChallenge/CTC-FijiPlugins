@@ -85,6 +85,36 @@ public class TrackDataCache
 		final int m_parent;
 	}
 
+	/** Fork representation. */
+	public class Fork
+	{
+		/** Explicit constructor. */
+		Fork(final int parent_id, final Vector<Integer> child_ids)
+		{
+			m_parent_id = parent_id;
+			m_child_ids = new int[child_ids.size()];
+
+			//copy from dynamic to static (and lightweight) data container
+			int i = 0;
+			for (Integer id : child_ids) m_child_ids[i++] = id;
+		}
+
+		/** Parent identificator. */
+		final int m_parent_id;
+
+		/** Child identificators. */
+		final int[] m_child_ids;
+
+		///returns index of the input GT label, or -1 if label was not found
+		public int findChildLabel(final int label)
+		{
+			for (int i=0; i < m_child_ids.length; ++i)
+				if (m_child_ids[i] == label) return (i);
+
+			return (-1);
+		}
+	}
+
 	/** Temporal level representation. */
 	public class TemporalLevel
 	{
@@ -156,11 +186,15 @@ public class TrackDataCache
 	}
 
 	//representation of tracks
-	public HashMap<Integer,Track> gt_tracks  = new HashMap<>();
-	public HashMap<Integer,Track> res_tracks = new HashMap<>();
+	public final HashMap<Integer,Track> gt_tracks  = new HashMap<>();
+	public final HashMap<Integer,Track> res_tracks = new HashMap<>();
 
 	//representation of "label coverage" at temporal points
-	public Vector<TemporalLevel> levels = new Vector<>(1000,100);
+	public final Vector<TemporalLevel> levels = new Vector<>(1000,100);
+
+	//representation of branching events
+	public final Vector<Fork> gt_forks  = new Vector<>(1000);
+	public final Vector<Fork> res_forks = new Vector<>(1000);
 
 	//---------------------------------------------------------------------/
 	//data loading functions:
@@ -402,6 +436,59 @@ public class TrackDataCache
 	}
 
 
+	/**
+	 * Detect forks in a given acyclic oriented graph,
+	 * which is to use the 'tracks' (that is the graph) and extract
+	 * all forking events (any situation when mother track ends and
+	 * continues with its two or more daughters) and save them
+	 * in the 'forks'.
+	 */
+	private void DetectForks(final Map<Integer,Track> tracks, final Vector<Fork> forks)
+	{
+		//prepare the output structure
+		forks.clear();
+
+		//scan through tracks and note who am I a children of
+		//NB: tracks know their parents, parents do not know explicitly their children
+		//
+		//       parent   list_of_kids
+		HashMap<Integer,Vector<Integer>> families = new HashMap<>();
+
+		for (Track track : tracks.values())
+		{
+			//does the current track have a parent?
+			if (track.m_parent > 0)
+			{
+				//retrieve current list of kids of this track's parent
+				Vector<Integer> kids = families.get(track.m_parent);
+				if (kids == null)
+				{
+					//hmm, we are adding the first kid (and assume up to 3 kids)
+					kids = new Vector<>(3);
+					families.put(track.m_parent,kids);
+				}
+
+				kids.add(track.m_id);
+			}
+		}
+
+		//now that we have (piece-by-piece) collected Fork-like data,
+		//fill the output variable finally
+		for (Integer parent : families.keySet())
+		{
+			//retrieve final list of kids of this parent
+			Vector<Integer> kids = families.get(parent);
+			//NB: should always hold: kids != null
+
+			//enough kids for a fork?
+			if (kids.size() > 1)
+			{
+				//yes, create the fork then
+				forks.add( new Fork(parent,kids) );
+			}
+		}
+	}
+
 	//---------------------------------------------------------------------/
 	/**
 	 * Measure calculation happens in two stages. The first/upper stage does
@@ -462,6 +549,10 @@ public class TrackDataCache
 
 		if (gt_tracks.size() == 0)
 			throw new IllegalArgumentException("No reference (GT) track was found!");
+
+		//calculate all forks -- branching events
+		DetectForks(gt_tracks,  gt_forks);
+		DetectForks(res_tracks, res_forks);
 
 		//now that we got here, note for what data
 		//this cache is valid, see validFor() above
