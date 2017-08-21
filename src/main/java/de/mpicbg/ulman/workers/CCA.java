@@ -12,16 +12,11 @@ import org.scijava.log.LogService;
 import io.scif.img.ImgIOException;
 import java.io.IOException;
 
-import java.util.Collection;
 import java.util.Vector;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.LinkedList;
 
 import de.mpicbg.ulman.workers.TrackDataCache.Track;
-import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
+import de.mpicbg.ulman.workers.TrackDataCache.Fork;
 
 public class CCA
 {
@@ -100,11 +95,122 @@ public class CCA
 		//shadows of the/short-cuts to the cache data
 		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
 		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
-		final Vector<TemporalLevel> levels = cache.levels;
 
-		//...
+		final Vector<Fork> gt_forks  = cache.gt_forks;
+		final Vector<Fork> res_forks = cache.res_forks;
 
+		//detects complete cell cycles and save frequency histogram of their
+		//lengths/durations, complete cell cycle corresponds to a track whose
+		//begin and end is evidenced in the data, i.e. we see the whole
+		//life of a cell from its birth till its death/division
+		//
+		//this we do by looking for tracks that connect two branching events
+
+		//number of detected complete cell cycles
+		int gt_count=0;
+		int res_count=0;
+
+		//maximum length spotted
+		int maxLength = 0;
+
+		//frequency histograms of their lengths
+		HashMap<Integer,Integer> gt_lenHist  = new HashMap<>();
+		HashMap<Integer,Integer> res_lenHist = new HashMap<>();
+
+		//now, scan all GT branching events
+		for (Fork parent : gt_forks) //later/ending point of some track
+		for (Fork child  : gt_forks) //earlier branching (may have many daughters)
+		for (int i=0; i < child.m_child_ids.length; ++i) //earlier/starting point of some track
+		{
+			//here we consider all combinations of starting vs. ending track points,
+			//see if the connection is realized with the same track
+			if (child.m_child_ids[i] == parent.m_parent_id)
+			{
+				//detected connecting track, its id and its duration/length
+				final int id = parent.m_parent_id;
+				final int length = gt_tracks.get(id).m_end - gt_tracks.get(id).m_begin +1;
+
+				//add the length to the histogram
+				Integer count = gt_lenHist.get(length);
+				gt_lenHist.put(length, count == null ? 1 : count+1);
+
+				//updated the max length observed so far
+				if (length > maxLength) maxLength = length;
+
+				//another complete cycle detected...
+				++gt_count;
+			}
+		}
+
+		//the same for RES branching events and tracks
+		for (Fork parent : res_forks)
+		for (Fork child  : res_forks)
+		for (int i=0; i < child.m_child_ids.length; ++i)
+		{
+			if (child.m_child_ids[i] == parent.m_parent_id)
+			{
+				//detected connecting track, its id and its duration/length
+				final int id = parent.m_parent_id;
+				final int length = res_tracks.get(id).m_end - res_tracks.get(id).m_begin +1;
+
+				Integer count = res_lenHist.get(length);
+				res_lenHist.put(length, count == null ? 1 : count+1);
+
+				if (length > maxLength) maxLength = length;
+
+				++res_count;
+			}
+		}
+
+		//do some overview reports on the situation in the data
 		log.info("---");
+		log.info("Number of complete cell cycles in reference (ground truth) tracks: "+gt_count);
+		log.info("Number of complete cell cycles in computed (result) tracks       : "+res_count);
+
+		if (gt_count == 0)
+			throw new IllegalArgumentException("GT tracking data show no complete cell cycle!");
+
+		if (res_count > 0)
+		{
+			//now, calculate the CCA
+
+			//accumulate sums for both histograms, respectively, so that
+			//we can move into "domain of probabilities" from "frequency counts"
+			long gt_sum = 0;
+			for (Integer count : gt_lenHist.values()) gt_sum += count;
+
+			long res_sum = 0;
+			for (Integer count : res_lenHist.values()) res_sum += count;
+
+			//with (for example) gt_lenHist[i] and gt_sum we can construct
+			//gt_CDF[i] = ( SUM_j=0..i gt_lenHist[j] ) / gt_sum
+			//and measure maximum difference between two such CDFs -- which is 1-CCA
+
+			double maxDiff = 0.0;
+			long gt_cumm = 0; //gt_CDF[] on the fly...
+			long res_cumm = 0;
+
+			//over all observed lengths
+			for (int len = 0; len <= maxLength; ++len)
+			{
+				//calculate gt_CDF[len]
+				Integer c = gt_lenHist.get(len);
+				gt_cumm += c == null ? 0 : c;
+
+				c = res_lenHist.get(len);
+				res_cumm += c == null ? 0 : c;
+
+				//see the difference between the two CDFs[len]
+				double diff  = (double)gt_cumm  / (double)gt_sum;
+				       diff -= (double)res_cumm / (double)res_sum;
+				diff = Math.abs(diff);
+
+				if (diff > maxDiff) maxDiff = diff;
+			}
+
+			cca = 1.0 - maxDiff;
+		}
+		//else: no complete cell cycle in RES data is defined as CCA = 0
 
 		log.info("CCA: "+cca);
 		return (cca);
