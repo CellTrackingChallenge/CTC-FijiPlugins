@@ -204,7 +204,7 @@ public class TrackDataCache
 
 	/// Loads the given filename AND checks it has appropriate voxel type.
 	@SuppressWarnings("unchecked")
-	private Img<UnsignedShortType> ReadImage(final String fname)
+	public Img<UnsignedShortType> ReadImage(final String fname)
 	throws ImgIOException
 	{
 		//init the "storing regime" of the input images and the loader object
@@ -239,7 +239,7 @@ public class TrackDataCache
 	}
 
 
-	private void LoadTrackFile(final String fname, Map<Integer,Track> track_list)
+	public void LoadTrackFile(final String fname, Map<Integer,Track> track_list)
 	throws IOException
 	{
 		Scanner s = null;
@@ -290,7 +290,7 @@ public class TrackDataCache
 	//aux data fillers -- merely a node data processors and classifiers
 
 	@SuppressWarnings("unchecked")
-	private void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img)
+	public void ClassifyLabels(Img<UnsignedShortType> gt_img, Img<UnsignedShortType> res_img)
 	{
 		//create output TemporalLevel to which we gonna save our findings about both images
 		TemporalLevel level = new TemporalLevel(levels.size());
@@ -443,7 +443,7 @@ public class TrackDataCache
 	 * continues with its two or more daughters) and save them
 	 * in the 'forks'.
 	 */
-	private void DetectForks(final Map<Integer,Track> tracks, final Vector<Fork> forks)
+	public void DetectForks(final Map<Integer,Track> tracks, final Vector<Fork> forks)
 	{
 		//prepare the output structure
 		forks.clear();
@@ -520,6 +520,7 @@ public class TrackDataCache
 		while (Files.isReadable(
 			new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time)).toPath()))
 		{
+			//read the image pair
 			Img<UnsignedShortType> gt_img
 				= ReadImage(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
 
