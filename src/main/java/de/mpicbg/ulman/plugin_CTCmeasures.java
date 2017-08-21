@@ -57,23 +57,23 @@ public class plugin_CTCmeasures implements Command
 	private final String measuresHeader = "";
 
 	@Parameter(label = "TRA",
-		description = "TBA...")
+		description = "Evaluates the ability of an algorithm to track cells in time.")
 	private boolean calcTRA = true;
 
 	@Parameter(label = "SEG",
-		description = "TBA...")
+		description = "Quantifies the amount of overlap between the reference annotations and the computed segmentation.")
 	private boolean calcSEG = true;
 
 	@Parameter(label = "CT",
-		description = "TBA...")
+		description = "Examines how good a method is at reconstructing complete reference tracks.")
 	private boolean calcCT = true;
 
 	@Parameter(label = "TF",
-		description = "TBA...")
+		description = "Targets the longest, correctly reconstructed, continuous fraction of a reference track.")
 	private boolean calcTF = true;
 
 	@Parameter(label = "BC(i)",
-		description = "TBA...")
+		description = "Examines how good a method is at reconstructing mother-daughter relationships.")
 	private boolean calcBCi = true;
 
 	@Parameter(label = "i =", min = "0", max = "5", columns = 3,
@@ -81,7 +81,7 @@ public class plugin_CTCmeasures implements Command
 	private int iForBCi = 2;
 
 	@Parameter(label = "CCA",
-		description = "TBA...")
+		description = "Reflects the ability of an algorithm to discover true distribution of cell cycle lengths in a video.")
 	private boolean calcCCA = true;
 
 
