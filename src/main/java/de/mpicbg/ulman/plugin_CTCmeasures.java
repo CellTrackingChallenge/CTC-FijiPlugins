@@ -138,11 +138,10 @@ public class plugin_CTCmeasures implements Command
 				cache = tra.getCache();
 			}
 
+			//SEG is whole different from the tracking-oriented rest,
+			//thus, it cannot really utilize the shared/cached data
 			if (calcSEG)
-			{
-				SEG = seg.calculate(gtPath,resPath,cache);
-				cache = seg.getCache();
-			}
+				SEG = seg.calculate(gtPath,resPath);
 
 			if (calcCT )
 			{
