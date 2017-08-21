@@ -46,16 +46,15 @@ public class plugin_CTCmeasures implements Command
 	private String resPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private final String pathFooter
-		= "Note that folders has to comply with certain data format, please see\n"
-		 +"http://www.celltrackingchallenge.net/Submission_of_Results.html";
+	private final String pathFooterA
+		= "Note that folders has to comply with certain data format, please see";
+	@Parameter(visibility = ItemVisibility.MESSAGE)
+	private final String pathFooterB
+		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
 
 
-	@Parameter(visibility = ItemVisibility.MESSAGE,
-		columns = 40)
-	private final String measuresHeader = "Select measures to calculate:"
-		+"                                                                                            "
-		+"                                                                                            ";
+	@Parameter(visibility = ItemVisibility.MESSAGE, label = "Select measures to calculate:")
+	private final String measuresHeader = "";
 
 	@Parameter(label = "TRA",
 		description = "TBA...")
@@ -73,9 +72,13 @@ public class plugin_CTCmeasures implements Command
 		description = "TBA...")
 	private boolean calcTF = true;
 
-	@Parameter(label = "BCi",
+	@Parameter(label = "BC(i)",
 		description = "TBA...")
 	private boolean calcBCi = true;
+
+	@Parameter(label = "i =", min = "0", max = "5", columns = 3,
+		description = "Value of 'i' for which the BC(i) should be computed.")
+	private int iForBCi = 2;
 
 	@Parameter(label = "CCA",
 		description = "TBA...")
@@ -124,6 +127,9 @@ public class plugin_CTCmeasures implements Command
 			final TF  tf  = new TF(log);
 			final BCi bci = new BCi(log);
 			final CCA cca = new CCA(log);
+
+			//set this one before we start any calculation
+			bci.setI(iForBCi);
 
 			//do the calculation and retrieve updated cache afterwards
 			if (calcTRA)
