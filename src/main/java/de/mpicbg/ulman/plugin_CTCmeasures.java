@@ -195,8 +195,6 @@ public class plugin_CTCmeasures implements Command
 	public static void main(final String... args)
 	{
 		//check the input parameters
-/*
-		//TODO: define command line syntax
 		if (args.length != 2)
 		{
 			System.out.println("Incorrect number of parameters, expecting exactly two parameters.");
@@ -207,19 +205,21 @@ public class plugin_CTCmeasures implements Command
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html");
 			return;
 		}
-*/
 
 		//parse and store the arguments, if necessary
 		//....
 
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		ij.ui().showUI();
+		//DEBUG//ij.ui().showUI();
 
 		//run this class as if from GUI
-		//ij.command().run(plugin_CTCmeasures.class, true);
+		ij.command().run(plugin_CTCmeasures.class, true, "gtPath",args[0], "resPath",args[1],
+			"calcTRA",true, "calcSEG",true, "calcCT",true, "calcTF",true,
+			"calcBCi",true, "iForBCi", 2, "calcCCA",true,
+			"pathFooterA","a", "pathFooterB","a", "measuresHeader","a", "citationFooter","a");
 
 		//and close the IJ instance...
-		//ij.appEvent().quit();
+		ij.appEvent().quit();
 	}
 }
