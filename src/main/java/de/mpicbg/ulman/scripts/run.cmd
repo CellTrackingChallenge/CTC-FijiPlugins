@@ -40,8 +40,7 @@ end test.py ]
 
 [ de -> /Users/ulman/devel/eclipse_workspace/CTC-FijiPlugins/target/classes/de ]
 (the class may start-up the scijava ecosystem: final ImageJ ij = new net.imagej.ImageJ();
- but running worker via command: ij.command().run(....) does not work for me,
- instead instantiating the worker class and running it (possibly using some ij services) is fine)
+ but is not working for me now...)
 
 # ======================================
 
