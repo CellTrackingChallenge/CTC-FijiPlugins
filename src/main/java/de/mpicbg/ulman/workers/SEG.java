@@ -68,7 +68,7 @@ public class SEG
 		final TrackDataCache cache = new TrackDataCache(log);
 
 		//do the bottom stage
-		log.info("Computing the SEG completely...");
+		//DEBUG// log.info("Computing the SEG completely...");
 		seg = 0.0;
 		long counter = 0;
 
@@ -136,7 +136,10 @@ public class SEG
 
 			//should extract slice? use imglib2 views instead
 			if (slice > -1)
+			{
 				res_img = Views.hyperSlice(res_img, 2, slice);
+				log.info("Considering only slice "+slice);
+			}
 
 			//now, both images must of the same size...
 			for (int n=0; n < gt_img.numDimensions(); ++n)

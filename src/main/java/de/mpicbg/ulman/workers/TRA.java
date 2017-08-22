@@ -504,7 +504,7 @@ public class TRA
 		}
 
 		//do the bottom stage
-		log.info("Computing the TRA bottom part...");
+		//DEBUG// log.info("Computing the TRA bottom part...");
 		aogm = 0.0;
 
 		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));

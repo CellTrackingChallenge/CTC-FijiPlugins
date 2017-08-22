@@ -176,7 +176,7 @@ public class BCi
 		}
 
 		//do the bottom stage
-		log.info("Computing the BCi bottom part...");
+		//DEBUG// log.info("Computing the BCi bottom part...");
 		bcI = 0.0;
 
 		//shadows of the/short-cuts to the cache data

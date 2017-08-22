@@ -236,7 +236,7 @@ public class TrackDataCache
 			throw new ImgIOException("Images are expected to have 16-bit gray voxels.");
 		}
 
-		log.info("loaded image: "+fname);
+		log.info("Loaded image: "+fname);
 		return ((Img<UnsignedShortType>)img);
 	}
 
@@ -285,7 +285,7 @@ public class TrackDataCache
 			}
 		}
 
-		log.info("loaded track file: "+fname);
+		log.info("Loaded track file: "+fname);
 	}
 
 	//---------------------------------------------------------------------/
@@ -508,7 +508,7 @@ public class TrackDataCache
 	{
 		log.info(" GT path: "+gtPath);
 		log.info("RES path: "+resPath);
-		log.info("Computing the common upper part...");
+		//DEBUG// log.info("Computing the common upper part...");
 
 		//fill the tracks data
 		LoadTrackFile( gtPath+"/TRA/man_track.txt", gt_tracks);

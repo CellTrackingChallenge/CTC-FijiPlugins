@@ -220,7 +220,7 @@ public class TF
 		}
 
 		//do the bottom stage
-		log.info("Computing the TF bottom part...");
+		//DEBUG// log.info("Computing the TF bottom part...");
 		tf = 0.0;
 
 		//shadows of the/short-cuts to the cache data

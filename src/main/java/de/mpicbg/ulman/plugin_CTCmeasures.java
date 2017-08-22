@@ -24,7 +24,7 @@ import de.mpicbg.ulman.workers.BCi;
 import de.mpicbg.ulman.workers.CCA;
 
 @Plugin(type = Command.class, menuPath = "Plugins>CTC>All Measures",
-        name = "CTC_ALL",
+        name = "CTC_ALL", headless = true,
 		  description = "Calculates all tracking performance measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
@@ -93,6 +93,13 @@ public class plugin_CTCmeasures implements Command
 
 	//hidden output values
 	@Parameter(type = ItemIO.OUTPUT)
+	String GTdir;
+	@Parameter(type = ItemIO.OUTPUT)
+	String RESdir;
+	@Parameter(type = ItemIO.OUTPUT)
+	String sep = "--------------------";
+
+	@Parameter(type = ItemIO.OUTPUT)
 	double TRA = -1;
 
 	@Parameter(type = ItemIO.OUTPUT)
@@ -130,6 +137,9 @@ public class plugin_CTCmeasures implements Command
 
 			//set this one before we start any calculation
 			bci.setI(iForBCi);
+
+			GTdir  = gtPath;
+			RESdir = resPath;
 
 			//do the calculation and retrieve updated cache afterwards
 			if (calcTRA)
@@ -206,7 +216,7 @@ public class plugin_CTCmeasures implements Command
 		final ImageJ ij = new net.imagej.ImageJ();
 		ij.ui().showUI();
 
-		//run this class is if from GUI
+		//run this class as if from GUI
 		//ij.command().run(plugin_CTCmeasures.class, true);
 
 		//and close the IJ instance...
