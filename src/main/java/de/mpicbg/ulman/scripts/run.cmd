@@ -8,12 +8,12 @@ cd ~/Apps/Fiji.app/Contents/MacOS
 # start as a menu item (directly via the plugin interface):
 # (the prefered option for command line)
 ./ImageJ-macosx --run "Annotations Merging Tool"  "mergeModel=\"Threshold - flat weights\",filePath=\"/Users/ulman/job_spec.txt\",mergeThreshold=2.0,fileIdxFrom=9,fileIdxTo=9,outputPath=\"/Users/ulman/DATA/combinedGT__XXX.tif\""
-./ImageJ-macosx --headless --run "All Measures"  "gtPath=\"foo1\",resPath=\"foo2\",calcTRA=true,calcSEG=true,calcCT=true,calcTF=true,calcBCi=true,iForBCi=2,calcCCA=true,pathFooterA=[],pathFooterB=[],measuresHeader=[],citationFooter=[]"
+./ImageJ-macosx --headless --run "Tracking performance measures"  "gtPath=\"foo1\",resPath=\"foo2\",calcTRA=true,calcSEG=true,calcCT=true,calcTF=true,calcBCi=true,iForBCi=2,calcCCA=true,pathFooterA=[],pathFooterB=[],measuresHeader=[],citationFooter=[]"
 
 # ======================================
 
 # start as a script:
-# (the command actually only executes the script 'ALL_test.py', which executes the FiJi menu command 'All Measures', which actually does the job...)
+# (the command actually only executes the script 'ALL_test.py', which executes the FiJi menu command 'Tracking performance measures', which actually does the job...)
 ./ImageJ-macosx --headless --run ./ALL_test.py "gtPath=\"$1\",resPath=\"$2\""
 
 [ begin ALL_test.py
@@ -23,7 +23,7 @@ cd ~/Apps/Fiji.app/Contents/MacOS
 
 from ij import IJ
 
-IJ.run("All Measures", "gtpath="+gtPath+" respath="+resPath
+IJ.run("Tracking performance measures", "gtpath="+gtPath+" respath="+resPath
        + " calctra=true calcseg=true calcct=true"
        + " calctf=true calcbci=true iforbci=2 calccca=true"
        + " pathfootera= pathfooterb= measuresheader= citationfooter=");

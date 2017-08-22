@@ -23,27 +23,27 @@ import de.mpicbg.ulman.workers.TF;
 import de.mpicbg.ulman.workers.BCi;
 import de.mpicbg.ulman.workers.CCA;
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>Tracking performance measures",
-        name = "CTC_ALL", headless = true,
+@Plugin(type = Command.class, menuPath = "Plugins>CTC>Dataset quality measures",
+        name = "CTC_ALL2", headless = true,
 		  description = "Calculates all tracking performance measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
-public class plugin_CTCmeasures implements Command
+public class plugin_CTCmeasures2 implements Command
 {
 	//------------- GUI stuff -------------
 	//
 	@Parameter
 	private LogService log;
 
-	@Parameter(label = "Path to ground-truth folder: ",
+	@Parameter(label = "Path to images folder: ",
 		columns = 40,
-		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
+		description = "Path should contain cell image files directly: t???.tif")
+	private String imgPath;
 
-	@Parameter(label = "Path to computed result folder: ",
+	@Parameter(label = "Path to annotations folder: ",
 		columns = 40,
-		description = "Path should contain result files directly: mask???.tif and res_track.txt")
-	private String resPath;
+		description = "Path should contain folders BG and TRA and annotation files: BG/mask???.tif, TRA/man_track???.tif and man_track.txt")
+	private String annPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE)
 	private final String pathFooterA
@@ -56,33 +56,9 @@ public class plugin_CTCmeasures implements Command
 	@Parameter(visibility = ItemVisibility.MESSAGE, label = "Select measures to calculate:")
 	private final String measuresHeader = "";
 
-	@Parameter(label = "TRA",
-		description = "Evaluates the ability of an algorithm to track cells in time.")
-	private boolean calcTRA = true;
-
-	@Parameter(label = "SEG",
-		description = "Quantifies the amount of overlap between the reference annotations and the computed segmentation.")
-	private boolean calcSEG = true;
-
-	@Parameter(label = "CT",
-		description = "Examines how good a method is at reconstructing complete reference tracks.")
-	private boolean calcCT = true;
-
-	@Parameter(label = "TF",
-		description = "Targets the longest, correctly reconstructed, continuous fraction of a reference track.")
-	private boolean calcTF = true;
-
-	@Parameter(label = "BC(i)",
-		description = "Examines how good a method is at reconstructing mother-daughter relationships.")
-	private boolean calcBCi = true;
-
-	@Parameter(label = "i =", min = "0", max = "5", columns = 3,
-		description = "Value of 'i' for which the BC(i) should be reported.")
-	private int iForBCi = 2;
-
-	@Parameter(label = "CCA",
-		description = "Reflects the ability of an algorithm to discover true distribution of cell cycle lengths in a video.")
-	private boolean calcCCA = true;
+	@Parameter(label = "foo",
+		description = "Evaluates the foo.")
+	private boolean calcFOO = true;
 
 
 	//citation footer...
@@ -93,29 +69,14 @@ public class plugin_CTCmeasures implements Command
 
 	//hidden output values
 	@Parameter(type = ItemIO.OUTPUT)
-	String GTdir;
+	String IMGdir;
 	@Parameter(type = ItemIO.OUTPUT)
-	String RESdir;
+	String ANNdir;
 	@Parameter(type = ItemIO.OUTPUT)
 	String sep = "--------------------";
 
 	@Parameter(type = ItemIO.OUTPUT)
-	double TRA = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double SEG = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double CT = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double TF = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double BCi = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double CCA = -1;
+	double FOO = -1;
 
 
 	//the GUI path entry function:
@@ -123,8 +84,11 @@ public class plugin_CTCmeasures implements Command
 	public void run()
 	{
 		try {
+			//WE GONNA USE THE SAME CACHE-BASED TEMPLATE HERE TOO
+
 			//reference on a shared object that does
 			//pre-fetching of data and some common pre-calculation
+			/*
 			TrackDataCache cache = null;
 
 			//start up the independent workers
@@ -176,6 +140,7 @@ public class plugin_CTCmeasures implements Command
 				CCA = cca.calculate(gtPath,resPath,cache);
 				cache = cca.getCache();
 			}
+			*/
 
 			//do not report anything explicitly (unless special format for parsing is
 			//desired) as ItemIO.OUTPUT will make it output automatically
@@ -195,31 +160,18 @@ public class plugin_CTCmeasures implements Command
 	public static void main(final String... args)
 	{
 		//check the input parameters
-		if (args.length != 2)
-		{
-			System.out.println("Incorrect number of parameters, expecting exactly two parameters.");
-			System.out.println("Parameters: GTpath RESpath\n");
-			System.out.println("GTpath should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt");
-			System.out.println("RESpath should contain result files directly: mask???.tif and res_track.txt");
-			System.out.println("Certain data format is assumed, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html");
-			return;
-		}
 
 		//parse and store the arguments, if necessary
 		//....
 
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		//DEBUG//ij.ui().showUI();
+		ij.ui().showUI();
 
 		//run this class as if from GUI
-		ij.command().run(plugin_CTCmeasures.class, true, "gtPath",args[0], "resPath",args[1],
-			"calcTRA",true, "calcSEG",true, "calcCT",true, "calcTF",true,
-			"calcBCi",true, "iForBCi", 2, "calcCCA",true,
-			"pathFooterA","a", "pathFooterB","a", "measuresHeader","a", "citationFooter","a");
+		//...
 
 		//and close the IJ instance...
-		ij.appEvent().quit();
+		//ij.appEvent().quit();
 	}
 }
