@@ -48,7 +48,7 @@ public class SEG
 	 * This is helpful for algorithm developers as it shows what, where and when
 	 * was incorrect in their results.
 	 */
-	boolean doLogReports = false;
+	public boolean doLogReports = false;
 
 	// ----------- the SEG essentially starts here -----------
 	//auxiliary data:
