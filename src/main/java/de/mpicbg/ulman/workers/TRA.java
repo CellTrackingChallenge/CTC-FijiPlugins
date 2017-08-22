@@ -53,7 +53,7 @@ public class TRA
 	 * Default CTC papers behaviour was not to do consistency checking.
 	 * But this should be changed soon...
 	 */
-	boolean doConsistencyCheck = false;
+	public boolean doConsistencyCheck = false;
 
 	/**
 	 * Calculation option: do report list of discrepancies between the reference
@@ -61,7 +61,7 @@ public class TRA
 	 * This is helpful for algorithm developers as it shows what, where and when
 	 * was incorrect in their results.
 	 */
-	boolean doLogReports = false;
+	public boolean doLogReports = false;
 
 	// ----------- the TRA essentially starts here -----------
 	//auxiliary data:
@@ -70,7 +70,7 @@ public class TRA
 	public class PenaltyConfig
 	{
 		/** Constructor. */
-		PenaltyConfig(final double ns, final double fn, final double fp,
+		public PenaltyConfig(final double ns, final double fn, final double fp,
 		              final double ed, final double ea, final double ec)
 		{
 			m_ns = ns; m_fn = fn; m_fp = fp;
@@ -95,7 +95,7 @@ public class TRA
 	}
 
 	///the default (CellTrackingChallenge) weights used for AOGM/TRA
-	private PenaltyConfig penalty
+	public PenaltyConfig penalty
 		= new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
 
 	///the to-be-calculated TRA value (based on the AOGM measure)
