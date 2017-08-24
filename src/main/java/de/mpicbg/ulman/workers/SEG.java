@@ -64,6 +64,9 @@ public class SEG
 	public double calculate(final String gtPath, final String resPath)
 	throws IOException, ImgIOException
 	{
+		log.info(" GT path: "+gtPath+"/SEG");
+		log.info("RES path: "+resPath);
+
 		//instantiate the cache because it has functions we will use
 		final TrackDataCache cache = new TrackDataCache(log);
 

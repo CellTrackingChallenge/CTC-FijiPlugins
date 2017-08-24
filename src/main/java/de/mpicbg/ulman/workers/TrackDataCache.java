@@ -506,7 +506,7 @@ public class TrackDataCache
 	public void calculate(final String gtPath, final String resPath)
 	throws IOException, ImgIOException
 	{
-		log.info(" GT path: "+gtPath);
+		log.info(" GT path: "+gtPath+"/TRA");
 		log.info("RES path: "+resPath);
 		//DEBUG// log.info("Computing the common upper part...");
 
