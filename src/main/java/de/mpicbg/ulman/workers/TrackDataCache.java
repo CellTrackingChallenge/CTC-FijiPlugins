@@ -215,6 +215,9 @@ public class TrackDataCache
 			openingRegime = new SCIFIOConfig();
 			openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
 			imgOpener = new ImgOpener();
+			//ask the logging system to log only ERRORs for the specific class and its derivatives
+			//as it often pollutes with WARNings regarding badly understood image metadata
+			imgOpener.log().setLevel("io.scif.formats", LogService.ERROR);
 		}
 
 		//the image to be loaded
