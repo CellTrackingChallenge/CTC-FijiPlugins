@@ -45,15 +45,16 @@ public class plugin_CTCmeasures implements Command
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
 	private String resPath;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterB
 		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
 
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, label = "Select measures to calculate:")
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false,
+		label = "Select measures to calculate:")
 	private final String measuresHeader = "";
 
 	@Parameter(label = "SEG",
@@ -86,7 +87,7 @@ public class plugin_CTCmeasures implements Command
 
 
 	//citation footer...
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String citationFooter
 		= "Please, cite us.... TBA";
 
