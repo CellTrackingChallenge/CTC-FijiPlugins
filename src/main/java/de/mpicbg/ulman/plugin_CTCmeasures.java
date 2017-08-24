@@ -56,13 +56,13 @@ public class plugin_CTCmeasures implements Command
 	@Parameter(visibility = ItemVisibility.MESSAGE, label = "Select measures to calculate:")
 	private final String measuresHeader = "";
 
-	@Parameter(label = "TRA",
-		description = "Evaluates the ability of an algorithm to track cells in time.")
-	private boolean calcTRA = true;
-
 	@Parameter(label = "SEG",
 		description = "Quantifies the amount of overlap between the reference annotations and the computed segmentation.")
 	private boolean calcSEG = true;
+
+	@Parameter(label = "TRA",
+		description = "Evaluates the ability of an algorithm to track cells in time.")
+	private boolean calcTRA = true;
 
 	@Parameter(label = "CT",
 		description = "Examines how good a method is at reconstructing complete reference tracks.")
@@ -100,10 +100,10 @@ public class plugin_CTCmeasures implements Command
 	String sep = "--------------------";
 
 	@Parameter(type = ItemIO.OUTPUT)
-	double TRA = -1;
+	double SEG = -1;
 
 	@Parameter(type = ItemIO.OUTPUT)
-	double SEG = -1;
+	double TRA = -1;
 
 	@Parameter(type = ItemIO.OUTPUT)
 	double CT = -1;
@@ -123,57 +123,59 @@ public class plugin_CTCmeasures implements Command
 	public void run()
 	{
 		try {
+			//set this one before we start any calculation because
+			//setI() does some tests on validity of iForBCi
+			final BCi bci = new BCi(log);
+			if (calcBCi) bci.setI(iForBCi);
+
+			//saves the input paths for the final report table
+			GTdir  = gtPath;
+			RESdir = resPath;
+
 			//reference on a shared object that does
 			//pre-fetching of data and some common pre-calculation
 			TrackDataCache cache = null;
 
-			//start up the independent workers
-			final TRA tra = new TRA(log);
-			final SEG seg = new SEG(log);
-			final CT  ct  = new CT(log);
-			final TF  tf  = new TF(log);
-			final BCi bci = new BCi(log);
-			final CCA cca = new CCA(log);
-
-			//set this one before we start any calculation
-			bci.setI(iForBCi);
-
-			GTdir  = gtPath;
-			RESdir = resPath;
+			if (calcSEG)
+			{
+				final SEG seg = new SEG(log);
+				//SEG is whole different from the tracking-oriented rest,
+				//thus, it cannot really utilize the shared/cached data
+				SEG = seg.calculate(gtPath, resPath);
+			}
 
 			//do the calculation and retrieve updated cache afterwards
 			if (calcTRA)
 			{
-				TRA = tra.calculate(gtPath,resPath,cache);
+				final TRA tra = new TRA(log);
+				TRA = tra.calculate(gtPath, resPath, cache);
 				cache = tra.getCache();
 			}
 
-			//SEG is whole different from the tracking-oriented rest,
-			//thus, it cannot really utilize the shared/cached data
-			if (calcSEG)
-				SEG = seg.calculate(gtPath,resPath);
-
 			if (calcCT )
 			{
-				CT = ct.calculate(gtPath,resPath,cache);
+				final CT  ct  = new CT(log);
+				CT = ct.calculate(gtPath, resPath, cache);
 				cache = ct.getCache();
 			}
 
 			if (calcTF )
 			{
-				TF = tf.calculate(gtPath,resPath,cache);
+				final TF  tf  = new TF(log);
+				TF = tf.calculate(gtPath, resPath, cache);
 				cache = tf.getCache();
 			}
 
 			if (calcBCi)
 			{
-				BCi = bci.calculate(gtPath,resPath,cache);
+				BCi = bci.calculate(gtPath, resPath, cache);
 				cache = bci.getCache();
 			}
 
 			if (calcCCA)
 			{
-				CCA = cca.calculate(gtPath,resPath,cache);
+				final CCA cca = new CCA(log);
+				CCA = cca.calculate(gtPath, resPath, cache);
 				cache = cca.getCache();
 			}
 
