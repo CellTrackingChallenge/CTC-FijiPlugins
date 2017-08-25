@@ -14,6 +14,7 @@ import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import io.scif.config.SCIFIOConfig;
@@ -201,12 +202,47 @@ public class TrackDataCache
 	//---------------------------------------------------------------------/
 	//data loading functions:
 
+	/// Loads the given filename AND checks it has appropriate GRAY16 voxel type.
+	@SuppressWarnings("unchecked")
+	public Img<UnsignedShortType> ReadImage(final String fname)
+	throws ImgIOException
+	{
+		Img<?> img = __ReadImage(fname);
+
+		//check input file for the appropriate type
+		if (!(img.firstElement() instanceof UnsignedShortType))
+		{
+			log.error("Error reading file: "+fname);
+			throw new ImgIOException("Images are expected to have 16-bit gray voxels.");
+		}
+
+		log.info("Loaded image: "+fname);
+		return ((Img<UnsignedShortType>)img);
+	}
+
+	/// Loads the given filename AND checks it has appropriate GRAY8 voxel type.
+	@SuppressWarnings("unchecked")
+	public Img<UnsignedByteType> ReadImageG8(final String fname)
+	throws ImgIOException
+	{
+		Img<?> img = __ReadImage(fname);
+
+		//check input file for the appropriate type
+		if (!(img.firstElement() instanceof UnsignedByteType))
+		{
+			log.error("Error reading file: "+fname);
+			throw new ImgIOException("Images are expected to have 8-bit gray voxels.");
+		}
+
+		log.info("Loaded image: "+fname);
+		return ((Img<UnsignedByteType>)img);
+	}
+
 	private SCIFIOConfig openingRegime = null;
 	private ImgOpener imgOpener = null;
 
-	/// Loads the given filename AND checks it has appropriate voxel type.
-	@SuppressWarnings("unchecked")
-	public Img<UnsignedShortType> ReadImage(final String fname)
+	/// helper loader of images of any voxel type
+	private Img<?> __ReadImage(final String fname)
 	throws ImgIOException
 	{
 		//init the "storing regime" of the input images and the loader object
@@ -223,7 +259,7 @@ public class TrackDataCache
 		//the image to be loaded
 		SCIFIOImgPlus<?> img = null;
 
-		//open it
+		//read it
 		try {
 			img = imgOpener.openImgs(fname,openingRegime).get(0);
 		}
@@ -232,15 +268,7 @@ public class TrackDataCache
 			throw new ImgIOException("Unable to read input file.");
 		}
 
-		//check input files for types and sizes
-		if (!(img.firstElement() instanceof UnsignedShortType))
-		{
-			log.error("Error reading file: "+fname);
-			throw new ImgIOException("Images are expected to have 16-bit gray voxels.");
-		}
-
-		log.info("Loaded image: "+fname);
-		return ((Img<UnsignedShortType>)img);
+		return ((Img<?>)img);
 	}
 
 
