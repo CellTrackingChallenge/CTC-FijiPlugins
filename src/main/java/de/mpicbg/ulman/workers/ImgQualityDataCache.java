@@ -14,6 +14,7 @@ import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 
@@ -24,7 +25,6 @@ import io.scif.img.ImgIOException;
 
 import java.util.Vector;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
 
 public class ImgQualityDataCache
@@ -81,8 +81,22 @@ public class ImgQualityDataCache
 	 * Usage: avgFG[timePoint].get(labelID) = averageIntensityValue
 	 */
 	public final Vector<HashMap<Integer,Double>> avgFG = new Vector<>(1000,100);
-	/// similar to this.avgFG
+	/// Similar to this.avgFG
 	public final Vector<HashMap<Integer,Double>> stdFG = new Vector<>(1000,100);
+
+	/// Stores NUMBER OF VOXELS (not a real volume) of the FG masks at time points.
+	public final Vector<HashMap<Integer,Long>> volumeFG = new Vector<>(1000,100);
+
+	/// Converts this.volumeFG values (no. of voxels) into a real volume (in cubic micrometers)
+	public double getRealVolume(final long vxlCnt)
+	{
+		double v = (double)vxlCnt;
+		for (double r : this.resolution) v *= r;
+		return (v);
+	}
+
+	/// Stores REAL SURFACE (in square micrometers) of the FG masks at time points.
+	public final Vector<HashMap<Integer,Double>> surfaceFG = new Vector<>(1000,100);
 
 	/**
 	 * Stores how many voxels are there in the intersection of masks of the same
@@ -90,26 +104,144 @@ public class ImgQualityDataCache
 	 */
 	public final Vector<HashMap<Integer,Long>> overlapFG = new Vector<>(1000,100);
 
-	/// Stores volumes of the FG masks at time points.
-	public final Vector<HashMap<Integer,Long>> volumeFG = new Vector<>(1000,100);
-
-	/// Stores surfaces of the FG masks at time points.
-	public final Vector<HashMap<Integer,Long>> surfaceFG = new Vector<>(1000,100);
-
 	/**
 	 * Representation of average & std. deviations of background region.
 	 * There is only one background marker expected in the images.
 	 */
 	public final Vector<Double> avgBG = new Vector<>(1000,100);
-	/// similar to this.avgBG
+	/// Similar to this.avgBG
 	public final Vector<Double> stdBG = new Vector<>(1000,100);
 
 	//---------------------------------------------------------------------/
 	//aux data fillers -- merely markers' properties calculator
 
-	public void ClassifyLabels(IterableInterval<UnsignedShortType> img,
+	/**
+	 * The cursor \e imgPosition points into the raw image at voxel whose counterparting voxel
+	 * in the \e imgFGcurrent image stores the first (in the sense of \e imgPosition internal
+	 * sweeping order) occurence of the marker that is to be processed with this function.
+	 *
+	 * This function pushes into global data at the specific \e time .
+	 */
+	private <T extends RealType<T>>
+	void extractFGObjectStats(final Cursor<T> imgPosition, final int time, //who: "object" @ time
+		final RandomAccessibleInterval<UnsignedShortType> imgFGcurrent,     //where: input masks
+		final RandomAccessibleInterval<UnsignedShortType> imgFGprevious)
+	{
+		//working pointers into the mask images
+		final RandomAccess<UnsignedShortType> fgCursor = imgFGcurrent.randomAccess();
+
+		//obtain the ID of the processed object
+		//NB: imgPosition points already at sure existing voxel
+		fgCursor.setPosition(imgPosition);
+		final int marker = fgCursor.get().getInteger();
+
+		//init aux variables:
+		double intSum = 0.; //for single-pass calculation of mean and variance
+		double int2Sum = 0.;
+		//according to: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Computing_shifted_data
+		//to fight against numerical issues we introduce a "value shifter",
+		//which we can already initiate with an "estimate of mean" which we
+		//derive from the object's first spotted voxel value
+		//NB: imgPosition points already at sure existing voxel
+		final double valShift=imgPosition.get().getRealDouble();
+
+		//the voxel counter (for volume)
+		long vxlCnt = 0L;
+
+		//working copy of the input cursor, this one drives the image sweeping
+		//sweep the image and search for this object/marker
+		final Cursor<T> rawCursor = imgPosition.copyCursor();
+		while (rawCursor.hasNext())
+		{
+			rawCursor.next();
+			fgCursor.setPosition(rawCursor);
+
+			if (fgCursor.get().getInteger() == marker)
+			{
+				//processing voxel that belongs to the current FG object:
+				//increase current volume
+				++vxlCnt;
+
+				final double val = rawCursor.get().getRealDouble();
+				intSum += (val-valShift);
+				int2Sum += (val-valShift) * (val-valShift);
+			}
+		}
+
+		//finish processing of the FG objects stats:
+		//mean intensity
+		avgFG.get(time).put(marker, (intSum / (double)vxlCnt) + valShift );
+
+		//variance
+		int2Sum -= (intSum*intSum/(double)vxlCnt);
+		int2Sum /= (double)vxlCnt;
+		//
+		//std. dev.
+		stdFG.get(time).put(marker, Math.sqrt(int2Sum) );
+
+		//voxel count
+		volumeFG.get(time).put(marker, vxlCnt );
+
+		//TODO: call dedicated function to calculate surface in real coordinates
+		//real area/surface
+		surfaceFG.get(time).put(marker, 999.9 );
+
+		//also process the "overlap feature" (if the object was found in the previous frame)
+		if (time > 0 && surfaceFG.get(time-1).get(marker) != null)
+			overlapFG.get(time).put(marker,
+				measureObjectsOverlap(imgPosition,imgFGcurrent, marker,imgFGprevious) );
+	}
+
+
+	/**
+	 * The functions counts how many times the current marker (see below) in the image \e imgFGcurrent
+	 * co-localizes with marker \e prevID in the image \e imgFGprevious. This number is returned.
+	 *
+	 * The cursor \e imgPosition points into the raw image at voxel whose counterparting voxel
+	 * in the \e imgFGcurrent image stores the first (in the sense of \e imgPosition internal
+	 * sweeping order) occurence of the marker that is to be processed with this function.
+	 */
+	private <T extends RealType<T>>
+	long measureObjectsOverlap(final Cursor<T> imgPosition, //pointer to the raw image -> gives current FG ID
+	                           final RandomAccessibleInterval<UnsignedShortType> imgFGcurrent, //FG mask
+									   final int prevID, //prev FG ID
+	                           final RandomAccessibleInterval<UnsignedShortType> imgFGprevious) //FG mask
+	{
+		//working copy of the input cursor, this one drives the image sweeping
+		final Cursor<T> rawCursor = imgPosition.copyCursor();
+
+		//working pointers into the (current and previous) object masks
+		final RandomAccess<UnsignedShortType> fgCursor = imgFGcurrent.randomAccess();
+		final RandomAccess<UnsignedShortType> prevFgCursor = imgFGprevious.randomAccess();
+
+		//obtain the ID of the processed object
+		//NB: imgPosition points already at sure existing voxel
+		//NB: rawCursor is as if newly created cursor, i.e., now it points before the image
+		fgCursor.setPosition(imgPosition);
+		final int marker = fgCursor.get().getInteger();
+
+		//return value...
+		long count = 0;
+
+		while (rawCursor.hasNext())
+		{
+			rawCursor.next();
+			fgCursor.setPosition(rawCursor);
+			prevFgCursor.setPosition(rawCursor);
+
+			if (fgCursor.get().getInteger() == marker && prevFgCursor.get().getInteger() == prevID)
+				++count;
+		}
+
+		return(count);
+	}
+
+
+	public void ClassifyLabels(final int time,
+	                           IterableInterval<UnsignedShortType> imgRaw,
+	                           RandomAccessibleInterval<UnsignedByteType> imgBG,
 	                           RandomAccessibleInterval<UnsignedShortType> imgFG,
-	                           RandomAccessibleInterval<UnsignedByteType> imgBG)
+	                           RandomAccessibleInterval<UnsignedShortType> imgFGprev)
 	{
 		//uses resolution from the class internal structures, check it is set already
 		if (resolution == null)
@@ -117,28 +249,120 @@ public class ImgQualityDataCache
 		//assume that resolution is sane
 
 		//check we have a resolution data available for every dimension
-		if (img.numDimensions() > resolution.length)
+		if (imgRaw.numDimensions() > resolution.length)
 			throw new IllegalArgumentException("Raw image has greater dimensionality"
 				+" than the available resolution data.");
 
 		//check the sizes of the images
-		if (img.numDimensions() != imgFG.numDimensions())
+		if (imgRaw.numDimensions() != imgFG.numDimensions())
 			throw new IllegalArgumentException("Raw image and FG label image"
 				+" are not of the same dimensionality.");
-		if (img.numDimensions() != imgBG.numDimensions())
+		if (imgRaw.numDimensions() != imgBG.numDimensions())
 			throw new IllegalArgumentException("Raw image and BG label image"
 				+" are not of the same dimensionality.");
 
-		for (int n=0; n < img.numDimensions(); ++n)
-			if (img.dimension(n) != imgFG.dimension(n))
+		for (int n=0; n < imgRaw.numDimensions(); ++n)
+			if (imgRaw.dimension(n) != imgFG.dimension(n))
 				throw new IllegalArgumentException("Raw image and FG label image"
 					+" are not of the same size.");
-		for (int n=0; n < img.numDimensions(); ++n)
-			if (img.dimension(n) != imgBG.dimension(n))
+		for (int n=0; n < imgRaw.numDimensions(); ++n)
+			if (imgRaw.dimension(n) != imgBG.dimension(n))
 				throw new IllegalArgumentException("Raw image and BG label image"
 					+" are not of the same size.");
 
 		//.... populate the internal structures ....
+		//first, frame-related stats variables:
+		long volBGvoxelCnt = 0L;
+		long volFGvoxelCnt = 0L;
+		long volFGBGcollisionVoxelCnt = 0L;
+
+		double intSum = 0.; //for mean and variance
+		double int2Sum = 0.;
+		//see extractFGObjectStats() for explanation of this variable
+		double valShift=-1.;
+
+		//sweeping variables:
+		final Cursor<UnsignedShortType> rawCursor = imgRaw.localizingCursor();
+		final RandomAccess<UnsignedByteType> bgCursor = imgBG.randomAccess();
+		final RandomAccess<UnsignedShortType> fgCursor = imgFG.randomAccess();
+
+		while (rawCursor.hasNext())
+		{
+			//update cursors...
+			rawCursor.next();
+			bgCursor.setPosition(rawCursor);
+			fgCursor.setPosition(rawCursor);
+
+			//analyze background voxels
+			if (bgCursor.get().getInteger() > 0)
+			{
+				if (fgCursor.get().getInteger() > 0)
+				{
+					//found colliding BG voxel, exclude it from BG stats (and note it)
+					++volFGBGcollisionVoxelCnt;
+				}
+				else
+				{
+					//found non-colliding BG voxel, include it for BG stats
+					++volBGvoxelCnt;
+
+					final double val = rawCursor.get().getRealDouble();
+					if (valShift == -1) valShift = val;
+
+					intSum += (val-valShift);
+					int2Sum += (val-valShift) * (val-valShift);
+				}
+			}
+			if (fgCursor.get().getInteger() > 0)
+				++volFGvoxelCnt; //found FG voxel, update FG stats
+		}
+
+		//report the "occupancy stats"
+		log.info("Frame at time "+time+" overview:");
+		final long imgSize = imgRaw.size();
+		log.info("pure BG voxels          : "+volBGvoxelCnt+" ( "+(double)volBGvoxelCnt/imgSize+" )");
+		log.info("BG&FG overlapping voxels: "+volFGBGcollisionVoxelCnt+" ( "+(double)volFGBGcollisionVoxelCnt/imgSize+" )");
+		log.info("pure FG voxels          : "+volFGvoxelCnt+" ( "+(double)volFGvoxelCnt/imgSize+" )");
+
+		//finish processing of the BG stats of the current frame
+		avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
+
+		int2Sum -= (intSum*intSum/(double)volBGvoxelCnt);
+		int2Sum /= (double)volBGvoxelCnt;
+		stdBG.add( Math.sqrt(int2Sum) );
+
+		//now, sweep the image, detect all labels and calculate & save their properties
+		//
+		//set to remember already discovered labels
+		//(with initial capacity for 1000 labels)
+		HashSet<Integer> mDiscovered = new HashSet<Integer>(1000);
+
+		//prepare the per-object data structures
+		avgFG.add( new HashMap<>() );
+		stdFG.add( new HashMap<>() );
+		volumeFG.add( new HashMap<>() );
+		surfaceFG.add( new HashMap<>() );
+		overlapFG.add( new HashMap<>() );
+
+		rawCursor.reset();
+		while (rawCursor.hasNext())
+		{
+			//update cursors...
+			rawCursor.next();
+			fgCursor.setPosition(rawCursor);
+
+			//analyze foreground voxels
+			final int curMarker = fgCursor.get().getInteger();
+			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
+			{
+				//found not-yet-processed FG voxel,
+				//that means: found not-yet-processed FG object
+				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev);
+
+				//mark the object (and all its voxels consequently) as processed
+				mDiscovered.add(curMarker);
+			}
+		}
 	}
 
 	//---------------------------------------------------------------------/
@@ -171,7 +395,11 @@ public class ImgQualityDataCache
 
 		//iterate through the RAW images folder and read files, one by one,
 		//find the appropriate file in the annotations folders,
-		//and call ClassifyLabels() for every such tripple
+		//and call ClassifyLabels() for every such tripple,
+		//
+		//check also previous frame for overlap size
+		Img<UnsignedShortType> imgFGprev = null;
+		//
 		int time = 0;
 		while (Files.isReadable(
 			new File(String.format("%s/t%03d.tif",imgPath,time)).toPath()))
@@ -186,7 +414,10 @@ public class ImgQualityDataCache
 			Img<UnsignedByteType> imgBG
 				= tCache.ReadImageG8(String.format("%s/BG/mask%03d.tif",annPath,time));
 
-			ClassifyLabels(img, imgFG, imgBG);
+			ClassifyLabels(time, img, imgBG, imgFG, imgFGprev);
+
+			imgFGprev = null; //be explicit that we do not want this in memory anymore
+			imgFGprev = imgFG;
 			++time;
 
 			//to be on safe side (with memory)
@@ -194,6 +425,7 @@ public class ImgQualityDataCache
 			imgFG = null;
 			imgBG = null;
 		}
+		imgFGprev = null;
 
 		if (time == 0)
 			throw new IllegalArgumentException("No raw image was found!");
