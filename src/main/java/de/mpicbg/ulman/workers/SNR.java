@@ -13,7 +13,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -107,7 +106,7 @@ public class SNR
 			//over all objects, in fact use their avg intensities
 			for (Double fg : avgFG.get(time).values())
 			{
-				snr += (fg - avgBG.get(time)) / stdBG.get(time);
+				snr += Math.abs(fg - avgBG.get(time)) / stdBG.get(time);
 				++noFGs;
 			}
 		}
