@@ -298,6 +298,16 @@ public class TrackDataCache
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
 	                           RandomAccessibleInterval<UnsignedShortType> res_img)
 	{
+		//check the sizes of the images
+		if (gt_img.numDimensions() != res_img.numDimensions())
+			throw new IllegalArgumentException("Image pair does not consist"
+				+" of images of the same dimensionality.");
+
+		for (int n=0; n < gt_img.numDimensions(); ++n)
+			if (gt_img.dimension(n) != res_img.dimension(n))
+				throw new IllegalArgumentException("Image pair does not consist"
+					+" of images of the same size.");
+
 		//create output TemporalLevel to which we gonna save our findings about both images
 		TemporalLevel level = new TemporalLevel(levels.size());
 
@@ -517,8 +527,8 @@ public class TrackDataCache
 		LoadTrackFile( gtPath+"/TRA/man_track.txt", gt_tracks);
 		LoadTrackFile(resPath+"/res_track.txt", res_tracks);
 
-		//iterate through the GT folder and read files, one by one
-		//find the appropriate file in the RES folder
+		//iterate through the GT folder and read files, one by one,
+		//find the appropriate file in the RES folder,
 		//and call ClassifyLabels() for every such pair
 		int time = 0;
 		while (Files.isReadable(
@@ -530,16 +540,6 @@ public class TrackDataCache
 
 			Img<UnsignedShortType> res_img
 				= ReadImage(String.format("%s/mask%03d.tif",resPath,time));
-
-			//check the sizes of the images
-			if (gt_img.numDimensions() != res_img.numDimensions())
-				throw new IllegalArgumentException("Image pair at time "+time
-					+" does not consist of images of the same dimensionality.");
-
-			for (int n=0; n < gt_img.numDimensions(); ++n)
-				if (gt_img.dimension(n) != res_img.dimension(n))
-					throw new IllegalArgumentException("Image pair at time"+time
-						+" does not consist of images of the same size.");
 
 			ClassifyLabels(gt_img, res_img);
 			++time;
