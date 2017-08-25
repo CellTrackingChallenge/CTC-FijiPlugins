@@ -22,6 +22,9 @@ import de.mpicbg.ulman.workers.CT;
 import de.mpicbg.ulman.workers.TF;
 import de.mpicbg.ulman.workers.BCi;
 import de.mpicbg.ulman.workers.CCA;
+import org.scijava.widget.FileWidget;
+
+import java.io.File;
 
 @Plugin(type = Command.class, menuPath = "Plugins>CTC>Tracking performance measures",
         name = "CTC_ALL", headless = true,
@@ -36,14 +39,16 @@ public class plugin_CTCmeasures implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to ground-truth folder: ",
+		style = FileWidget.DIRECTORY_STYLE,
 		columns = 40,
 		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
+	private File gtPath;
 
 	@Parameter(label = "Path to computed result folder: ",
+		style = FileWidget.DIRECTORY_STYLE,
 		columns = 40,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
-	private String resPath;
+	private File resPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -129,6 +134,8 @@ public class plugin_CTCmeasures implements Command
 			final BCi bci = new BCi(log);
 			if (calcBCi) bci.setI(iForBCi);
 
+			String gtPath = this.gtPath.getPath();
+			String resPath = this.resPath.getPath();
 			//saves the input paths for the final report table
 			GTdir  = gtPath;
 			RESdir = resPath;
