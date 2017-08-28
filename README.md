@@ -1,7 +1,9 @@
 Welcome
 -------
 
-This is a repository to hold all [Cell Tracking Challenge](http://www.celltrackingchallenge.net) related [FiJi](http://fiji.sc) tools. The tools are in the form of a Fiji GUI plugins, notes on how to install all of them just follows. However, owing to the Fiji capabilities, it is possible to call the tools also from command line.
+This is a repository with source codes of the [FiJi](http://fiji.sc) tools related to the [Cell Tracking Challenge](http://www.celltrackingchallenge.net). In particular, one can find here the technical measures (TRA, SEG) and the biological measures (CT, TF, BC(i), CCA) as well as dataset quality measures (SNR, CR, ..., Mit). The binaries can be downloaded from the [official challenge website](http://www.celltrackingchallenge.net).
+
+The tools are in the form of a Fiji GUI plugins, notes on how to install all of them just follows. However, owing to the Fiji capabilities, it is possible to call the tools also from command line.
 
 The tools were developed and the page is maintained by [Vladimír Ulman](http://www.fi.muni.cz/~xulman/).
 
