@@ -1,9 +1,9 @@
 /*
- * To the extent possible under law, the ImageJ developers have waived
- * all copyright and related or neighboring rights to this tutorial code.
+ * CC BY-SA 4.0
  *
- * See the CC0 1.0 Universal license for details:
- *     http://creativecommons.org/publicdomain/zero/1.0/
+ * The code is licensed with "Attribution-ShareAlike 4.0 International license".
+ * See the license details:
+ *     https://creativecommons.org/licenses/by-sa/4.0/
  */
 package de.mpicbg.ulman;
 
@@ -37,7 +37,7 @@ import java.awt.Dimension;
 
 import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>Annotations Merging Tool")
+@Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
 public class machineGTViaMarkers implements Command
 {
 
@@ -54,11 +54,11 @@ public class machineGTViaMarkers implements Command
 	private UIService uiService;
 
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String headerA =
 		"Please, provide a path to a job specification file (see below), and fill required parameters.";
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String headerB =
 		"Check the status bar (in the main Fiji window) for hint messages.";
 
@@ -70,16 +70,16 @@ public class machineGTViaMarkers implements Command
 			callback = "mergeModelChanged")
 	private String mergeModel;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String fileInfoA = "The job file should list one input filename pattern per line.";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String fileInfoB = "The job file should end with tracking markers filename pattern.";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String fileInfoC = " ";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private String fileInfoD = "Threshold value is required now.";
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String fileInfoE =
 		 "The filename pattern is a full path to a file that includes XXX where "
 		+"numbers should be substituted.";
