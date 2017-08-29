@@ -63,6 +63,13 @@ public class TRA
 	 */
 	public boolean doLogReports = false;
 
+	/**
+	 * This flag, when set to true, changes the default calculation mode, that is,
+	 * the AOGM will be calculated instead of the TRA (which is essentially
+	 * a normalized AOGM).
+	 */
+	public boolean doAOGM = false;
+
 	// ----------- the TRA essentially starts here -----------
 	//auxiliary data:
 
@@ -573,39 +580,7 @@ public class TRA
 
 		FindEDAndECEdges(levels, gt_tracks, res_tracks);
 		FindEAEdges(levels, gt_tracks, res_tracks);
-
-		//now, the (old) TRA between GT and RES is calculated:
-		//the old refers to the un-normalized TRA value, interval [0,infinity)
-		// (approx. an energy required to CORRECT tracking result)
-
-		//calculate also the (old) TRA when no result is supplied
-		// (approx. an energy required to CREATE tracking result from the scratch)
-		//
-		//how many parental links to add
-		int num_par = 0;
-		//how many track links (edges) to add
-		int sum = 0;
-
-		for (Integer id : gt_tracks.keySet())
-		{
-			Track t = gt_tracks.get(id);
-			sum += t.m_end - t.m_begin;
-
-			if (t.m_parent > 0) ++num_par;
-		}
-
-		final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()) //adding nodes
-		                        + penalty.m_ea * (sum + num_par);         //adding edges
-
-		log.info("AOGM to curate  the  given  result: "+aogm);
-		log.info("AOGM to build a new correct result: "+aogm_empty);
-
-		//if correcting is more expensive than creating, we assume user deletes
-		//the whole result and starts from the scratch, hence aogm = aogm_empty
-		aogm = aogm > aogm_empty ? aogm_empty : aogm;
-
-		//normalization:
-		aogm = 1.0 - aogm/aogm_empty;
+		//AOGM calculation ends here
 
 		//should the log reports be printed?
 		if (doLogReports)
@@ -618,8 +593,49 @@ public class TRA
 			reportLog(logEC);
 		}
 
-		log.info("---");
-		log.info("normalized AOGM = TRA: "+aogm);
+		//now, the (old) TRA between GT and RES is calculated:
+		//the old refers to the un-normalized TRA value, interval [0,infinity)
+		// (approx. an energy required to CORRECT tracking result)
+
+		if (doAOGM == false)
+		{
+			//calculate the (old) TRA when no result is supplied
+			// (approx. an energy required to CREATE tracking result from the scratch)
+			//
+			//how many parental links to add
+			int num_par = 0;
+			//how many track links (edges) to add
+			int sum = 0;
+
+			for (Integer id : gt_tracks.keySet())
+			{
+				Track t = gt_tracks.get(id);
+				sum += t.m_end - t.m_begin;
+
+				if (t.m_parent > 0) ++num_par;
+			}
+
+			final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()) //adding nodes
+											+ penalty.m_ea * (sum + num_par);         //adding edges
+
+			log.info("AOGM to curate  the  given  result: "+aogm);
+			log.info("AOGM to build a new correct result: "+aogm_empty);
+
+			//if correcting is more expensive than creating, we assume user deletes
+			//the whole result and starts from the scratch, hence aogm = aogm_empty
+			aogm = aogm > aogm_empty ? aogm_empty : aogm;
+
+			//normalization:
+			aogm = 1.0 - aogm/aogm_empty;
+
+			log.info("---");
+			log.info("normalized AOGM = TRA: "+aogm);
+		}
+		else
+		{
+			//just report the AOGM as it is...
+			log.info("AOGM: "+aogm);
+		}
 		return (aogm);
 	}
 
