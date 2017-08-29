@@ -298,7 +298,7 @@ public class ImgQualityDataCache
 			{
 				if (fgCursor.get().getInteger() > 0)
 				{
-					//found colliding BG voxel, exclude it from BG stats (and note it)
+					//found colliding BG voxel, exclude it from BG stats
 					++volFGBGcollisionVoxelCnt;
 				}
 				else
@@ -320,9 +320,11 @@ public class ImgQualityDataCache
 		//report the "occupancy stats"
 		log.info("Frame at time "+time+" overview:");
 		final long imgSize = imgRaw.size();
-		log.info("pure BG voxels          : "+volBGvoxelCnt+" ( "+(double)volBGvoxelCnt/imgSize+" )");
-		log.info("BG&FG overlapping voxels: "+volFGBGcollisionVoxelCnt+" ( "+(double)volFGBGcollisionVoxelCnt/imgSize+" )");
-		log.info("pure FG voxels          : "+volFGvoxelCnt+" ( "+(double)volFGvoxelCnt/imgSize+" )");
+		log.info("all FG voxels           : "+volFGvoxelCnt+" ( "+100.0*(double)volFGvoxelCnt/imgSize+" %)");
+		log.info("pure BG voxels          : "+volBGvoxelCnt+" ( "+100.0*(double)volBGvoxelCnt/imgSize+" %)");
+		log.info("BG&FG overlapping voxels: "+volFGBGcollisionVoxelCnt+" ( "+100.0*(double)volFGBGcollisionVoxelCnt/imgSize+" %)");
+		final long untouched = imgSize - volFGvoxelCnt - volBGvoxelCnt;
+		log.info("not annotated voxels    : "+untouched+" ( "+100.0*(double)untouched/imgSize+" %)");
 
 		//finish processing of the BG stats of the current frame
 		avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
