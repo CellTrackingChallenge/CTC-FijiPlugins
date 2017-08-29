@@ -15,7 +15,6 @@ import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
-import de.mpicbg.ulman.workers.TrackDataCache;
 import de.mpicbg.ulman.workers.TRA;
 import de.mpicbg.ulman.workers.SEG;
 
@@ -94,27 +93,19 @@ public class plugin_CTCmeasuresICT implements Command
 			GTdir  = gtPath;
 			RESdir = resPath;
 
-			//reference on a shared object that does
-			//pre-fetching of data and some common pre-calculation
-			TrackDataCache cache = null;
-
 			if (calcSEG)
 			{
 				final SEG seg = new SEG(log);
-				//SEG is whole different from the tracking-oriented rest,
-				//thus, it cannot really utilize the shared/cached data
 				seg.doLogReports = true;
 				SEG = seg.calculate(gtPath, resPath);
 			}
 
-			//do the calculation and retrieve updated cache afterwards
 			if (calcTRA)
 			{
 				final TRA tra = new TRA(log);
 				tra.doConsistencyCheck = true;
 				tra.doLogReports = true;
-				TRA = tra.calculate(gtPath, resPath, cache);
-				cache = tra.getCache();
+				TRA = tra.calculate(gtPath, resPath);
 			}
 
 			//do not report anything explicitly (unless special format for parsing is
