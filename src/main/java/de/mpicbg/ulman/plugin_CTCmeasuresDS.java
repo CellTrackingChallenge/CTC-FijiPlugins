@@ -1,9 +1,9 @@
 /*
- * To the extent possible under law, the ImageJ developers have waived
- * all copyright and related or neighboring rights to this tutorial code.
+ * CC BY-SA 4.0
  *
- * See the CC0 1.0 Universal license for details:
- *     http://creativecommons.org/publicdomain/zero/1.0/
+ * The code is licensed with "Attribution-ShareAlike 4.0 International license".
+ * See the license details:
+ *     https://creativecommons.org/licenses/by-sa/4.0/
  */
 package de.mpicbg.ulman;
 
@@ -26,42 +26,44 @@ import de.mpicbg.ulman.workers.DEN;
 import de.mpicbg.ulman.workers.CHA;
 import de.mpicbg.ulman.workers.OVE;
 import de.mpicbg.ulman.workers.MIT;
+/*
 import de.mpicbg.ulman.workers.SYN;
 import de.mpicbg.ulman.workers.ENTLEAV;
+*/
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>Dataset quality measures",
-        name = "CTC_ALL2", headless = true,
-		  description = "Calculates all dataset quality measures from the CTC paper.\n"
+@Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Dataset measures",
+        name = "CTC_DS", headless = true,
+		  description = "Calculates dataset quality measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
-public class plugin_CTCmeasures2 implements Command
+public class plugin_CTCmeasuresDS implements Command
 {
 	//------------- GUI stuff -------------
 	//
 	@Parameter
 	private LogService log;
 
-	@Parameter(label = "Path to images folder: ",
+	@Parameter(label = "Path to images folder:",
 		columns = 40,
 		description = "Path should contain cell image files directly: t???.tif")
 	private String imgPath;
 
-	@Parameter(label = "Resolution (um/px) of the images, x-axis: ",
+	@Parameter(label = "Resolution (um/px) of the images, x-axis:",
 		min = "0.0001", stepSize = "0.1",
 		description = "Size of single pixel/voxel along the x-axis in micrometers.")
 	double xRes = 1.0;
 
-	@Parameter(label = "y-axis: ",
+	@Parameter(label = "y-axis:",
 		min = "0.0001", stepSize = "0.1",
 		description = "Size of single pixel/voxel along the y-axis in micrometers.")
 	double yRes = 1.0;
 
-	@Parameter(label = "z-axis: ",
+	@Parameter(label = "z-axis:",
 		min = "0.0001", stepSize = "0.1",
 		description = "Size of single pixel/voxel along the z-axis in micrometers.")
 	double zRes = 1.0;
 
-	@Parameter(label = "Path to annotations folder: ",
+	@Parameter(label = "Path to annotations folder:",
 		columns = 40,
 		description = "Path should contain folders BG and TRA and annotation files: "
 			+ "BG/mask???.tif, TRA/man_track???.tif and man_track.txt. "
@@ -120,6 +122,7 @@ public class plugin_CTCmeasures2 implements Command
 		description = "Evaluates the foo.")
 	private boolean calcMit = true;
 
+	/*
 	@Parameter(label = "Syn",
 		description = "Evaluates the foo.")
 	private boolean calcSyn = true;
@@ -127,12 +130,15 @@ public class plugin_CTCmeasures2 implements Command
 	@Parameter(label = "EntLeav",
 		description = "Evaluates the foo.")
 	private boolean calcEntLeav = true;
+	*/
 
 
 	//citation footer...
+	/*
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String citationFooter
 		= "Please, cite us.... TBA";
+	*/
 
 
 	//hidden output values
@@ -173,11 +179,13 @@ public class plugin_CTCmeasures2 implements Command
 	@Parameter(type = ItemIO.OUTPUT)
 	double Mit = -1;
 
+	/*
 	@Parameter(type = ItemIO.OUTPUT)
 	byte Syn = -1;
 
 	@Parameter(type = ItemIO.OUTPUT)
 	byte EntLeav = -1;
+	*/
 
 
 	//the GUI path entry function:
@@ -270,6 +278,7 @@ public class plugin_CTCmeasures2 implements Command
 				cache = mit .getCache();
 			}
 
+			/*
 			if (calcSyn)
 			{
 				final SYN syn = new SYN(log);
@@ -283,6 +292,7 @@ public class plugin_CTCmeasures2 implements Command
 				EntLeav = entleav.calculate(imgPath, resolution, annPath, cache);
 				cache = entleav.getCache();
 			}
+			*/
 
 			//do not report anything explicitly (unless special format for parsing is
 			//desired) as ItemIO.OUTPUT will make it output automatically

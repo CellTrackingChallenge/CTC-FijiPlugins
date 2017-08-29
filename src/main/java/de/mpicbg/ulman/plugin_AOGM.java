@@ -1,9 +1,9 @@
 /*
- * To the extent possible under law, the ImageJ developers have waived
- * all copyright and related or neighboring rights to this tutorial code.
+ * CC BY-SA 4.0
  *
- * See the CC0 1.0 Universal license for details:
- *     http://creativecommons.org/publicdomain/zero/1.0/
+ * The code is licensed with "Attribution-ShareAlike 4.0 International license".
+ * See the license details:
+ *     https://creativecommons.org/licenses/by-sa/4.0/
  */
 package de.mpicbg.ulman;
 
@@ -18,32 +18,32 @@ import net.imagej.ImageJ;
 import de.mpicbg.ulman.workers.TRA;
 import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>TRA measure",
-        name = "CTC_TRA",
-		  description = "Calculates the TRA tracking performance measure from the AOGM paper.\n"
+@Plugin(type = Command.class, menuPath = "Plugins>AOGM tracking measure",
+        name = "CTC_AOGM", headless = true,
+		  description = "Calculates the AOGM tracking performance measure from the AOGM paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
-public class plugin_TRA implements Command
+public class plugin_AOGM implements Command
 {
 	//------------- GUI stuff -------------
 	//
 	@Parameter
 	private LogService log;
 
-	@Parameter(label = "Path to ground-truth folder: ",
-		columns = 40,
-		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
-
-	@Parameter(label = "Path to computed result folder: ",
+	@Parameter(label = "Path to computed result folder:",
 		columns = 40,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
 	private String resPath;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(label = "Path to ground-truth folder:",
+		columns = 40,
+		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
+	private String gtPath;
+
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
-	@Parameter(visibility = ItemVisibility.MESSAGE)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterB
 		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
 
@@ -83,13 +83,19 @@ public class plugin_TRA implements Command
 
 
 	//citation footer...
-	@Parameter(visibility = ItemVisibility.MESSAGE)
-	private final String citationFooter
-		= "Please, cite us.... TBA";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = "Please, cite us:")
+	private final String citationFooterA
+		= "Matula P, Maška M, Sorokin DV, Matula P, Ortiz-de-Solórzano C, Kozubek M.";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = ":")
+	private final String citationFooterB
+		= "Cell tracking accuracy measurement based on comparison of acyclic";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = ":")
+	private final String citationFooterC
+		= "oriented graphs. PloS one. 2015 Dec 18;10(12):e0144959.";
 
 
 	@Parameter(type = ItemIO.OUTPUT)
-	double TRA = -1;
+	double AOGM = -1;
 
 	///input GUI handler
 	@SuppressWarnings("unused")
@@ -130,22 +136,23 @@ public class plugin_TRA implements Command
 			//set up its operational details
 			tra.doConsistencyCheck = doConsistencyCheck;
 			tra.doLogReports = doLogReports;
+			tra.doAOGM = true;
 
-			//also the TRA weights
+			//also the AOGM weights
 			final PenaltyConfig penalty = tra.new PenaltyConfig(p1,p2,p3,p4,p5,p6);
 			tra.penalty = penalty;
 
 			//do the calculation
-			TRA = tra.calculate(gtPath,resPath);
+			AOGM = tra.calculate(gtPath,resPath);
 
 			//do not report anything explicitly (unless special format for parsing is
 			//desired) as ItemIO.OUTPUT will make it output automatically
 		}
 		catch (RuntimeException e) {
-			log.error("TRA problem: "+e.getMessage());
+			log.error("AOGM problem: "+e.getMessage());
 		}
 		catch (Exception e) {
-			log.error("TRA error: "+e.getMessage());
+			log.error("AOGM error: "+e.getMessage());
 		}
 	}
 
@@ -177,7 +184,7 @@ public class plugin_TRA implements Command
 		ij.ui().showUI();
 
 		//run this class is if from GUI
-		//ij.command().run(plugin_TRA.class, true, "gtPath",args[0], "resPath",args[1]);
+		//ij.command().run(plugin_AOGM.class, true, "gtPath",args[0], "resPath",args[1]);
 
 		//and close the IJ instance...
 		//ij.appEvent().quit();

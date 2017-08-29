@@ -1,9 +1,9 @@
 /*
- * To the extent possible under law, the ImageJ developers have waived
- * all copyright and related or neighboring rights to this tutorial code.
+ * CC BY-SA 4.0
  *
- * See the CC0 1.0 Universal license for details:
- *     http://creativecommons.org/publicdomain/zero/1.0/
+ * The code is licensed with "Attribution-ShareAlike 4.0 International license".
+ * See the license details:
+ *     https://creativecommons.org/licenses/by-sa/4.0/
  */
 package de.mpicbg.ulman;
 
@@ -16,34 +16,32 @@ import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
 import de.mpicbg.ulman.workers.TrackDataCache;
-import de.mpicbg.ulman.workers.TRA;
-import de.mpicbg.ulman.workers.SEG;
 import de.mpicbg.ulman.workers.CT;
 import de.mpicbg.ulman.workers.TF;
 import de.mpicbg.ulman.workers.BCi;
 import de.mpicbg.ulman.workers.CCA;
 
-@Plugin(type = Command.class, menuPath = "Plugins>CTC>Tracking performance measures",
-        name = "CTC_ALL", headless = true,
-		  description = "Calculates all tracking performance measures from the CTC paper.\n"
+@Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Biological measures",
+        name = "CTC_BIO", headless = true,
+		  description = "Calculates biological tracking performance measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
-public class plugin_CTCmeasures implements Command
+public class plugin_CTCmeasuresBIO implements Command
 {
 	//------------- GUI stuff -------------
 	//
 	@Parameter
 	private LogService log;
 
-	@Parameter(label = "Path to ground-truth folder: ",
-		columns = 40,
-		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
-
-	@Parameter(label = "Path to computed result folder: ",
+	@Parameter(label = "Path to computed result folder:",
 		columns = 40,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
 	private String resPath;
+
+	@Parameter(label = "Path to ground-truth folder:",
+		columns = 40,
+		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
+	private String gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -56,14 +54,6 @@ public class plugin_CTCmeasures implements Command
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false,
 		label = "Select measures to calculate:")
 	private final String measuresHeader = "";
-
-	@Parameter(label = "SEG",
-		description = "Quantifies the amount of overlap between the reference annotations and the computed segmentation.")
-	private boolean calcSEG = true;
-
-	@Parameter(label = "TRA",
-		description = "Evaluates the ability of an algorithm to track cells in time.")
-	private boolean calcTRA = true;
 
 	@Parameter(label = "CT",
 		description = "Examines how good a method is at reconstructing complete reference tracks.")
@@ -87,9 +77,11 @@ public class plugin_CTCmeasures implements Command
 
 
 	//citation footer...
+	/*
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String citationFooter
 		= "Please, cite us.... TBA";
+	*/
 
 
 	//hidden output values
@@ -99,12 +91,6 @@ public class plugin_CTCmeasures implements Command
 	String RESdir;
 	@Parameter(type = ItemIO.OUTPUT)
 	String sep = "--------------------";
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double SEG = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
-	double TRA = -1;
 
 	@Parameter(type = ItemIO.OUTPUT)
 	double CT = -1;
@@ -136,22 +122,6 @@ public class plugin_CTCmeasures implements Command
 			//reference on a shared object that does
 			//pre-fetching of data and some common pre-calculation
 			TrackDataCache cache = null;
-
-			if (calcSEG)
-			{
-				final SEG seg = new SEG(log);
-				//SEG is whole different from the tracking-oriented rest,
-				//thus, it cannot really utilize the shared/cached data
-				SEG = seg.calculate(gtPath, resPath);
-			}
-
-			//do the calculation and retrieve updated cache afterwards
-			if (calcTRA)
-			{
-				final TRA tra = new TRA(log);
-				TRA = tra.calculate(gtPath, resPath, cache);
-				cache = tra.getCache();
-			}
 
 			if (calcCT )
 			{
@@ -217,10 +187,9 @@ public class plugin_CTCmeasures implements Command
 		//DEBUG//ij.ui().showUI();
 
 		//run this class as if from GUI
-		ij.command().run(plugin_CTCmeasures.class, true, "gtPath",args[0], "resPath",args[1],
-			"calcTRA",true, "calcSEG",true, "calcCT",true, "calcTF",true,
-			"calcBCi",true, "iForBCi", 2, "calcCCA",true,
-			"pathFooterA","a", "pathFooterB","a", "measuresHeader","a", "citationFooter","a");
+		ij.command().run(plugin_CTCmeasuresBIO.class, true, "gtPath",args[0], "resPath",args[1],
+			"calcCT",true, "calcTF",true,
+			"calcBCi",true, "iForBCi", 2, "calcCCA",true);
 
 		//and close the IJ instance...
 		ij.appEvent().quit();
