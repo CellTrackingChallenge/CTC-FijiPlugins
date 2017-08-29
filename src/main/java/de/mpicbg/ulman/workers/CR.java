@@ -13,7 +13,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -97,17 +96,19 @@ public class CR
 		//shadows of the/short-cuts to the cache data
 		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
 		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
 
 		//go over all FG objects and calc their CRs
 		long noFGs = 0;
 		//over all time points
 		for (int time=0; time < avgFG.size(); ++time)
 		{
+			//skip this frame if we cannot compute anything on it
+			if (avgBG.get(time) == 0.0) continue;
+
 			//over all objects, in fact use their avg intensities
 			for (Double fg : avgFG.get(time).values())
 			{
-				cr += (fg - avgBG.get(time)) / stdBG.get(time);
+				cr += fg / avgBG.get(time);
 				++noFGs;
 			}
 		}
@@ -119,7 +120,7 @@ public class CR
 			log.info("CR: "+cr);
 		}
 		else
-			log.info("CR: Couldn't calculate average CR because there are no cells labelled.");
+			log.info("CR: Couldn't calculate average CR because there are missing labels.");
 
 		return (cr);
 	}

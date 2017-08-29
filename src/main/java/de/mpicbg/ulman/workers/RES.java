@@ -13,7 +13,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -95,19 +94,17 @@ public class RES
 		res = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
+		final Vector<HashMap<Integer,Long>> volumeFG = cache.volumeFG;
 
 		//go over all FG objects and calc their RESs
 		long noFGs = 0;
 		//over all time points
-		for (int time=0; time < avgFG.size(); ++time)
+		for (int time=0; time < volumeFG.size(); ++time)
 		{
-			//over all objects, in fact use their avg intensities
-			for (Double fg : avgFG.get(time).values())
+			//over all objects
+			for (Long vol : volumeFG.get(time).values())
 			{
-				res += (fg - avgBG.get(time)) / stdBG.get(time);
+				res += (double)vol;
 				++noFGs;
 			}
 		}

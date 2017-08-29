@@ -13,7 +13,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -95,19 +94,18 @@ public class OVE
 		ove = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
+		final Vector<HashMap<Integer,Long>> volumeFG = cache.volumeFG;
+		final Vector<HashMap<Integer,Long>> overlapFG = cache.overlapFG;
 
 		//go over all FG objects and calc their OVEs
 		long noFGs = 0;
-		//over all time points
-		for (int time=0; time < avgFG.size(); ++time)
+		//over all time points (NB: no overlap possible for time==0)
+		for (int time=1; time < overlapFG.size(); ++time)
 		{
-			//over all objects, in fact use their avg intensities
-			for (Double fg : avgFG.get(time).values())
+			//over all objects
+			for (Integer fgID : overlapFG.get(time).keySet())
 			{
-				ove += (fg - avgBG.get(time)) / stdBG.get(time);
+				ove += (double)overlapFG.get(time).get(fgID) / (double)volumeFG.get(time).get(fgID);
 				++noFGs;
 			}
 		}

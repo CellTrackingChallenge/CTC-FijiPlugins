@@ -13,7 +13,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -96,18 +95,18 @@ public class HETI
 
 		//shadows of the/short-cuts to the cache data
 		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
+		final Vector<HashMap<Integer,Double>> stdFG = cache.stdFG;
 		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
 
 		//go over all FG objects and calc their CRs
 		long noFGs = 0;
 		//over all time points
 		for (int time=0; time < avgFG.size(); ++time)
 		{
-			//over all objects, in fact use their avg intensities
-			for (Double fg : avgFG.get(time).values())
+			//over all objects
+			for (Integer fgID : avgFG.get(time).keySet())
 			{
-				heti += (fg - avgBG.get(time)) / stdBG.get(time);
+				heti += stdFG.get(time).get(fgID) / Math.abs(avgFG.get(time).get(fgID) - avgBG.get(time));
 				++noFGs;
 			}
 		}
