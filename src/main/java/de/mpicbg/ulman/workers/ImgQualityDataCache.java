@@ -10,13 +10,19 @@ package de.mpicbg.ulman.workers;
 import org.scijava.log.LogService;
 
 import net.imglib2.img.Img;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.view.Views;
+import net.imglib2.view.ExtendedRandomAccessibleInterval;
+import net.imglib2.FinalDimensions;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
-import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.FloatType;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,6 +83,22 @@ public class ImgQualityDataCache
 		for (int n=0; n < resolution.length; ++n)
 			resolution[n] = _res[n];
 	}
+
+	//the structure to interchange results from the extractObjectDistance()
+	private class ObjectDescription
+	{
+		int otherMarker;
+		float distance;
+	}
+	private ObjectDescription objDistance = new ObjectDescription();
+
+	//"time saver" to prevent allocating it over and over again:
+	//for storing coordinates
+	private int[] pos = null;
+	private int[] box = null;
+	private float[] boxDistances = null; //only for isotropic boxes 3x3x...x3
+	private FinalDimensions imgSize = null;
+	ArrayImgFactory<FloatType> imgFactory = new ArrayImgFactory<>();
 
 	/**
 	 * Representation of average & std. deviations within individual
@@ -246,10 +268,283 @@ public class ImgQualityDataCache
 	}
 
 
+	/**
+	 * The \e curMarker represents the marker whose distance to nearest
+	 * neighbor is to be calculated.
+	 *
+	 * It dilates (with 3x3x... SE) until it hits some other marker and returns number
+	 * of iterations required. The iterations are however limited with \e maxIters.
+	 */
+	private <T extends IntegerType<T>>
+	void extractObjectDistance(final Img<T> img, final int curMarker,
+	                           final ObjectDescription objDistance,
+	                           final int maxIters)
+	//TODO DEBUG REMOVE ME
+	//throws Exception
+	{
+		//overlay over the original input image with special marker boundary
+		T specialBorderMarker = img.firstElement().createVariable();
+		specialBorderMarker.setInteger(-1);
+		final int borderMarker = specialBorderMarker.getInteger(); //short-cut...
+
+		ExtendedRandomAccessibleInterval<T,Img<T>> extImg
+			= Views.extendValue(img, specialBorderMarker);
+
+		//working (float-type) "copies" of the input image
+		final Img<FloatType> dilIgA = imgFactory.create(imgSize, new FloatType());
+		final Img<FloatType> dilIgB = imgFactory.create(imgSize, new FloatType());
+
+		//overlays over the working copies with extended boundary
+		ExtendedRandomAccessibleInterval<FloatType,Img<FloatType>> dilImgA
+			= Views.extendValue(dilIgA, new FloatType());
+		ExtendedRandomAccessibleInterval<FloatType,Img<FloatType>> dilImgB
+			= Views.extendValue(dilIgB, new FloatType());
+
+		//setup necessary pointers for the tmp images
+		final Cursor<FloatType> sweepCursorA = dilIgA.localizingCursor();
+		final Cursor<FloatType> sweepCursorB = dilIgB.localizingCursor();
+		final RandomAccess<FloatType> outCursorA = dilImgA.randomAccess();
+		final RandomAccess<FloatType> outCursorB = dilImgB.randomAccess();
+
+		//prepare the initial working image
+		Cursor<T> imgCursor = img.localizingCursor();
+		RandomAccess<FloatType> outCursor = outCursorA;
+		while (imgCursor.hasNext())
+		{
+			if (imgCursor.next().getInteger() == curMarker)
+			{
+				outCursor.setPosition(imgCursor);
+				outCursor.get().setReal(1.f);
+			}
+		}
+		imgCursor = null;
+		//TODO DEBUG REMOVE ME
+		/*
+		String fileName = String.format("%s_t%03d_label%d_dilated0.tif",
+			defaultOutputPrefix,currentFrame,curMarker);
+		try {
+			ij.log().info("Saving file: "+fileName);
+			ImgSaver imgSaver = new ImgSaver();
+			imgSaver.saveImg(fileName, dilIgA);
+		}
+		catch (ImgIOException | IncompatibleTypeException e) {
+			ij.log().error("Error writing file: "+fileName);
+			ij.log().error("Error msg: "+e);
+		}
+		*/
+
+		//current working cursors: "sweep" scans the input image, "out" checks the input image
+		boolean AisInput = true;
+		Cursor<FloatType> sweepCursor = sweepCursorA;
+		outCursor = outCursorB;
+		RandomAccess<T> inCursor = extImg.randomAccess();
+
+		boolean hasHit = false;
+		int closestMarker = 0;
+		float closestDist = Float.MAX_VALUE;
+
+		int iters=0;
+		do
+		{
+			//dilate and check if we are running into somebody
+			//NB: always finish the whole round!
+			sweepCursor.reset();
+			while (sweepCursor.hasNext())
+			{
+				//currently observed distance at the currently examined voxel
+				float curDist = sweepCursor.next().getRealFloat();
+
+				//check we are over "any already touched" voxel:
+				//NB: should be faster than checking if our voxel is a neighbor to "any touched" voxel
+				if (curDist > 0.f)
+				{
+					sweepCursor.localize(pos);
+					//reportCoordinate("found marker "+curMarker+" at: ");
+
+					//BOX STRUCTURING ELEMENT -- APPROXIMATES L2 DISTANCES (Eucledian metric)
+
+					//now check its neighbors..., and update hasHit possibly
+					//NB: always finish the whole round!
+					sweepBox(true); //true means "do init"
+					do
+					{
+						inCursor.setPosition(pos);
+						outCursor.setPosition(pos);
+
+						//First, update the distance value at the current "neighbor" voxel:
+						//so far best distance stored in the output voxel
+						final float neigDist = outCursor.get().getRealFloat();
+
+						//update distance for the current inside-box position
+						/*
+						float offsetDist = 0;
+						for (int i=0; i < box.length; ++i)
+							offsetDist += (float)box[i]*(float)box[i];
+						offsetDist = (float)Math.sqrt(offsetDist);
+						*/
+
+						//NB: this works only for isotropic boxes 3x3x...x3
+						int nonZeroAxesCnt = 0;
+						for (int i=0; i < box.length; ++i)
+							nonZeroAxesCnt += box[i]&1;
+						final float offsetDist = boxDistances[nonZeroAxesCnt];
+
+						//first condition: is there any distance stored already?
+						//second condition: would a move from the current position
+						//improve currently saved distance in the output voxel?
+						if (neigDist == 0. || neigDist > curDist+offsetDist)
+							outCursor.get().setReal(curDist+offsetDist);
+
+						//Second, check we haven't run into another object (marker)
+						int examinedMarker = inCursor.get().getInteger();
+						if (examinedMarker > 0 && examinedMarker != curMarker && examinedMarker != borderMarker)
+						{
+							hasHit = true;
+							curDist = outCursor.get().getRealFloat(); //get fresh distance value
+							//reportCoordinate(curMarker+" found his neighbor "+examinedMarker+" at distance "+curDist+" at: ");
+
+							if (curDist < closestDist)
+							{
+								closestDist = curDist;
+								closestMarker = examinedMarker;
+							}
+						}
+					}
+					while (sweepBox(false));
+				} //over "already discovered" voxel
+			} //input image sweeping
+
+			//flip the intput/output image sense
+			if (AisInput)
+			{
+				//make B input
+				sweepCursor = sweepCursorB;
+				outCursor = outCursorA;
+				AisInput=false;
+
+				//TODO DEBUG REMOVE ME
+				/*
+				fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
+					defaultOutputPrefix,currentFrame,curMarker,iters+1);
+				try {
+					ij.log().info("Saving file: "+fileName);
+					ImgSaver imgSaver = new ImgSaver();
+					imgSaver.saveImg(fileName, dilIgB);
+				}
+				catch (ImgIOException | IncompatibleTypeException e) {
+					ij.log().error("Error writing file: "+fileName);
+					ij.log().error("Error msg: "+e);
+				}
+				*/
+			}
+			else
+			{
+				//make A input
+				sweepCursor = sweepCursorA;
+				outCursor = outCursorB;
+				AisInput=true;
+
+				//TODO DEBUG REMOVE ME
+				/*
+				fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
+					defaultOutputPrefix,currentFrame,curMarker,iters+1);
+				try {
+					ij.log().info("Saving file: "+fileName);
+					ImgSaver imgSaver = new ImgSaver();
+					imgSaver.saveImg(fileName, dilIgA);
+				}
+				catch (ImgIOException | IncompatibleTypeException e) {
+					ij.log().error("Error writing file: "+fileName);
+					ij.log().error("Error msg: "+e);
+				}
+				*/
+			}
+
+			//calculates truly a number of iterations (for now)
+			++iters;
+		}
+		while (!hasHit && iters < maxIters);
+
+		//TODO DEBUG REMOVE ME
+		/*
+		//Exports only the situation at final iteration
+		String fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
+			defaultOutputPrefix,currentFrame,curMarker,iters);
+		try {
+			ij.log().info("Saving file: "+fileName);
+			ImgSaver imgSaver = new ImgSaver();
+			if (AisInput)
+				imgSaver.saveImg(fileName, dilIgA);
+			else
+				imgSaver.saveImg(fileName, dilIgB);
+		}
+		catch (ImgIOException | IncompatibleTypeException e) {
+			ij.log().error("Error writing file: "+fileName);
+			ij.log().error("Error msg: "+e);
+		}
+		*/
+
+		//set up the return values
+		if (hasHit)
+		{
+			objDistance.otherMarker = closestMarker;
+			objDistance.distance = closestDist;
+			log.info(curMarker+" found his neighbor "+closestMarker+" at distance "+closestDist+" isotropic voxels.");
+		}
+		else
+		{
+			objDistance.otherMarker = -1;
+			objDistance.distance = (float)maxIters;
+			log.info(curMarker+" has not found his neighbor with in "+maxIters+" iterations.");
+		}
+	}
+
+	private boolean sweepBox(final boolean init)
+	{
+		if (init == true)
+		{
+			for (int i=0; i < box.length; ++i)
+			{
+				box[i]=-1;
+				--pos[i];
+			}
+			return (true);
+		}
+		else
+		{
+			int index=box.length-1;
+			while (index >= 0)
+			{
+				++box[index];
+				++pos[index];
+				if (box[index] == 2)
+				{
+					box[index]=-1;
+					pos[index]-=3;
+					--index;
+				}
+				else return (true);
+			}
+		}
+		return (false);
+	}
+
+
+	///reports coordinate stored in the internal attribute this.pos[]
+	@SuppressWarnings("unused")
+	private void reportCoordinate(final String msg)
+	{
+		if (pos.length == 3)
+			System.out.println(msg+"("+pos[0]+","+pos[1]+","+pos[2]+")");
+		else
+			System.out.println(msg+"("+pos[0]+","+pos[1]+")");
+	}
+
+
 	public void ClassifyLabels(final int time,
 	                           IterableInterval<UnsignedShortType> imgRaw,
 	                           RandomAccessibleInterval<UnsignedByteType> imgBG,
-	                           RandomAccessibleInterval<UnsignedShortType> imgFG,
+	                           Img<UnsignedShortType> imgFG,
 	                           RandomAccessibleInterval<UnsignedShortType> imgFGprev)
 	{
 		//uses resolution from the class internal structures, check it is set already
@@ -379,6 +674,7 @@ public class ImgQualityDataCache
 				//found not-yet-processed FG voxel,
 				//that means: found not-yet-processed FG object
 				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev);
+				extractObjectDistance(imgFG,curMarker, objDistance, 50);
 
 				//mark the object (and all its voxels consequently) as processed
 				mDiscovered.add(curMarker);
@@ -434,6 +730,29 @@ public class ImgQualityDataCache
 
 			Img<UnsignedByteType> imgBG
 				= tCache.ReadImageG8(String.format("%s/BG/mask%03d.tif",annPath,time));
+
+			//time to allocate helper variables?
+			if (time == 0)
+			{
+				//positions and box sweeping:
+				pos = new int[imgFG.numDimensions()];
+				box = new int[imgFG.numDimensions()];
+
+				//pre-calculating distances with box (any box point from box centre)
+				//based on how many non-zero elements is available in a vector
+				//that points at any box point
+				//NB: hard-fixed for up to 10-dimensional image
+				//NB: this works only for isotropic boxes 3x3x...x3
+				boxDistances = new float[10];
+				for (int i=1; i < 10; ++i)
+					boxDistances[i] = (float)Math.sqrt((double)i);
+
+				//creating tmp images of the right size:
+				long[] dims = new long[imgFG.numDimensions()];
+				imgFG.dimensions(dims);
+				imgSize = new FinalDimensions(dims);
+				dims = null;
+			}
 
 			ClassifyLabels(time, img, imgBG, imgFG, imgFGprev);
 
