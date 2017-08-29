@@ -53,6 +53,9 @@ public class ImgQualityDataCache
 		return (imgPath == _imgPath && annPath == _annPath);
 	}
 
+	///if proper area/surface estimates should be computed
+	public boolean doSurfaces = false;
+
 
 	// ----------- the common upper stage essentially starts here -----------
 	//auxiliary data:
@@ -182,9 +185,14 @@ public class ImgQualityDataCache
 		//voxel count
 		volumeFG.get(time).put(marker, vxlCnt );
 
-		//TODO: call dedicated function to calculate surface in real coordinates
+		//TODO: flag to be set from GUI run() depending on calcSha == true
+		//
+		//call dedicated function to calculate surface in real coordinates,
 		//real area/surface
-		surfaceFG.get(time).put(marker, 999.9 );
+		if (doSurfaces)
+			surfaceFG.get(time).put(marker, 999.9 ); //TODO replace 999 with some function call
+		else
+			surfaceFG.get(time).put(marker, -1.0 );
 
 		//also process the "overlap feature" (if the object was found in the previous frame)
 		if (time > 0 && surfaceFG.get(time-1).get(marker) != null)
