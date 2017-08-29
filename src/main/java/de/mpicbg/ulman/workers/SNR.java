@@ -103,6 +103,9 @@ public class SNR
 		//over all time points
 		for (int time=0; time < avgFG.size(); ++time)
 		{
+			//skip this frame if we cannot compute anything on it
+			if (stdBG.get(time) == 0.0) continue;
+
 			//over all objects, in fact use their avg intensities
 			for (Double fg : avgFG.get(time).values())
 			{
@@ -118,7 +121,7 @@ public class SNR
 			log.info("SNR: "+snr);
 		}
 		else
-			log.info("SNR: Couldn't calculate average SNR because there are no cells labelled.");
+			log.info("SNR: Couldn't calculate average SNR because there are missing labels.");
 
 		return (snr);
 	}

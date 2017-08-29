@@ -170,6 +170,7 @@ public class ImgQualityDataCache
 				int2Sum += (val-valShift) * (val-valShift);
 			}
 		}
+		//must hold: vxlCnt > 1 (otherwise ClassifyLabels wouldn't call this function)
 
 		//finish processing of the FG objects stats:
 		//mean intensity
@@ -335,11 +336,21 @@ public class ImgQualityDataCache
 		log.info("not annotated voxels    : "+untouched+" ( "+100.0*(double)untouched/imgSize+" %)");
 
 		//finish processing of the BG stats of the current frame
-		avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
+		if (volBGvoxelCnt > 0)
+		{
+			//great, some pure-background voxels have been found
+			avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
 
-		int2Sum -= (intSum*intSum/(double)volBGvoxelCnt);
-		int2Sum /= (double)volBGvoxelCnt;
-		stdBG.add( Math.sqrt(int2Sum) );
+			int2Sum -= (intSum*intSum/(double)volBGvoxelCnt);
+			int2Sum /= (double)volBGvoxelCnt;
+			stdBG.add( Math.sqrt(int2Sum) );
+		}
+		else
+		{
+			log.info("Warning: Background annotation has no pure background voxels.");
+			avgBG.add( 0.0 );
+			stdBG.add( 0.0 );
+		}
 
 		//now, sweep the image, detect all labels and calculate & save their properties
 		//
