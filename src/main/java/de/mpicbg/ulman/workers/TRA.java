@@ -618,6 +618,7 @@ public class TRA
 			final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()) //adding nodes
 											+ penalty.m_ea * (sum + num_par);         //adding edges
 
+			log.info("---");
 			log.info("AOGM to curate  the  given  result: "+aogm);
 			log.info("AOGM to build a new correct result: "+aogm_empty);
 
@@ -628,12 +629,12 @@ public class TRA
 			//normalization:
 			aogm = 1.0 - aogm/aogm_empty;
 
-			log.info("---");
 			log.info("normalized AOGM = TRA: "+aogm);
 		}
 		else
 		{
 			//just report the AOGM as it is...
+			log.info("---");
 			log.info("AOGM: "+aogm);
 		}
 		return (aogm);
