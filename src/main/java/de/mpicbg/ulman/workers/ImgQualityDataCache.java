@@ -86,14 +86,6 @@ public class ImgQualityDataCache
 			resolution[n] = _res[n];
 	}
 
-	//the structure to interchange results from the extractObjectDistance()
-	private class ObjectDescription
-	{
-		int otherMarker;
-		float distance;
-	}
-	private ObjectDescription objDistance = new ObjectDescription();
-
 	//"time saver" to prevent allocating it over and over again:
 	//for storing coordinates
 	private int[] pos = null;
@@ -130,6 +122,15 @@ public class ImgQualityDataCache
 	 * marker at time point and previous time point.
 	 */
 	public final Vector<HashMap<Integer,Long>> overlapFG = new Vector<>(1000,100);
+
+	/**
+	 * Stores how many voxels are there in between the marker and its nearest
+	 * neighboring (other) marker at time points. The distance is measured with
+	 * Chamfer distance (which considers diagonals in voxels) and thus the value
+	 * is not necessarily an integer anymore. The resolution (size of voxels)
+	 * of the image is not taken into account.
+	 */
+	public final Vector<HashMap<Integer,Float>> nearDistFG = new Vector<>(1000,100);
 
 	/**
 	 * Representation of average & std. deviations of background region.
@@ -274,15 +275,15 @@ public class ImgQualityDataCache
 	 * The \e curMarker represents the marker whose distance to nearest
 	 * neighbor is to be calculated.
 	 *
-	 * It dilates (with 3x3x... SE) until it hits some other marker and returns number
-	 * of iterations required. The iterations are however limited with \e maxIters.
+	 * It dilates (with 3x3x... SE) until it hits some other marker and returns Chamfer
+	 * distance to that marker. The iterations (number of dilations) are however limited
+	 * with \e maxIters.
 	 */
 	private <T extends IntegerType<T>>
-	void extractObjectDistance(final Img<T> img, final int curMarker,
-	                           final ObjectDescription objDistance,
-	                           final int maxIters)
 	//TODO DEBUG REMOVE ME
 	//throws Exception
+	float extractObjectDistance(final Img<T> img, final int curMarker,
+	                            final int maxIters)
 	{
 		//overlay over the original input image with special marker boundary
 		T specialBorderMarker = img.firstElement().createVariable();
@@ -342,7 +343,7 @@ public class ImgQualityDataCache
 		RandomAccess<T> inCursor = extImg.randomAccess();
 
 		boolean hasHit = false;
-		int closestMarker = 0;
+		//DEBUG//int closestMarker = 0;
 		float closestDist = Float.MAX_VALUE;
 
 		int iters=0;
@@ -408,7 +409,7 @@ public class ImgQualityDataCache
 							if (curDist < closestDist)
 							{
 								closestDist = curDist;
-								closestMarker = examinedMarker;
+								//DEBUG//closestMarker = examinedMarker;
 							}
 						}
 					}
@@ -445,7 +446,6 @@ public class ImgQualityDataCache
 				sweepCursor = sweepCursorA;
 				outCursor = outCursorB;
 				AisInput=true;
-
 				//TODO DEBUG REMOVE ME
 				/*
 				fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
@@ -489,15 +489,17 @@ public class ImgQualityDataCache
 		//set up the return values
 		if (hasHit)
 		{
-			objDistance.otherMarker = closestMarker;
-			objDistance.distance = closestDist;
-			log.info(curMarker+" found his neighbor "+closestMarker+" at distance "+closestDist+" isotropic voxels.");
+			//objDistance.otherMarker = closestMarker;
+			//objDistance.distance = closestDist;
+			//DEBUG//log.info(curMarker+" found his neighbor "+closestMarker+" at distance "+closestDist+" isotropic voxels.");
+			return (closestDist);
 		}
 		else
 		{
-			objDistance.otherMarker = -1;
-			objDistance.distance = (float)maxIters;
-			log.info(curMarker+" has not found his neighbor with in "+maxIters+" iterations.");
+			//objDistance.otherMarker = -1;
+			//objDistance.distance = (float)maxIters;
+			//DEBUG//log.info(curMarker+" has not found his neighbor with in "+maxIters+" iterations.");
+			return ((float)maxIters);
 		}
 	}
 
@@ -650,6 +652,7 @@ public class ImgQualityDataCache
 		}
 
 		//now, sweep the image, detect all labels and calculate & save their properties
+		log.info("Retrieving per object statistics, might take some time...");
 		//
 		//set to remember already discovered labels
 		//(with initial capacity for 1000 labels)
@@ -661,6 +664,7 @@ public class ImgQualityDataCache
 		volumeFG.add( new HashMap<>() );
 		surfaceFG.add( new HashMap<>() );
 		overlapFG.add( new HashMap<>() );
+		nearDistFG.add( new HashMap<>() );
 
 		rawCursor.reset();
 		while (rawCursor.hasNext())
@@ -676,7 +680,9 @@ public class ImgQualityDataCache
 				//found not-yet-processed FG voxel,
 				//that means: found not-yet-processed FG object
 				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev);
-				extractObjectDistance(imgFG,curMarker, objDistance, 50);
+
+				nearDistFG.get(time).put(curMarker,
+					extractObjectDistance(imgFG,curMarker, 50) );
 
 				//mark the object (and all its voxels consequently) as processed
 				mDiscovered.add(curMarker);
