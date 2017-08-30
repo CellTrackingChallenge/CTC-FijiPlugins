@@ -15,7 +15,6 @@ import io.scif.img.ImgIOException;
 import java.io.IOException;
 
 import java.util.Vector;
-import java.util.Map;
 import java.util.HashMap;
 
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
@@ -97,26 +96,30 @@ public class DEN
 		den = 0.0;
 
 		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
+		final Vector<HashMap<Integer,Float>> nearDistFG = cache.nearDistFG;
+
+		//number of objects whose neighbors were not found (within the distance)
+		long noIsolatedFGs = 0;
 
 		//go over all FG objects and calc their DENs
 		long noFGs = 0;
 		//over all time points
-		for (int time=0; time < avgFG.size(); ++time)
+		for (int time=0; time < nearDistFG.size(); ++time)
 		{
 			//over all objects, in fact use their avg intensities
-			for (Double fg : avgFG.get(time).values())
+			for (Float dist : nearDistFG.get(time).values())
 			{
-				den += (fg - avgBG.get(time)) / stdBG.get(time);
+				den += (double)dist;
 				++noFGs;
+				if (dist == 50.0) ++noIsolatedFGs;
 			}
 		}
 
 		//finish the calculation of the average
 		if (noFGs > 0)
 		{
+			log.info("DEN: There is "+noIsolatedFGs+" ( "+100.0*noIsolatedFGs/(double)noFGs
+				+" %) cells with no neighbor in the range of 50 voxels.");
 			den /= (double)noFGs;
 			log.info("DEN: "+den);
 		}
