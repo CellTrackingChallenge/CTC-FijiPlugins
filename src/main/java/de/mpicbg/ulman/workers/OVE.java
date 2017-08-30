@@ -91,8 +91,7 @@ public class OVE
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the OVE bottom part...");
+		//DEBUG//log.info("Computing the OVE bottom part...");
 		ove = 0.0;
 
 		//shadows of the/short-cuts to the cache data

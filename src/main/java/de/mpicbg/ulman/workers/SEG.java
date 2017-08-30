@@ -73,7 +73,7 @@ public class SEG
 		final TrackDataCache cache = new TrackDataCache(log);
 
 		//do the bottom stage
-		//DEBUG// log.info("Computing the SEG completely...");
+		//DEBUG//log.info("Computing the SEG completely...");
 		seg = 0.0;
 		long counter = 0;
 

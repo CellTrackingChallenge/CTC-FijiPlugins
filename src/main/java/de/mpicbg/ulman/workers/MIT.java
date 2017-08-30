@@ -92,8 +92,7 @@ public class MIT
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the MIT bottom part...");
+		//DEBUG//log.info("Computing the MIT bottom part...");
 		mit = 0.0;
 
 		//shadows of the/short-cuts to the cache data

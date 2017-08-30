@@ -92,8 +92,7 @@ public class ENTLEAV
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the ENTLEAV bottom part...");
+		//DEBUG//log.info("Computing the ENTLEAV bottom part...");
 		entleav = 0;
 
 		//shadows of the/short-cuts to the cache data

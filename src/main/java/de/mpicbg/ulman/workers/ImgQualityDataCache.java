@@ -645,8 +645,7 @@ public class ImgQualityDataCache
 	{
 		log.info("IMG path: "+imgPath);
 		log.info("ANN path: "+annPath);
-		//DEBUG//
-		log.info("Computing the common upper part...");
+		//DEBUG//log.info("Computing the common upper part...");
 
 		//test and save the given resolution
 		setResolution(resolution);

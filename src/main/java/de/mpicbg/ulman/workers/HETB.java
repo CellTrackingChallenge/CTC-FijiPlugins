@@ -91,8 +91,7 @@ public class HETB
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the HETB bottom part...");
+		//DEBUG//log.info("Computing the HETB bottom part...");
 		hetb = 0.0;
 
 		double intSum = 0.; //for mean and variance

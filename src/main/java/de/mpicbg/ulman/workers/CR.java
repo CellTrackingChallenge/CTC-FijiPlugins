@@ -91,8 +91,7 @@ public class CR
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the CR bottom part...");
+		//DEBUG//log.info("Computing the CR bottom part...");
 		cr = 0.0;
 
 		//shadows of the/short-cuts to the cache data

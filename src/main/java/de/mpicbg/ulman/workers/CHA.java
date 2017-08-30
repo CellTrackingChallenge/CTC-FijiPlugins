@@ -120,8 +120,7 @@ public class CHA
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the CHA bottom part...");
+		//DEBUG//log.info("Computing the CHA bottom part...");
 		cha = 0.0;
 
 		//shadows of the/short-cuts to the cache data

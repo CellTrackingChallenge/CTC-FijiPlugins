@@ -91,8 +91,7 @@ public class SNR
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the SNR bottom part...");
+		//DEBUG//log.info("Computing the SNR bottom part...");
 		snr = 0.0;
 
 		//shadows of the/short-cuts to the cache data

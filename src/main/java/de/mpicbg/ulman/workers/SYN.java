@@ -92,8 +92,7 @@ public class SYN
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the SYN bottom part...");
+		//DEBUG//log.info("Computing the SYN bottom part...");
 		syn = 0;
 
 		//shadows of the/short-cuts to the cache data

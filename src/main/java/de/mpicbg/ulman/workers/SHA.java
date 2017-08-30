@@ -92,8 +92,7 @@ public class SHA
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the SHA bottom part...");
+		//DEBUG//log.info("Computing the SHA bottom part...");
 		sha = 0.0;
 
 		//shadows of the/short-cuts to the cache data

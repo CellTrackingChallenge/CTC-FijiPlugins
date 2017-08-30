@@ -91,8 +91,7 @@ public class DEN
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the DEN bottom part...");
+		//DEBUG//log.info("Computing the DEN bottom part...");
 		den = 0.0;
 
 		//shadows of the/short-cuts to the cache data

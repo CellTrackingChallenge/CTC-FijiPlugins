@@ -91,7 +91,7 @@ public class CCA
 		}
 
 		//do the bottom stage
-		//DEBUG// log.info("Computing the CCA bottom part...");
+		//DEBUG//log.info("Computing the CCA bottom part...");
 		cca = 0.0;
 
 		//shadows of the/short-cuts to the cache data

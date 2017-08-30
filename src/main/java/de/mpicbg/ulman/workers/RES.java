@@ -91,8 +91,7 @@ public class RES
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the RES bottom part...");
+		//DEBUG//log.info("Computing the RES bottom part...");
 		res = 0.0;
 
 		//shadows of the/short-cuts to the cache data

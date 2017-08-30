@@ -91,8 +91,7 @@ public class HETI
 		}
 
 		//do the bottom stage
-		//DEBUG//
-		log.info("Computing the HETI bottom part...");
+		//DEBUG//log.info("Computing the HETI bottom part...");
 		heti = 0.0;
 
 		//shadows of the/short-cuts to the cache data

@@ -551,7 +551,7 @@ public class TrackDataCache
 	{
 		log.info(" GT path: "+gtPath+"/TRA");
 		log.info("RES path: "+resPath);
-		//DEBUG// log.info("Computing the common upper part...");
+		//DEBUG//log.info("Computing the common upper part...");
 
 		//fill the tracks data
 		LoadTrackFile( gtPath+"/TRA/man_track.txt", gt_tracks);
