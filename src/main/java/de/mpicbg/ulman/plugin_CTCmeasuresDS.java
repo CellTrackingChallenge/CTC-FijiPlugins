@@ -276,8 +276,7 @@ public class plugin_CTCmeasuresDS implements Command
 			if (calcMit)
 			{
 				final MIT mit = new MIT(log);
-				Mit = mit.calculate(imgPath, resolution, annPath, cache);
-				cache = mit .getCache();
+				Mit = mit.calculate(annPath);
 			}
 
 			/*
