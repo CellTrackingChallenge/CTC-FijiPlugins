@@ -18,7 +18,7 @@ import java.util.Vector;
 import java.util.Map;
 import java.util.HashMap;
 
-import de.mpicbg.ulman.workers.ImgQualityDataCache;
+import de.mpicbg.ulman.workers.TrackDataCache;
 
 public class MIT
 {
@@ -35,13 +35,6 @@ public class MIT
 		log = _log;
 	}
 
-	///reference on cache that we used recently
-	private ImgQualityDataCache cache = null;
-
-	///to provide the cache to others/to share it with others
-	public ImgQualityDataCache getCache()
-	{ return (cache); }
-
 
 	// ----------- the MIT essentially starts here -----------
 	//auxiliary data:
@@ -52,53 +45,69 @@ public class MIT
 
 	//---------------------------------------------------------------------/
 	/**
-	 * Measure calculation happens in two stages. The first/upper stage does
-	 * data pre-fetch and calculations to populate the TrackDataCache.
-	 * TrackDataCache.calculate() actually does this job. The sort of
-	 * calculations is such that the other measures could benefit from
-	 * it and re-use it (instead of loading images again and doing some
-	 * calculations again), and the results are stored in the cache.
-	 * The second/bottom stage is measure-specific. It basically finishes
-	 * the measure calculation procedure, possible using data from the cache.
-	 *
-	 * This function is asked to use, if applicable, such cache data
-	 * as the caller believes the given cache is still valid. The measure
-	 * can only carry on with the bottom stage then (thus being overall faster
-	 * than when computing both stages).
-	 *
-	 * The class never re-uses its own cache to allow for fresh complete
-	 * re-calculation on the (new) data in the same folders.
-	 *
 	 * This is the main MIT calculator.
 	 */
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath,
-	                        final ImgQualityDataCache _cache)
-	throws IOException, ImgIOException
+	public double calculate(final String annPath)
+	throws IOException
 	{
-		//invalidate own cache
-		cache = null;
+		//shadows of the/short-cuts to the cache data
+		TrackDataCache cache = new TrackDataCache(log);
+		final HashMap<Integer,Track> ann_tracks = cache.gt_tracks;
 
-		//check we got some hint/cache
-		//and if it fits our input, then use it
-		if (_cache != null && _cache.validFor(imgPath,annPath)) cache = _cache;
-
-		//if no cache is available after all, compute it
-		if (cache == null)
-		{
-			//do the upper stage
-			cache = new ImgQualityDataCache(log);
-			cache.calculate(imgPath, resolution, annPath);
-		}
+		//load our own working data
+		cache.LoadTrackFile(annPath+"/TRA/man_track.txt", ann_tracks);
+		if (ann_tracks.size() == 0)
+			throw new IllegalArgumentException("No reference (GT) track was found!");
 
 		//do the bottom stage
-		//DEBUG//log.info("Computing the MIT bottom part...");
+		//DEBUG//log.info("Computing the MIT completely...");
 		mit = 0.0;
 
+		//detected span of time points
+		int minTime = Integer.MAX_VALUE;
+		int maxTime = Integer.MIN_VALUE;
+
+		//detect the span
+		for (Track t : ann_tracks.values())
+		{
+			minTime = Math.min(minTime, t.m_begin);
+			maxTime = Math.max(maxTime, t.m_end);
+		}
+		//NB: we do not mind negative time points (can happen only with minTime)
+
+		//check before the allocation below
+		if (minTime > maxTime)
+			throw new IllegalArgumentException("Reference (GT) tracks have wrong (negative) time span.");
+
+		//stores, per frame, number of present cells and number of cells
+		//that die here because of division in some next frame
+		int[] populationSize     = new int[maxTime-minTime+1];
+		int[] populationDividers = new int[maxTime-minTime+1];
+
+		//fill populations per frame
+		for (Track t : ann_tracks.values())
+			for (int f = t.m_begin; f <= t.m_end; ++f)
+				++populationSize[f -minTime];
+
 		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-		final Vector<Double> avgBG = cache.avgBG;
-		final Vector<Double> stdBG = cache.stdBG;
+		final Vector<Fork> ann_forks = cache.gt_forks;
+		cache.DetectForks(ann_tracks, ann_forks);
+
+		//fill the dividers array
+		for (Fork f : ann_forks)
+			++populationDividers[ann_tracks.get(f.m_parent_id).m_end -minTime];
+
+		//calculate the average number of dividing cells per frame
+		//........... work in progress .............
+
+
+
+
+
+
+
+
+
 
 		//go over all FG objects and calc their MITs
 		long noFGs = 0;
@@ -123,13 +132,5 @@ public class MIT
 			log.info("MIT: Couldn't calculate average MIT because there are no cells labelled.");
 
 		return (mit);
-	}
-
-	/// This is the wrapper MIT calculator, assuring complete re-calculation.
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath)
-	throws IOException, ImgIOException
-	{
-		return this.calculate(imgPath, resolution, annPath, null);
 	}
 }
