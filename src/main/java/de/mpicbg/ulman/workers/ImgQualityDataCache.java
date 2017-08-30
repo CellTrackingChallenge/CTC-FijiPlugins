@@ -280,8 +280,6 @@ public class ImgQualityDataCache
 	 * with \e maxIters.
 	 */
 	private <T extends IntegerType<T>>
-	//TODO DEBUG REMOVE ME
-	//throws Exception
 	float extractObjectDistance(final Img<T> img, final int curMarker,
 	                            final int maxIters)
 	{
@@ -321,20 +319,6 @@ public class ImgQualityDataCache
 			}
 		}
 		imgCursor = null;
-		//TODO DEBUG REMOVE ME
-		/*
-		String fileName = String.format("%s_t%03d_label%d_dilated0.tif",
-			defaultOutputPrefix,currentFrame,curMarker);
-		try {
-			ij.log().info("Saving file: "+fileName);
-			ImgSaver imgSaver = new ImgSaver();
-			imgSaver.saveImg(fileName, dilIgA);
-		}
-		catch (ImgIOException | IncompatibleTypeException e) {
-			ij.log().error("Error writing file: "+fileName);
-			ij.log().error("Error msg: "+e);
-		}
-		*/
 
 		//current working cursors: "sweep" scans the input image, "out" checks the input image
 		boolean AisInput = true;
@@ -424,21 +408,6 @@ public class ImgQualityDataCache
 				sweepCursor = sweepCursorB;
 				outCursor = outCursorA;
 				AisInput=false;
-
-				//TODO DEBUG REMOVE ME
-				/*
-				fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
-					defaultOutputPrefix,currentFrame,curMarker,iters+1);
-				try {
-					ij.log().info("Saving file: "+fileName);
-					ImgSaver imgSaver = new ImgSaver();
-					imgSaver.saveImg(fileName, dilIgB);
-				}
-				catch (ImgIOException | IncompatibleTypeException e) {
-					ij.log().error("Error writing file: "+fileName);
-					ij.log().error("Error msg: "+e);
-				}
-				*/
 			}
 			else
 			{
@@ -446,45 +415,12 @@ public class ImgQualityDataCache
 				sweepCursor = sweepCursorA;
 				outCursor = outCursorB;
 				AisInput=true;
-				//TODO DEBUG REMOVE ME
-				/*
-				fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
-					defaultOutputPrefix,currentFrame,curMarker,iters+1);
-				try {
-					ij.log().info("Saving file: "+fileName);
-					ImgSaver imgSaver = new ImgSaver();
-					imgSaver.saveImg(fileName, dilIgA);
-				}
-				catch (ImgIOException | IncompatibleTypeException e) {
-					ij.log().error("Error writing file: "+fileName);
-					ij.log().error("Error msg: "+e);
-				}
-				*/
 			}
 
 			//calculates truly a number of iterations (for now)
 			++iters;
 		}
 		while (!hasHit && iters < maxIters);
-
-		//TODO DEBUG REMOVE ME
-		/*
-		//Exports only the situation at final iteration
-		String fileName = String.format("%s_t%03d_label%d_dilated%d.tif",
-			defaultOutputPrefix,currentFrame,curMarker,iters);
-		try {
-			ij.log().info("Saving file: "+fileName);
-			ImgSaver imgSaver = new ImgSaver();
-			if (AisInput)
-				imgSaver.saveImg(fileName, dilIgA);
-			else
-				imgSaver.saveImg(fileName, dilIgB);
-		}
-		catch (ImgIOException | IncompatibleTypeException e) {
-			ij.log().error("Error writing file: "+fileName);
-			ij.log().error("Error msg: "+e);
-		}
-		*/
 
 		//set up the return values
 		if (hasHit)
