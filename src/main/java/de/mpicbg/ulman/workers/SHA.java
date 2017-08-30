@@ -113,6 +113,25 @@ public class SHA
 			}
 		}
 
+
+		//NOTES:
+		//use imagej-ops to convert RAI to DefaultMesh
+		//via: src/main/java/net/imagej/ops/geom/geom3d/DefaultMarchingCubes.java
+		// (need to figure out how binarization is achieved -- see .isolevel and interpolatorClass)
+		//
+		//That seems to be an implementation of http://paulbourke.net/geometry/polygonise/
+		//(which is likely a defacto standard approach, 1st hit on Google at least)
+		//
+		//once image is meshified, go through all facets of the mesh and stretch vertices
+		//according to the current resolution, call mesh.getSurfaceArea() afterwards
+		//
+		//(alternatively, make a copy of the MC class, and change it by
+		// incorporating the resolution directly, see L178-L186)
+		//
+		//some MC is in 3D_Viewer by Ulrik, some MC is done Kyle...
+		//see: https://gitter.im/fiji/fiji/archives/2016/01/22
+
+
 		//finish the calculation of the average
 		if (noFGs > 0)
 		{
