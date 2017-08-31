@@ -37,7 +37,7 @@ import de.mpicbg.ulman.workers.ENTLEAV;
         name = "CTC_DS", headless = true,
 		  description = "Calculates dataset quality measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
+				+"http://www.celltrackingchallenge.net/submission-of-results.html")
 public class plugin_CTCmeasuresDS implements Command
 {
 	//------------- GUI stuff -------------
@@ -77,7 +77,7 @@ public class plugin_CTCmeasuresDS implements Command
 		= "Note that folders has to comply with certain data format, please see";
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterB
-		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
+		= "http://www.celltrackingchallenge.net/submission-of-results.html";
 
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false,

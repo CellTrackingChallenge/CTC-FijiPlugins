@@ -24,7 +24,7 @@ import de.mpicbg.ulman.workers.SEG;
         name = "CTC_ICT", headless = true,
 		  description = "Calculates technical tracking performance measures from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
+				+"http://www.celltrackingchallenge.net/submission-of-results.html")
 public class plugin_CTCmeasuresICT implements Command
 {
 	//------------- GUI stuff -------------
@@ -47,7 +47,7 @@ public class plugin_CTCmeasuresICT implements Command
 		= "Note that folders has to comply with certain data format, please see";
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterB
-		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
+		= "http://www.celltrackingchallenge.net/submission-of-results.html";
 
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false,
@@ -135,7 +135,7 @@ public class plugin_CTCmeasuresICT implements Command
 			System.out.println("GTpath should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt");
 			System.out.println("RESpath should contain result files directly: mask???.tif and res_track.txt");
 			System.out.println("Certain data format is assumed, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html");
+				+"http://www.celltrackingchallenge.net/submission-of-results.html");
 			return;
 		}
 

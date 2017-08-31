@@ -24,7 +24,7 @@ import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
         name = "CTC_AOGM", headless = true,
 		  description = "Calculates the AOGM tracking performance measure from the AOGM paper.\n"
 				+"The plugin assumes certain data format, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html")
+				+"http://www.celltrackingchallenge.net/submission-of-results.html")
 public class plugin_AOGM implements Command
 {
 	//------------- GUI stuff -------------
@@ -47,7 +47,7 @@ public class plugin_AOGM implements Command
 		= "Note that folders has to comply with certain data format, please see";
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterB
-		= "http://www.celltrackingchallenge.net/Submission_of_Results.html";
+		= "http://www.celltrackingchallenge.net/submission-of-results.html";
 
 
 	@Parameter(label = "Penalty preset:",
@@ -173,7 +173,7 @@ public class plugin_AOGM implements Command
 			System.out.println("GTpath should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt");
 			System.out.println("RESpath should contain result files directly: mask???.tif and res_track.txt");
 			System.out.println("Certain data format is assumed, please see\n"
-				+"http://www.celltrackingchallenge.net/Submission_of_Results.html");
+				+"http://www.celltrackingchallenge.net/submission-of-results.html");
 			return;
 		}
 		*/
