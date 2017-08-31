@@ -17,7 +17,6 @@ import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.view.Views;
 import net.imglib2.view.ExtendedRandomAccessibleInterval;
-import net.imglib2.FinalDimensions;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.IntegerType;
@@ -86,13 +85,15 @@ public class ImgQualityDataCache
 			resolution[n] = _res[n];
 	}
 
-	//"time saver" to prevent allocating it over and over again:
-	//for storing coordinates
+	//"time savers" to prevent allocating it over and over again:
+	//for extractObjectDistance(), for storing coordinates
 	private int[] pos = null;
 	private int[] box = null;
-	private float[] boxDistances = null; //only for isotropic boxes 3x3x...x3
-	private FinalDimensions imgSize = null;
-	ArrayImgFactory<FloatType> imgFactory = new ArrayImgFactory<>();
+	//for extractObjectDistance(), only for isotropic boxes 3x3x...x3
+	private float[] boxDistances = null;
+	//for extractObjectDistance(), for calculating distance tranforms per object
+	Img<FloatType> dilIgA = null;
+	Img<FloatType> dilIgB = null;
 
 	/**
 	 * Representation of average & std. deviations within individual
@@ -292,8 +293,9 @@ public class ImgQualityDataCache
 			= Views.extendValue(img, specialBorderMarker);
 
 		//working (float-type) "copies" of the input image
-		final Img<FloatType> dilIgA = imgFactory.create(imgSize, new FloatType());
-		final Img<FloatType> dilIgB = imgFactory.create(imgSize, new FloatType());
+		if (dilIgA == null || dilIgB == null)
+			throw new IllegalArgumentException("Internal error in extractFGObjectStats(), sorry.");
+		//could also check for proper size of the two images vs. img...
 
 		//overlays over the working copies with extended boundary
 		ExtendedRandomAccessibleInterval<FloatType,Img<FloatType>> dilImgA
@@ -310,13 +312,13 @@ public class ImgQualityDataCache
 		//prepare the initial working image
 		Cursor<T> imgCursor = img.localizingCursor();
 		RandomAccess<FloatType> outCursor = outCursorA;
+		int tmp;
 		while (imgCursor.hasNext())
 		{
-			if (imgCursor.next().getInteger() == curMarker)
-			{
-				outCursor.setPosition(imgCursor);
-				outCursor.get().setReal(1.f);
-			}
+			tmp = imgCursor.next().getInteger();
+			outCursor.setPosition(imgCursor);
+			//make sure all voxels are initiated
+			outCursor.get().setReal( tmp == curMarker ? 1.f : 0.f );
 		}
 		imgCursor = null;
 
@@ -691,10 +693,14 @@ public class ImgQualityDataCache
 					boxDistances[i] = (float)Math.sqrt((double)i);
 
 				//creating tmp images of the right size:
-				long[] dims = new long[imgFG.numDimensions()];
-				imgFG.dimensions(dims);
-				imgSize = new FinalDimensions(dims);
+				int[] dims = new int[imgFG.numDimensions()];
+				for (int n=0; n < imgFG.numDimensions(); ++n)
+					dims[n] = (int)imgFG.dimension(n);
+				ArrayImgFactory<FloatType> imgFactory = new ArrayImgFactory<>();
+				dilIgA = imgFactory.create(dims, new FloatType());
+				dilIgB = imgFactory.create(dims, new FloatType());
 				dims = null;
+				imgFactory = null;
 			}
 
 			ClassifyLabels(time, img, imgBG, imgFG, imgFGprev);
