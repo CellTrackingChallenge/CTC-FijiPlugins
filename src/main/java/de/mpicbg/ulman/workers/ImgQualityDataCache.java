@@ -322,6 +322,10 @@ public class ImgQualityDataCache
 		}
 		imgCursor = null;
 
+		//clear the second temp image
+		while (sweepCursorB.hasNext())
+			sweepCursorB.next().setReal(0.f);
+
 		//current working cursors: "sweep" scans the input image, "out" checks the input image
 		boolean AisInput = true;
 		Cursor<FloatType> sweepCursor = sweepCursorA;
