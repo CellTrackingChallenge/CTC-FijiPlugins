@@ -89,39 +89,39 @@ public class plugin_CTCmeasuresDS implements Command
 	private boolean calcSNR = true;
 
 	@Parameter(label = "CR",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average contrast ratio over all annotated cells.")
 	private boolean calcCR = true;
 
 	@Parameter(label = "Heti",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average internal signal heterogeneity of the cells.")
 	private boolean calcHeti = true;
 
 	@Parameter(label = "Hetb",
-		description = "Evaluates the foo.")
+		description = "Evaluates the heterogeneity (as standard deviation) of the signal between cells.")
 	private boolean calcHetb = true;
 
 	@Parameter(label = "Res",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average resolution, measured as the average size of the cells in number of pixels (2D) or voxels (3D).")
 	private boolean calcRes = true;
 
 	@Parameter(label = "Sha",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average regularity of the cell shape, normalized between 0 (completely irregular) and 1 (perfectly regular).")
 	private boolean calcSha = true;
 
 	@Parameter(label = "Den",
-		description = "Evaluates the foo.")
+		description = "Evaluates the cell density measured as average minimum pixel (2D) or voxel (3D) distance between cells.")
 	private boolean calcDen = true;
 
 	@Parameter(label = "Cha",
-		description = "Evaluates the foo.")
+		description = "Evaluates the absolute change of the average intensity of the cells with time.")
 	private boolean calcCha = true;
 
 	@Parameter(label = "Ove",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average level of overlap of the cells in consecutive frames, normalized between 0 (no overlap) and 1 (complete overlap).")
 	private boolean calcOve = true;
 
 	@Parameter(label = "Mit",
-		description = "Evaluates the foo.")
+		description = "Evaluates the average number of division events per frame.")
 	private boolean calcMit = true;
 
 	/*
