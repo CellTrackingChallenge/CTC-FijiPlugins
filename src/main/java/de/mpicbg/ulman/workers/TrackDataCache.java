@@ -11,6 +11,9 @@ package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
 
+import ij.ImagePlus;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+
 import net.imglib2.img.Img;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
@@ -18,12 +21,6 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-
-import io.scif.config.SCIFIOConfig;
-import io.scif.config.SCIFIOConfig.ImgMode;
-import io.scif.img.ImgIOException;
-import io.scif.img.SCIFIOImgPlus;
-import io.scif.img.ImgOpener;
 
 import java.io.File;
 import java.io.IOException;
@@ -207,7 +204,7 @@ public class TrackDataCache
 	/// Loads the given filename AND checks it has appropriate GRAY16 voxel type.
 	@SuppressWarnings("unchecked")
 	public Img<UnsignedShortType> ReadImage(final String fname)
-	throws ImgIOException
+	throws IOException
 	{
 		Img<?> img = __ReadImage(fname);
 
@@ -215,7 +212,7 @@ public class TrackDataCache
 		if (!(img.firstElement() instanceof UnsignedShortType))
 		{
 			log.error("Error reading file: "+fname);
-			throw new ImgIOException("Images are expected to have 16-bit gray voxels.");
+			throw new IOException("Images are expected to have 16-bit gray voxels.");
 		}
 
 		log.info("Loaded image: "+fname);
@@ -225,7 +222,7 @@ public class TrackDataCache
 	/// Loads the given filename AND checks it has appropriate GRAY8 voxel type.
 	@SuppressWarnings("unchecked")
 	public Img<UnsignedByteType> ReadImageG8(final String fname)
-	throws ImgIOException
+	throws IOException
 	{
 		Img<?> img = __ReadImage(fname);
 
@@ -233,44 +230,25 @@ public class TrackDataCache
 		if (!(img.firstElement() instanceof UnsignedByteType))
 		{
 			log.error("Error reading file: "+fname);
-			throw new ImgIOException("Images are expected to have 8-bit gray voxels.");
+			throw new IOException("Images are expected to have 8-bit gray voxels.");
 		}
 
 		log.info("Loaded image: "+fname);
 		return ((Img<UnsignedByteType>)img);
 	}
 
-	private SCIFIOConfig openingRegime = null;
-	private ImgOpener imgOpener = null;
-
 	/// helper loader of images of any voxel type
 	private Img<?> __ReadImage(final String fname)
-	throws ImgIOException
+	throws IOException
 	{
-		//init the "storing regime" of the input images and the loader object
-		if (openingRegime == null)
+		Img<?> img = ImageJFunctions.wrap(new ImagePlus(fname));
+		if (img == null)
 		{
-			openingRegime = new SCIFIOConfig();
-			openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
-			imgOpener = new ImgOpener();
-			//ask the logging system to log only ERRORs for the specific class and its derivatives
-			//as it often pollutes with WARNings regarding badly understood image metadata
-			imgOpener.log().setLevel("io.scif.formats", LogService.ERROR);
-		}
-
-		//the image to be loaded
-		SCIFIOImgPlus<?> img = null;
-
-		//read it
-		try {
-			img = imgOpener.openImgs(fname,openingRegime).get(0);
-		}
-		catch (ImgIOException e) {
 			log.error("Error reading file: "+fname);
-			throw new ImgIOException("Unable to read input file.");
+			throw new IOException("Unable to read input file.");
 		}
 
-		return ((Img<?>)img);
+		return (img);
 	}
 
 
@@ -547,7 +525,7 @@ public class TrackDataCache
 	 * This function computes the common upper stage of measures.
 	 */
 	public void calculate(final String gtPath, final String resPath)
-	throws IOException, ImgIOException
+	throws IOException
 	{
 		log.info(" GT path: "+gtPath+"/TRA");
 		log.info("RES path: "+resPath);

@@ -92,5 +92,15 @@
       <groupId>net.imagej</groupId>
       <artifactId>imagej-ops</artifactId>
     </dependency>
+
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej-legacy</artifactId>
+		</dependency>
+
   </dependencies>
 </project>
