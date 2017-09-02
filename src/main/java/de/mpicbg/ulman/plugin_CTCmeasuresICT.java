@@ -90,35 +90,43 @@ public class plugin_CTCmeasuresICT implements Command
 	@Override
 	public void run()
 	{
-		try {
-			//saves the input paths for the final report table
-			GTdir  = gtPath;
-			RESdir = resPath;
+		//saves the input paths for the final report table
+		GTdir  = gtPath;
+		RESdir = resPath;
 
-			if (calcSEG)
-			{
+		if (calcSEG)
+		{
+			try {
 				final SEG seg = new SEG(log);
 				seg.doLogReports = true;
 				SEG = seg.calculate(gtPath, resPath);
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcTRA)
-			{
+		if (calcTRA)
+		{
+			try {
 				final TRA tra = new TRA(log);
 				tra.doConsistencyCheck = true;
 				tra.doLogReports = true;
 				TRA = tra.calculate(gtPath, resPath);
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			//do not report anything explicitly (unless special format for parsing is
-			//desired) as ItemIO.OUTPUT will make it output automatically
-		}
-		catch (RuntimeException e) {
-			log.error("CTC measures problem: "+e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("CTC measures error: "+e.getMessage());
-		}
+		//do not report anything explicitly (unless special format for parsing is
+		//desired) as ItemIO.OUTPUT will make it output automatically
 	}
 
 

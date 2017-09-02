@@ -194,116 +194,172 @@ public class plugin_CTCmeasuresDS implements Command
 	@Override
 	public void run()
 	{
-		try {
-			//store the resolution information
-			final double[] resolution = new double[3];
-			resolution[0] = xRes;
-			resolution[1] = yRes;
-			resolution[2] = zRes;
+		//store the resolution information
+		final double[] resolution = new double[3];
+		resolution[0] = xRes;
+		resolution[1] = yRes;
+		resolution[2] = zRes;
 
-			//saves the input paths for the final report table
-			IMGdir = imgPath;
-			ANNdir = annPath;
+		//saves the input paths for the final report table
+		IMGdir = imgPath;
+		ANNdir = annPath;
 
-			//reference on a shared object that does
-			//pre-fetching of data and some common pre-calculation
-			ImgQualityDataCache cache = null;
+		//reference on a shared object that does
+		//pre-fetching of data and some common pre-calculation
+		ImgQualityDataCache cache = null;
 
-			//do the calculation and retrieve updated cache afterwards
-			if (calcSNR)
-			{
+		//do the calculation and retrieve updated cache afterwards
+		if (calcSNR)
+		{
+			try {
 				final SNR snr = new SNR(log);
 				SNR = snr.calculate(imgPath, resolution, annPath, cache);
 				cache = snr.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcCR)
-			{
+		if (calcCR)
+		{
+			try {
 				final CR cr = new CR(log);
 				CR = cr.calculate(imgPath, resolution, annPath, cache);
 				cache = cr.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcHeti)
-			{
+		if (calcHeti)
+		{
+			try {
 				final HETI heti = new HETI(log);
 				Heti = heti.calculate(imgPath, resolution, annPath, cache);
 				cache = heti.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcHetb)
-			{
+		if (calcHetb)
+		{
+			try {
 				final HETB hetb = new HETB(log);
 				Hetb = hetb.calculate(imgPath, resolution, annPath, cache);
 				cache = hetb.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcRes)
-			{
+		if (calcRes)
+		{
+			try {
 				final RES res = new RES(log);
 				Res = res.calculate(imgPath, resolution, annPath, cache);
-				cache = res .getCache();
+				cache = res.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcSha)
-			{
+		if (calcSha)
+		{
+			try {
 				final SHA sha = new SHA(log);
 				Sha = sha.calculate(imgPath, resolution, annPath, cache);
-				cache = sha .getCache();
+				cache = sha.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcDen)
-			{
+		if (calcDen)
+		{
+			try {
 				final DEN den = new DEN(log);
 				Den = den.calculate(imgPath, resolution, annPath, cache);
-				cache = den .getCache();
+				cache = den.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcCha)
-			{
+		if (calcCha)
+		{
+			try {
 				final CHA cha = new CHA(log);
 				Cha = cha.calculate(imgPath, resolution, annPath, cache);
-				cache = cha .getCache();
+				cache = cha.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcOve)
-			{
+		if (calcOve)
+		{
+			try {
 				final OVE ove = new OVE(log);
 				Ove = ove.calculate(imgPath, resolution, annPath, cache);
-				cache = ove .getCache();
+				cache = ove.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcMit)
-			{
+		if (calcMit)
+		{
+			try {
 				final MIT mit = new MIT(log);
 				Mit = mit.calculate(annPath);
 			}
-
-			/*
-			if (calcSyn)
-			{
-				final SYN syn = new SYN(log);
-				Syn = syn.calculate(imgPath, resolution, annPath, cache);
-				cache = syn .getCache();
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
 			}
-
-			if (calcEntLeav)
-			{
-				final ENTLEAV entleav = new ENTLEAV(log);
-				EntLeav = entleav.calculate(imgPath, resolution, annPath, cache);
-				cache = entleav.getCache();
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
 			}
-			*/
+		}
 
-			//do not report anything explicitly (unless special format for parsing is
-			//desired) as ItemIO.OUTPUT will make it output automatically
-		}
-		catch (RuntimeException e) {
-			log.error("CTC measures problem: "+e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("CTC measures error: "+e.getMessage());
-		}
+		//do not report anything explicitly (unless special format for parsing is
+		//desired) as ItemIO.OUTPUT will make it output automatically
 	}
 
 

@@ -111,56 +111,77 @@ public class plugin_CTCmeasuresBIO implements Command
 	@Override
 	public void run()
 	{
-		try {
-			//set this one before we start any calculation because
-			//setI() does some tests on validity of iForBCi
-			final BCi bci = new BCi(log);
-			if (calcBCi) bci.setI(iForBCi);
+		//saves the input paths for the final report table
+		GTdir  = gtPath;
+		RESdir = resPath;
 
-			//saves the input paths for the final report table
-			GTdir  = gtPath;
-			RESdir = resPath;
+		//reference on a shared object that does
+		//pre-fetching of data and some common pre-calculation
+		TrackDataCache cache = null;
 
-			//reference on a shared object that does
-			//pre-fetching of data and some common pre-calculation
-			TrackDataCache cache = null;
-
-			if (calcCT )
-			{
-				final CT  ct  = new CT(log);
+		if (calcCT )
+		{
+			try {
+				final CT ct = new CT(log);
 				CT = ct.calculate(gtPath, resPath, cache);
 				cache = ct.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcTF )
-			{
-				final TF  tf  = new TF(log);
+		if (calcTF )
+		{
+			try {
+				final TF tf = new TF(log);
 				TF = tf.calculate(gtPath, resPath, cache);
 				cache = tf.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcBCi)
-			{
+		if (calcBCi)
+		{
+			try {
+				final BCi bci = new BCi(log);
+				if (calcBCi) bci.setI(iForBCi);
 				BCi = bci.calculate(gtPath, resPath, cache);
 				cache = bci.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			if (calcCCA)
-			{
+		if (calcCCA)
+		{
+			try {
 				final CCA cca = new CCA(log);
 				CCA = cca.calculate(gtPath, resPath, cache);
 				cache = cca.getCache();
 			}
+			catch (RuntimeException e) {
+				log.error("CTC measures problem: "+e.getMessage());
+			}
+			catch (Exception e) {
+				log.error("CTC measures error: "+e.getMessage());
+			}
+		}
 
-			//do not report anything explicitly (unless special format for parsing is
-			//desired) as ItemIO.OUTPUT will make it output automatically
-		}
-		catch (RuntimeException e) {
-			log.error("CTC measures problem: "+e.getMessage());
-		}
-		catch (Exception e) {
-			log.error("CTC measures error: "+e.getMessage());
-		}
+		//do not report anything explicitly (unless special format for parsing is
+		//desired) as ItemIO.OUTPUT will make it output automatically
 	}
 
 
