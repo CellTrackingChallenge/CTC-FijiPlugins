@@ -17,6 +17,9 @@ import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
+import org.scijava.widget.FileWidget;
+import java.io.File;
+
 import de.mpicbg.ulman.workers.TRA;
 import de.mpicbg.ulman.workers.SEG;
 
@@ -33,14 +36,14 @@ public class plugin_CTCmeasuresICT implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to computed result folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
-	private String resPath;
+	private File resPath;
 
 	@Parameter(label = "Path to ground-truth folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
+	private File gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -73,9 +76,9 @@ public class plugin_CTCmeasuresICT implements Command
 
 	//hidden output values
 	@Parameter(type = ItemIO.OUTPUT)
-	String GTdir;
-	@Parameter(type = ItemIO.OUTPUT)
 	String RESdir;
+	@Parameter(type = ItemIO.OUTPUT)
+	String GTdir;
 	@Parameter(type = ItemIO.OUTPUT)
 	String sep = "--------------------";
 
@@ -91,15 +94,15 @@ public class plugin_CTCmeasuresICT implements Command
 	public void run()
 	{
 		//saves the input paths for the final report table
-		GTdir  = gtPath;
-		RESdir = resPath;
+		GTdir  = gtPath.getPath();
+		RESdir = resPath.getPath();
 
 		if (calcSEG)
 		{
 			try {
 				final SEG seg = new SEG(log);
 				seg.doLogReports = true;
-				SEG = seg.calculate(gtPath, resPath);
+				SEG = seg.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {
 				log.error("CTC SEG measure problem: "+e.getMessage());
@@ -115,7 +118,7 @@ public class plugin_CTCmeasuresICT implements Command
 				final TRA tra = new TRA(log);
 				tra.doConsistencyCheck = true;
 				tra.doLogReports = true;
-				TRA = tra.calculate(gtPath, resPath);
+				TRA = tra.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {
 				log.error("CTC TRA measure problem: "+e.getMessage());

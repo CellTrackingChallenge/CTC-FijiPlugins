@@ -17,6 +17,9 @@ import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
+import org.scijava.widget.FileWidget;
+import java.io.File;
+
 import de.mpicbg.ulman.workers.ImgQualityDataCache;
 import de.mpicbg.ulman.workers.SNR;
 import de.mpicbg.ulman.workers.CR;
@@ -46,9 +49,9 @@ public class plugin_CTCmeasuresDS implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to images folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain cell image files directly: t???.tif")
-	private String imgPath;
+	private File imgPath;
 
 	@Parameter(label = "Resolution (um/px) of the images, x-axis:",
 		min = "0.0001", stepSize = "0.1",
@@ -66,11 +69,11 @@ public class plugin_CTCmeasuresDS implements Command
 	double zRes = 1.0;
 
 	@Parameter(label = "Path to annotations folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain folders BG and TRA and annotation files: "
 			+ "BG/mask???.tif, TRA/man_track???.tif and man_track.txt. "
 			+ "The TRA/man_track???.tif must provide realistic masks of cells (not just blobs representing centres etc.).")
-	private String annPath;
+	private File annPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -201,8 +204,8 @@ public class plugin_CTCmeasuresDS implements Command
 		resolution[2] = zRes;
 
 		//saves the input paths for the final report table
-		IMGdir = imgPath;
-		ANNdir = annPath;
+		IMGdir = imgPath.getPath();
+		ANNdir = annPath.getPath();
 
 		//reference on a shared object that does
 		//pre-fetching of data and some common pre-calculation
@@ -213,7 +216,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final SNR snr = new SNR(log);
-				SNR = snr.calculate(imgPath, resolution, annPath, cache);
+				SNR = snr.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = snr.getCache();
 			}
 			catch (RuntimeException e) {
@@ -228,7 +231,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final CR cr = new CR(log);
-				CR = cr.calculate(imgPath, resolution, annPath, cache);
+				CR = cr.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = cr.getCache();
 			}
 			catch (RuntimeException e) {
@@ -243,7 +246,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final HETI heti = new HETI(log);
-				Heti = heti.calculate(imgPath, resolution, annPath, cache);
+				Heti = heti.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = heti.getCache();
 			}
 			catch (RuntimeException e) {
@@ -258,7 +261,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final HETB hetb = new HETB(log);
-				Hetb = hetb.calculate(imgPath, resolution, annPath, cache);
+				Hetb = hetb.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = hetb.getCache();
 			}
 			catch (RuntimeException e) {
@@ -273,7 +276,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final RES res = new RES(log);
-				Res = res.calculate(imgPath, resolution, annPath, cache);
+				Res = res.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = res.getCache();
 			}
 			catch (RuntimeException e) {
@@ -288,7 +291,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final SHA sha = new SHA(log);
-				Sha = sha.calculate(imgPath, resolution, annPath, cache);
+				Sha = sha.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = sha.getCache();
 			}
 			catch (RuntimeException e) {
@@ -303,7 +306,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final DEN den = new DEN(log);
-				Den = den.calculate(imgPath, resolution, annPath, cache);
+				Den = den.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = den.getCache();
 			}
 			catch (RuntimeException e) {
@@ -318,7 +321,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final CHA cha = new CHA(log);
-				Cha = cha.calculate(imgPath, resolution, annPath, cache);
+				Cha = cha.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = cha.getCache();
 			}
 			catch (RuntimeException e) {
@@ -333,7 +336,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final OVE ove = new OVE(log);
-				Ove = ove.calculate(imgPath, resolution, annPath, cache);
+				Ove = ove.calculate(IMGdir, resolution, ANNdir, cache);
 				cache = ove.getCache();
 			}
 			catch (RuntimeException e) {
@@ -348,7 +351,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final MIT mit = new MIT(log);
-				Mit = mit.calculate(annPath);
+				Mit = mit.calculate(ANNdir);
 			}
 			catch (RuntimeException e) {
 				log.error("CTC Mit measure problem: "+e.getMessage());

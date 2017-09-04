@@ -17,6 +17,9 @@ import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
+import org.scijava.widget.FileWidget;
+import java.io.File;
+
 import de.mpicbg.ulman.workers.TrackDataCache;
 import de.mpicbg.ulman.workers.CT;
 import de.mpicbg.ulman.workers.TF;
@@ -36,14 +39,14 @@ public class plugin_CTCmeasuresBIO implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to computed result folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
-	private String resPath;
+	private File resPath;
 
 	@Parameter(label = "Path to ground-truth folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
+	private File gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -88,9 +91,9 @@ public class plugin_CTCmeasuresBIO implements Command
 
 	//hidden output values
 	@Parameter(type = ItemIO.OUTPUT)
-	String GTdir;
-	@Parameter(type = ItemIO.OUTPUT)
 	String RESdir;
+	@Parameter(type = ItemIO.OUTPUT)
+	String GTdir;
 	@Parameter(type = ItemIO.OUTPUT)
 	String sep = "--------------------";
 
@@ -112,8 +115,8 @@ public class plugin_CTCmeasuresBIO implements Command
 	public void run()
 	{
 		//saves the input paths for the final report table
-		GTdir  = gtPath;
-		RESdir = resPath;
+		GTdir  = gtPath.getPath();
+		RESdir = resPath.getPath();
 
 		//reference on a shared object that does
 		//pre-fetching of data and some common pre-calculation
@@ -123,7 +126,7 @@ public class plugin_CTCmeasuresBIO implements Command
 		{
 			try {
 				final CT ct = new CT(log);
-				CT = ct.calculate(gtPath, resPath, cache);
+				CT = ct.calculate(GTdir, RESdir, cache);
 				cache = ct.getCache();
 			}
 			catch (RuntimeException e) {
@@ -138,7 +141,7 @@ public class plugin_CTCmeasuresBIO implements Command
 		{
 			try {
 				final TF tf = new TF(log);
-				TF = tf.calculate(gtPath, resPath, cache);
+				TF = tf.calculate(GTdir, RESdir, cache);
 				cache = tf.getCache();
 			}
 			catch (RuntimeException e) {
@@ -154,7 +157,7 @@ public class plugin_CTCmeasuresBIO implements Command
 			try {
 				final BCi bci = new BCi(log);
 				if (calcBCi) bci.setI(iForBCi);
-				BCi = bci.calculate(gtPath, resPath, cache);
+				BCi = bci.calculate(GTdir, RESdir, cache);
 				cache = bci.getCache();
 			}
 			catch (RuntimeException e) {
@@ -169,7 +172,7 @@ public class plugin_CTCmeasuresBIO implements Command
 		{
 			try {
 				final CCA cca = new CCA(log);
-				CCA = cca.calculate(gtPath, resPath, cache);
+				CCA = cca.calculate(GTdir, RESdir, cache);
 				cache = cca.getCache();
 			}
 			catch (RuntimeException e) {
