@@ -102,10 +102,10 @@ public class plugin_CTCmeasuresICT implements Command
 				SEG = seg.calculate(gtPath, resPath);
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC SEG measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC SEG measure error: "+e.getMessage());
 			}
 		}
 
@@ -118,10 +118,10 @@ public class plugin_CTCmeasuresICT implements Command
 				TRA = tra.calculate(gtPath, resPath);
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC TRA measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC TRA measure error: "+e.getMessage());
 			}
 		}
 

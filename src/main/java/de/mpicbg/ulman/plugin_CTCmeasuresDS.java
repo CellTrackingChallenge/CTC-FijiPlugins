@@ -217,10 +217,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = snr.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC SNR measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC SNR measure error: "+e.getMessage());
 			}
 		}
 
@@ -232,10 +232,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = cr.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC CR measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC CR measure error: "+e.getMessage());
 			}
 		}
 
@@ -247,10 +247,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = heti.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Heti measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Heti measure error: "+e.getMessage());
 			}
 		}
 
@@ -262,10 +262,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = hetb.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Hetb measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Hetb measure error: "+e.getMessage());
 			}
 		}
 
@@ -277,10 +277,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = res.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Res measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Res measure error: "+e.getMessage());
 			}
 		}
 
@@ -292,10 +292,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = sha.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Sha measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Sha measure error: "+e.getMessage());
 			}
 		}
 
@@ -307,10 +307,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = den.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Den measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Den measure error: "+e.getMessage());
 			}
 		}
 
@@ -322,10 +322,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = cha.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Cha measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Cha measure error: "+e.getMessage());
 			}
 		}
 
@@ -337,10 +337,10 @@ public class plugin_CTCmeasuresDS implements Command
 				cache = ove.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Ove measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Ove measure error: "+e.getMessage());
 			}
 		}
 
@@ -351,10 +351,10 @@ public class plugin_CTCmeasuresDS implements Command
 				Mit = mit.calculate(annPath);
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC Mit measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC Mit measure error: "+e.getMessage());
 			}
 		}
 

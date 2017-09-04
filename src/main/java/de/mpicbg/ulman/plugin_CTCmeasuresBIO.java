@@ -127,10 +127,10 @@ public class plugin_CTCmeasuresBIO implements Command
 				cache = ct.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC CT measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC CT measure error: "+e.getMessage());
 			}
 		}
 
@@ -142,10 +142,10 @@ public class plugin_CTCmeasuresBIO implements Command
 				cache = tf.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC TF measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC TF measure error: "+e.getMessage());
 			}
 		}
 
@@ -158,10 +158,10 @@ public class plugin_CTCmeasuresBIO implements Command
 				cache = bci.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC BC(i) measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC BC(i) measure error: "+e.getMessage());
 			}
 		}
 
@@ -173,10 +173,10 @@ public class plugin_CTCmeasuresBIO implements Command
 				cache = cca.getCache();
 			}
 			catch (RuntimeException e) {
-				log.error("CTC measures problem: "+e.getMessage());
+				log.error("CTC CCA measure problem: "+e.getMessage());
 			}
 			catch (Exception e) {
-				log.error("CTC measures error: "+e.getMessage());
+				log.error("CTC CCA measure error: "+e.getMessage());
 			}
 		}
 
