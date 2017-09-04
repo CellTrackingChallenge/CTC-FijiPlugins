@@ -17,6 +17,9 @@ import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
 import net.imagej.ImageJ;
 
+import org.scijava.widget.FileWidget;
+import java.io.File;
+
 import de.mpicbg.ulman.workers.TRA;
 import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
 
@@ -33,14 +36,14 @@ public class plugin_AOGM implements Command
 	private LogService log;
 
 	@Parameter(label = "Path to computed result folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
-	private String resPath;
+	private File resPath;
 
 	@Parameter(label = "Path to ground-truth folder:",
-		columns = 40,
+		columns = 40, style = FileWidget.DIRECTORY_STYLE,
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
-	private String gtPath;
+	private File gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
 	private final String pathFooterA
@@ -145,7 +148,7 @@ public class plugin_AOGM implements Command
 			tra.penalty = penalty;
 
 			//do the calculation
-			AOGM = tra.calculate(gtPath,resPath);
+			AOGM = tra.calculate(gtPath.getPath(),resPath.getPath());
 
 			//do not report anything explicitly (unless special format for parsing is
 			//desired) as ItemIO.OUTPUT will make it output automatically
