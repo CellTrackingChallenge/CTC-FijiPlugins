@@ -378,8 +378,6 @@ public class TrackDataCache
 		//check the images are not completely blank
 		if (level.m_gt_lab.length == 0)
 			throw new IllegalArgumentException("GT image has no markers!");
-		if (level.m_res_lab.length == 0)
-			throw new IllegalArgumentException("RES image has no markers!");
 
 		//we don't need this one anymore
 		gt_hist.clear();
