@@ -84,6 +84,10 @@ public class machineGTViaMarkers_Worker
 		//now, try to load the input images
 		final SCIFIOConfig openingRegime = new SCIFIOConfig();
 		openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
+		//create and silence image loader routines
+		final ImgOpener imgOpener = new ImgOpener();
+		imgOpener.log().setLevel("io.scif.formats", LogService.ERROR);
+
 		SCIFIOImgPlus<?> img = null;
 
 		//load all of them
@@ -92,7 +96,6 @@ public class machineGTViaMarkers_Worker
 			try {
 				//load the image
 				log.info("Reading pair: "+args[2*i]+" "+args[2*i +1]);
-				ImgOpener imgOpener = new ImgOpener();
 				img = imgOpener.openImgs(args[2*i],openingRegime).get(0);
 
 				//check the type of the image (the combineGTs plug-in requires RealType<>)
@@ -132,9 +135,12 @@ public class machineGTViaMarkers_Worker
 					ops.create().img(inImgs.get(0), new UnsignedShortType()));
 
 		//setup the debug image filename
+		/*
 		String newName = args[args.length-1];
 		final int dotSeparatorIdx = newName.lastIndexOf(".");
 		newName = new String(newName.substring(0, dotSeparatorIdx)+"__DBG"+newName.substring(dotSeparatorIdx));
+		*/
+		final String newName = null;
 
 		//NB: we have checked that images are of RealType<?> in the loading loop,
 		//    so we know we can cast to raw type to be able to call the combineGTs()

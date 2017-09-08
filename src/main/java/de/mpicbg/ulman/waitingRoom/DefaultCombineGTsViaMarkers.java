@@ -387,7 +387,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//save now a debug image
 		try {
-			if (dbgImgFileName.length() > 0)
+			if (dbgImgFileName != null && dbgImgFileName.length() > 0)
 			{
 				ImgSaver imgSaver = new ImgSaver();
 				imgSaver.saveImg(dbgImgFileName, outImg);
