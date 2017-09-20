@@ -168,6 +168,43 @@ public class TrackDataCache
 		 */
 		int[] m_match = null;
 
+		/// prints out the current matching matrix on a terminal
+		public void PrintMatchingMatrix()
+		{
+			//first, read-out all GT labels and sort them
+			Vector<Integer> GTlabs = new Vector<>(m_gt_lab.length);
+			for (int l : m_gt_lab) GTlabs.add(l);
+			GTlabs.sort(null);
+
+			//second, the same for RES labels
+			Vector<Integer> RESlabs = new Vector<>(m_res_lab.length);
+			for (int l : m_res_lab) RESlabs.add(l);
+			RESlabs.sort(null);
+
+			//print the first "header" line
+			System.out.print(this.m_level+":\t");
+			for (int gt : GTlabs)
+				System.out.print(gt+"\t");
+			System.out.println();
+
+			//print for every RES:
+			final int m_match_lineSize = m_gt_lab.length;
+			for (int res : RESlabs)
+			{
+				System.out.print(res+":\t");
+				for (int gt : GTlabs)
+				{
+					System.out.print(
+						m_match[ gt_findLabel(gt) + m_match_lineSize*res_findLabel(res) ]
+						+"\t");
+				}
+				System.out.println();
+			}
+
+			//put "separation" empty line
+			System.out.println();
+		}
+
 		/**
 		 * Indices of reference vertex matching, i.e., it is of the same length
 		 * as m_gt_lab and it holds indices into the m_res_lab.
