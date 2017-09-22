@@ -69,9 +69,12 @@ public class TF
 		final int[] gt_ids = new int[gt_tracks.size()];
 
 		int i = 0;
-		for (Integer id : gt_tracks.keySet())
+		//for (Integer id : gt_tracks.keySet())
+		Vector<Integer> sortedIDs = new Vector<>(gt_tracks.keySet());
+		sortedIDs.sort(null);
+		for (Integer id : sortedIDs)
 		{
-			//NB: enumerates GT IDs in some undefined order
+			//NB: enumerates GT IDs in defined order (from the smallest to the largest)
 			//NB: (and we need to scan gt_tracks repeatedly, always in the same order)
 			gt_correct[i] = false;
 			gt_ids[i] = id;
@@ -81,8 +84,13 @@ public class TF
 		}
 
 		//now, over all RES tracks and look for appropriate, not yet reconstructed GT track
-		for (Track res_track : res_tracks.values())
+		//for (Track res_track : res_tracks.values())
+		sortedIDs = new Vector<>(res_tracks.keySet());
+		sortedIDs.sort(null);
+		for (Integer id : sortedIDs)
 		{
+			final Track res_track = res_tracks.get(id);
+
 			//scan over all GT tracks ...
 			for (i = 0; i < gt_correct.length; ++i)
 			{
@@ -169,7 +177,9 @@ public class TF
 						gt_startingRatio.put(gt_ids[i],0.f);
 						gt_followedRatio.put(gt_ids[i],1.f);
 						gt_correct[i] = true;
-						//break;
+						//should be commented out to continue searching for other GTs
+						//that can this RES track satisfy/discover/reconstruct
+						break;
 					}
 					else
 					{
