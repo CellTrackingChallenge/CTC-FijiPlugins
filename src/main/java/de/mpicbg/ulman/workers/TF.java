@@ -169,12 +169,14 @@ public class TF
 						gt_startingRatio.put(gt_ids[i],0.f);
 						gt_followedRatio.put(gt_ids[i],1.f);
 						gt_correct[i] = true;
-						break;
+						//break;
 					}
-
-					//save the (updated) so far the best progress
-					gt_startingRatio.put(gt_ids[i],bestStartPos);
-					gt_followedRatio.put(gt_ids[i],bestFraction);
+					else
+					{
+						//save the (updated) so far the best progress
+						gt_startingRatio.put(gt_ids[i],bestStartPos);
+						gt_followedRatio.put(gt_ids[i],bestFraction);
+					}
 				}
 			}
 		}
