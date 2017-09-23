@@ -210,6 +210,7 @@ public class ImgQualityDataCache
 		//working copy of the input cursor, this one drives the image sweeping
 		//sweep the image and search for this object/marker
 		final Cursor<T> rawCursor = imgPosition.copyCursor();
+		rawCursor.reset();
 		while (rawCursor.hasNext())
 		{
 			rawCursor.next();
@@ -284,6 +285,7 @@ public class ImgQualityDataCache
 		//return value...
 		long count = 0;
 
+		rawCursor.reset();
 		while (rawCursor.hasNext())
 		{
 			rawCursor.next();
