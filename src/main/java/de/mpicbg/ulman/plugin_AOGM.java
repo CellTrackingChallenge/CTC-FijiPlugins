@@ -45,10 +45,10 @@ public class plugin_AOGM implements Command
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterB
 		= "http://www.celltrackingchallenge.net/submission-of-results.html";
 
@@ -88,13 +88,13 @@ public class plugin_AOGM implements Command
 
 
 	//citation footer...
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = "Please, cite us:")
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
 	private final String citationFooterA
 		= "Matula P, Maška M, Sorokin DV, Matula P, Ortiz-de-Solórzano C, Kozubek M.";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = ":")
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
 	private final String citationFooterB
 		= "Cell tracking accuracy measurement based on comparison of acyclic";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, label = ":")
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
 	private final String citationFooterC
 		= "oriented graphs. PloS one. 2015 Dec 18;10(12):e0144959.";
 

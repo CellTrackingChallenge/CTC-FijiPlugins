@@ -56,11 +56,11 @@ public class machineGTViaMarkers implements Command
 	private UIService uiService;
 
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String headerA =
 		"Please, provide a path to a job specification file (see below), and fill required parameters.";
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String headerB =
 		"Check the status bar (in the main Fiji window) for hint messages.";
 
@@ -72,16 +72,16 @@ public class machineGTViaMarkers implements Command
 			callback = "mergeModelChanged")
 	private String mergeModel;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private String fileInfoA = "The job file should list one input filename pattern per line.";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private String fileInfoB = "The job file should end with tracking markers filename pattern.";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private String fileInfoC = " ";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private String fileInfoD = "Threshold value is required now.";
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String fileInfoE =
 		 "The filename pattern is a full path to a file that includes XXX where "
 		+"numbers should be substituted.";

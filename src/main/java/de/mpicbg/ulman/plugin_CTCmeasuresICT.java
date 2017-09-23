@@ -45,15 +45,15 @@ public class plugin_CTCmeasuresICT implements Command
 		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterB
 		= "http://www.celltrackingchallenge.net/submission-of-results.html";
 
 
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false,
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "Select measures to calculate:")
 	private final String measuresHeader = "";
 
@@ -68,7 +68,7 @@ public class plugin_CTCmeasuresICT implements Command
 
 	//citation footer...
 	/*
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false)
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String citationFooter
 		= "Please, cite us.... TBA";
 	*/
