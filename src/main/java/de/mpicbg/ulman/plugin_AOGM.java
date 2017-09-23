@@ -23,7 +23,7 @@ import java.io.File;
 import de.mpicbg.ulman.workers.TRA;
 import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
 
-@Plugin(type = Command.class, menuPath = "Plugins>AOGM tracking measure",
+@Plugin(type = Command.class, menuPath = "Plugins>Tracking>AOGM: Tracking measure",
         name = "CTC_AOGM", headless = true,
 		  description = "Calculates the AOGM tracking performance measure from the AOGM paper.\n"
 				+"The plugin assumes certain data format, please see\n"
