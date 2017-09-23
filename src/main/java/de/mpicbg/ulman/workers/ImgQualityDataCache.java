@@ -515,8 +515,9 @@ public class ImgQualityDataCache
 	}
 
 
-	public void ClassifyLabels(final int time,
-	                           IterableInterval<UnsignedShortType> imgRaw,
+	public <T extends RealType<T>>
+	void ClassifyLabels(final int time,
+	                           IterableInterval<T> imgRaw,
 	                           RandomAccessibleInterval<UnsignedByteType> imgBG,
 	                           Img<UnsignedShortType> imgFG,
 	                           RandomAccessibleInterval<UnsignedShortType> imgFGprev)
@@ -560,7 +561,7 @@ public class ImgQualityDataCache
 		double valShift=-1.;
 
 		//sweeping variables:
-		final Cursor<UnsignedShortType> rawCursor = imgRaw.localizingCursor();
+		final Cursor<T> rawCursor = imgRaw.localizingCursor();
 		final RandomAccess<UnsignedByteType> bgCursor = imgBG.randomAccess();
 		final RandomAccess<UnsignedShortType> fgCursor = imgFG.randomAccess();
 
@@ -701,7 +702,7 @@ public class ImgQualityDataCache
 			new File(String.format("%s/t%03d.tif",imgPath,time)).toPath()))
 		{
 			//read the image tripple (raw image, FG labels, BG label)
-			Img<UnsignedShortType> img
+			Img<?> img
 				= tCache.ReadImage(String.format("%s/t%03d.tif",imgPath,time));
 
 			Img<UnsignedShortType> imgFG
@@ -737,7 +738,7 @@ public class ImgQualityDataCache
 				imgFactory = null;
 			}
 
-			ClassifyLabels(time, img, imgBG, imgFG, imgFGprev);
+			ClassifyLabels(time, (IterableInterval)img, imgBG, imgFG, imgFGprev);
 
 			imgFGprev = null; //be explicit that we do not want this in memory anymore
 			imgFGprev = imgFG;
