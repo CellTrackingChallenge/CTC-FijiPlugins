@@ -135,7 +135,7 @@ public class TRA
 	 * Internal test of GT data sanity mainly to alleviate for heavy bound checking etc.
 	 * during the TRA/AOGM calculation.
 	 */
-	private void CheckConsistency(final Vector<TemporalLevel> levels,
+	public void CheckConsistency(final Vector<TemporalLevel> levels,
 		final Map<Integer,Track> tracks,
 		final boolean isGTcheck)
 	{
