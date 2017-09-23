@@ -1,1 +1,1 @@
-~/Fiji.app/ImageJ-linux64 --headless --run "Tracking performance measures" "gtPath=\"$1\",resPath=\"$2\",calcTRA=true,calcSEG=true,calcCT=true,calcTF=true,calcBCi=true,iForBCi=2,calcCCA=true,pathFooterA=[],pathFooterB=[],measuresHeader=[],citationFooter=[]" 2>&1 | grep INFO > `mktemp -u OUTPUT_XXXX.txt`
+~/Fiji.app/ImageJ-linux64 --headless --run "Tracking performance measures" "gtPath=\"$1\",resPath=\"$2\",calcTRA=true,calcSEG=true,calcCT=true,calcTF=true,calcBCi=true,iForBCi=2,calcCCA=true" 2>&1 | grep INFO > `mktemp -u OUTPUT_XXXX.txt`
