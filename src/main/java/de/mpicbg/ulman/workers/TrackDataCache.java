@@ -289,10 +289,10 @@ public class TrackDataCache
 
 	/// Loads the given filename AND checks it has appropriate GRAY16 voxel type.
 	@SuppressWarnings("unchecked")
-	public Img<UnsignedShortType> ReadImage(final String fname)
+	public Img<UnsignedShortType> ReadImageG16(final String fname)
 	throws IOException
 	{
-		Img<?> img = __ReadImage(fname);
+		Img<?> img = ReadImage(fname);
 
 		//check input file for the appropriate type
 		if (!(img.firstElement() instanceof UnsignedShortType))
@@ -301,7 +301,6 @@ public class TrackDataCache
 			throw new IOException("Images are expected to have 16-bit gray voxels.");
 		}
 
-		log.info("Loaded image: "+fname);
 		return ((Img<UnsignedShortType>)img);
 	}
 
@@ -310,7 +309,7 @@ public class TrackDataCache
 	public Img<UnsignedByteType> ReadImageG8(final String fname)
 	throws IOException
 	{
-		Img<?> img = __ReadImage(fname);
+		Img<?> img = ReadImage(fname);
 
 		//check input file for the appropriate type
 		if (!(img.firstElement() instanceof UnsignedByteType))
@@ -319,12 +318,11 @@ public class TrackDataCache
 			throw new IOException("Images are expected to have 8-bit gray voxels.");
 		}
 
-		log.info("Loaded image: "+fname);
 		return ((Img<UnsignedByteType>)img);
 	}
 
 	/// helper loader of images of any voxel type
-	private Img<?> __ReadImage(final String fname)
+	public Img<?> ReadImage(final String fname)
 	throws IOException
 	{
 		Img<?> img = ImageJFunctions.wrap(new ImagePlus(fname));
@@ -334,6 +332,7 @@ public class TrackDataCache
 			throw new IOException("Unable to read input file.");
 		}
 
+		log.info("Loaded image: "+fname);
 		return (img);
 	}
 
@@ -628,10 +627,10 @@ public class TrackDataCache
 		{
 			//read the image pair
 			Img<UnsignedShortType> gt_img
-				= ReadImage(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
+				= ReadImageG16(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
 
 			Img<UnsignedShortType> res_img
-				= ReadImage(String.format("%s/mask%03d.tif",resPath,time));
+				= ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
 
 			ClassifyLabels(gt_img, res_img);
 			++time;

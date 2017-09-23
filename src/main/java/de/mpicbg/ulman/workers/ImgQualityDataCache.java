@@ -674,6 +674,7 @@ public class ImgQualityDataCache
 	 *
 	 * This function computes the common upper stage of measures.
 	 */
+	@SuppressWarnings({"unchecked","rawtypes"})
 	public void calculate(final String imgPath, final double[] resolution,
 	                      final String annPath)
 	throws IOException, ImgIOException
@@ -704,7 +705,7 @@ public class ImgQualityDataCache
 				= tCache.ReadImage(String.format("%s/t%03d.tif",imgPath,time));
 
 			Img<UnsignedShortType> imgFG
-				= tCache.ReadImage(String.format("%s/TRA/man_track%03d.tif",annPath,time));
+				= tCache.ReadImageG16(String.format("%s/TRA/man_track%03d.tif",annPath,time));
 
 			Img<UnsignedByteType> imgBG
 				= tCache.ReadImageG8(String.format("%s/BG/mask%03d.tif",annPath,time));

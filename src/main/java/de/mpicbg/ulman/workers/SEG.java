@@ -122,10 +122,10 @@ public class SEG
 
 			//read the image pair
 			IterableInterval<UnsignedShortType> gt_img
-				= cache.ReadImage(file.toString());
+				= cache.ReadImageG16(file.toString());
 
 			RandomAccessibleInterval<UnsignedShortType> res_img
-				= cache.ReadImage(String.format("%s/mask%03d.tif",resPath,time));
+				= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
 
 			//check that slice "extracting" can make sense (the 3rd dim must be present)
 			if (slice > -1 && res_img.numDimensions() <= 2)
