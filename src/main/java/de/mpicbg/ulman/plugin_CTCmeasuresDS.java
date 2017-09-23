@@ -209,7 +209,13 @@ public class plugin_CTCmeasuresDS implements Command
 
 		//reference on a shared object that does
 		//pre-fetching of data and some common pre-calculation
-		ImgQualityDataCache cache = null;
+		//
+		//create an "empty" object and tell it what features we wanna calculate,
+		//the first measure to be calculated will recognize that this object does not fit
+		//and will make a new one that fits and will retain the flags of demanded features
+		ImgQualityDataCache cache = new ImgQualityDataCache(log);
+		if (calcDen) cache.doDensityPrecalculation = true;
+		if (calcSha) cache.doShapePrecalculation = true;
 
 		//do the calculation and retrieve updated cache afterwards
 		if (calcSNR)

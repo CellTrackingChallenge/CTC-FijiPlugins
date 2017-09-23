@@ -86,7 +86,7 @@ public class HETI
 		if (cache == null)
 		{
 			//do the upper stage
-			cache = new ImgQualityDataCache(log);
+			cache = new ImgQualityDataCache(log, _cache);
 			cache.calculate(imgPath, resolution, annPath);
 		}
 

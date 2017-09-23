@@ -39,6 +39,14 @@ public class ImgQualityDataCache
 	///shortcuts to some Fiji services
 	private final LogService log;
 
+	/**
+	 * flag to notify ClassifyLabels() if to call extractObjectDistance()
+	 * (which will be called in addition to extractFGObjectStats())
+	 */
+	public boolean doDensityPrecalculation = false;
+	///flag to notify extractFGObjectStats() if to bother itself with surface mesh
+	public boolean doShapePrecalculation = false;
+
 	///a constructor requiring connection to Fiji report/log services
 	public ImgQualityDataCache(final LogService _log)
 	{
@@ -47,6 +55,28 @@ public class ImgQualityDataCache
 			throw new NullPointerException("No log service supplied.");
 
 		log = _log;
+	}
+
+	/**
+	 * a constructor requiring connection to Fiji report/log services;
+	 * this constructor preserves demanded feature flags as they are
+	 * given in the foreign \e _cache; \e _cache can be null and then
+	 * nothing is preserved
+	 */
+	public ImgQualityDataCache(final LogService _log, final ImgQualityDataCache _cache)
+	{
+		//check that non-null was given for _log!
+		if (_log == null)
+			throw new NullPointerException("No log service supplied.");
+
+		log = _log;
+
+		if (_cache != null)
+		{
+			//preserve the feature flags
+			doDensityPrecalculation = _cache.doDensityPrecalculation;
+			doShapePrecalculation   = _cache.doShapePrecalculation;
+		}
 	}
 
 	///GT and RES paths combination for which this cache is valid, null means invalid
@@ -59,9 +89,6 @@ public class ImgQualityDataCache
 	{
 		return (imgPath == _imgPath && annPath == _annPath);
 	}
-
-	///if proper area/surface estimates should be computed
-	public boolean doSurfaces = false;
 
 
 	// ----------- the common upper stage essentially starts here -----------
@@ -212,17 +239,13 @@ public class ImgQualityDataCache
 		//voxel count
 		volumeFG.get(time).put(marker, vxlCnt );
 
-		//TODO: flag to be set from GUI run() depending on calcSha == true
-		//
 		//call dedicated function to calculate surface in real coordinates,
-		//real area/surface
-		if (doSurfaces)
+		//the real area/surface
+		if (doShapePrecalculation)
 			surfaceFG.get(time).put(marker, 999.9 ); //TODO replace 999 with some function call
-		else
-			surfaceFG.get(time).put(marker, -1.0 );
 
 		//also process the "overlap feature" (if the object was found in the previous frame)
-		if (time > 0 && surfaceFG.get(time-1).get(marker) != null)
+		if (time > 0 && volumeFG.get(time-1).get(marker) != null)
 			overlapFG.get(time).put(marker,
 				measureObjectsOverlap(imgPosition,imgFGcurrent, marker,imgFGprevious) );
 	}
@@ -623,8 +646,9 @@ public class ImgQualityDataCache
 				//that means: found not-yet-processed FG object
 				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev);
 
-				nearDistFG.get(time).put(curMarker,
-					extractObjectDistance(imgFG,curMarker, 50) );
+				if (doDensityPrecalculation)
+					nearDistFG.get(time).put(curMarker,
+						extractObjectDistance(imgFG,curMarker, 50) );
 
 				//mark the object (and all its voxels consequently) as processed
 				mDiscovered.add(curMarker);
