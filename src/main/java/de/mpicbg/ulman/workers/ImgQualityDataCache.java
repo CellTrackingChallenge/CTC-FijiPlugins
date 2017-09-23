@@ -87,7 +87,10 @@ public class ImgQualityDataCache
 	///reference-based-only check if the parameters are those on which this cache was computed
 	public boolean validFor(final String _imgPath, final String _annPath)
 	{
-		return (imgPath == _imgPath && annPath == _annPath);
+		return ( imgPath != null &&  annPath != null
+		     && _imgPath != null && _annPath != null
+		     && imgPath == _imgPath
+		     && annPath == _annPath);
 	}
 
 

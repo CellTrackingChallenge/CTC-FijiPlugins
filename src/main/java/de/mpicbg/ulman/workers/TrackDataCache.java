@@ -58,7 +58,10 @@ public class TrackDataCache
 	///reference-based-only check if the parameters are those on which this cache was computed
 	public boolean validFor(final String _gtPath, final String _resPath)
 	{
-		return (gtPath == _gtPath && resPath == _resPath);
+		return ( gtPath != null &&  resPath != null
+		     && _gtPath != null && _resPath != null
+		     && gtPath == _gtPath
+		     && resPath == _resPath);
 	}
 
 
