@@ -28,7 +28,7 @@ import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
 		  description = "Calculates the AOGM tracking performance measure from the AOGM paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/submission-of-results.html")
-public class plugin_AOGM implements Command
+public class plugin_AOGMmeasure implements Command
 {
 	//------------- GUI stuff -------------
 	//

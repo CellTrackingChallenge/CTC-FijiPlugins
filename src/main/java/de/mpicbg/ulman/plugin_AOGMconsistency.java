@@ -32,7 +32,7 @@ import de.mpicbg.ulman.workers.TrackDataCache;
 				+"It is the same consistency as is used in the AOGM tracking measure.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/submission-of-results.html")
-public class plugin_consistencyTest implements Command
+public class plugin_AOGMconsistency implements Command
 {
 	//------------- GUI stuff -------------
 	//
