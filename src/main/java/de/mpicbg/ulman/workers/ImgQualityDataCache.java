@@ -698,7 +698,6 @@ public class ImgQualityDataCache
 	 *
 	 * This function computes the common upper stage of measures.
 	 */
-	@SuppressWarnings({"unchecked","rawtypes"})
 	public void calculate(final String imgPath, final double[] resolution,
 	                      final String annPath)
 	throws IOException, ImgIOException
