@@ -11,124 +11,73 @@ package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
 
-import io.scif.img.ImgIOException;
-import java.io.IOException;
-
 import java.util.Vector;
 import java.util.HashMap;
 
-import de.mpicbg.ulman.workers.ImgQualityDataCache;
+import de.mpicbg.ulman.workers.ImgQualityDataCache.videoDataContainer;
 
-public class HETI
+public class HETI extends AbstractDSmeasure
 {
-	///shortcuts to some Fiji services
-	private final LogService log;
-
 	///a constructor requiring connection to Fiji report/log services
 	public HETI(final LogService _log)
-	{
-		//check that non-null was given for _log!
-		if (_log == null)
-			throw new NullPointerException("No log service supplied.");
-
-		log = _log;
-	}
-
-	///reference on cache that we used recently
-	private ImgQualityDataCache cache = null;
-
-	///to provide the cache to others/to share it with others
-	public ImgQualityDataCache getCache()
-	{ return (cache); }
-
-
-	// ----------- the HETI essentially starts here -----------
-	//auxiliary data:
-
-	///the to-be-calculated measure value
-	private double heti = 0.0;
+	{ super(_log); }
 
 
 	//---------------------------------------------------------------------/
-	/**
-	 * Measure calculation happens in two stages. The first/upper stage does
-	 * data pre-fetch and calculations to populate the TrackDataCache.
-	 * TrackDataCache.calculate() actually does this job. The sort of
-	 * calculations is such that the other measures could benefit from
-	 * it and re-use it (instead of loading images again and doing some
-	 * calculations again), and the results are stored in the cache.
-	 * The second/bottom stage is measure-specific. It basically finishes
-	 * the measure calculation procedure, possible using data from the cache.
-	 *
-	 * This function is asked to use, if applicable, such cache data
-	 * as the caller believes the given cache is still valid. The measure
-	 * can only carry on with the bottom stage then (thus being overall faster
-	 * than when computing both stages).
-	 *
-	 * The class never re-uses its own cache to allow for fresh complete
-	 * re-calculation on the (new) data in the same folders.
-	 *
-	 * This is the main HETI calculator.
-	 */
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath,
-	                        final ImgQualityDataCache _cache)
-	throws IOException, ImgIOException
+	/// This is the main HETI calculator.
+	@Override
+	protected double calculateBottomStage()
 	{
-		//invalidate own cache
-		cache = null;
-
-		//check we got some hint/cache
-		//and if it fits our input, then use it
-		if (_cache != null && _cache.validFor(imgPath,annPath)) cache = _cache;
-
-		//if no cache is available after all, compute it
-		if (cache == null)
-		{
-			//do the upper stage
-			cache = new ImgQualityDataCache(log, _cache);
-			cache.calculate(imgPath, resolution, annPath);
-		}
-
 		//do the bottom stage
 		//DEBUG//log.info("Computing the HETI bottom part...");
-		heti = 0.0;
+		double heti = 0.0;
+		long videoCnt = 0; //how many videos were processed
 
-		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-		final Vector<HashMap<Integer,Double>> stdFG = cache.stdFG;
-		final Vector<Double> avgBG = cache.avgBG;
-
-		//go over all FG objects and calc their CRs
-		long noFGs = 0;
-		//over all time points
-		for (int time=0; time < avgFG.size(); ++time)
+		//go over all encountered videos and calc
+		//their respective avg. HETIs and average them
+		for (videoDataContainer data : cache.cachedVideoData)
 		{
-			//over all objects
-			for (Integer fgID : avgFG.get(time).keySet())
+			//shadows of the/short-cuts to the cache data
+			final Vector<HashMap<Integer,Double>> avgFG = data.avgFG;
+			final Vector<HashMap<Integer,Double>> stdFG = data.stdFG;
+			final Vector<Double> avgBG = data.avgBG;
+
+			//go over all FG objects and calc their CRs
+			long noFGs = 0;
+			double l_heti = 0.0;
+			//over all time points
+			for (int time=0; time < avgFG.size(); ++time)
 			{
-				heti += stdFG.get(time).get(fgID) / Math.abs(avgFG.get(time).get(fgID) - avgBG.get(time));
-				++noFGs;
+				//over all objects
+				for (Integer fgID : avgFG.get(time).keySet())
+				{
+					l_heti += stdFG.get(time).get(fgID) / Math.abs(avgFG.get(time).get(fgID) - avgBG.get(time));
+					++noFGs;
+				}
 			}
+
+			//finish the calculation of the average
+			if (noFGs > 0)
+			{
+				l_heti /= (double)noFGs;
+				log.info("HETI for video "+data.video+": "+l_heti);
+
+				heti += l_heti;
+				++videoCnt;
+			}
+			else
+				log.info("HETI for video "+data.video+": Couldn't calculate average HETI because there are no cells labelled.");
 		}
 
-		//finish the calculation of the average
-		if (noFGs > 0)
+		//summarize over all datasets:
+		if (videoCnt > 0)
 		{
-			heti /= (double)noFGs;
-			log.info("HETI: "+heti);
+			heti /= (double)videoCnt;
+			log.info("HETI for dataset: "+heti);
 		}
 		else
-			log.info("HETI: Couldn't calculate average HETI because there are no cells labelled.");
+			log.info("HETI for dataset: Couldn't calculate average HETI because there are missing labels.");
 
 		return (heti);
-	}
-
-	/// This is the wrapper HETI calculator, assuring complete re-calculation.
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath)
-	throws IOException, ImgIOException
-	{
-		return this.calculate(imgPath, resolution, annPath, null);
 	}
 }

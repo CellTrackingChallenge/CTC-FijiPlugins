@@ -11,42 +11,16 @@ package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
 
-import io.scif.img.ImgIOException;
-import java.io.IOException;
-
 import java.util.Vector;
 import java.util.HashMap;
 
-import de.mpicbg.ulman.workers.ImgQualityDataCache;
+import de.mpicbg.ulman.workers.ImgQualityDataCache.videoDataContainer;
 
-public class CHA
+public class CHA extends AbstractDSmeasure
 {
-	///shortcuts to some Fiji services
-	private final LogService log;
-
 	///a constructor requiring connection to Fiji report/log services
 	public CHA(final LogService _log)
-	{
-		//check that non-null was given for _log!
-		if (_log == null)
-			throw new NullPointerException("No log service supplied.");
-
-		log = _log;
-	}
-
-	///reference on cache that we used recently
-	private ImgQualityDataCache cache = null;
-
-	///to provide the cache to others/to share it with others
-	public ImgQualityDataCache getCache()
-	{ return (cache); }
-
-
-	// ----------- the CHA essentially starts here -----------
-	//auxiliary data:
-
-	///the to-be-calculated measure value
-	private double cha = 0.0;
+	{ super(_log); }
 
 
 	//---------------------------------------------------------------------/
@@ -55,11 +29,9 @@ public class CHA
 	 * are present at time points (inclusive) \e from till \e to.
 	 * Returns -1 if no object has been found at all.
 	 */
-	private double avgFGfromTimeSpan(final int from, final int to)
+	private double avgFGfromTimeSpan(final int from, final int to,
+		final Vector<HashMap<Integer,Double>> avgFG)
 	{
-		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-
 		if (from < 0 || from >= avgFG.size()) return (-1.0);
 		if ( to  < 0 ||  to  >= avgFG.size()) return (-1.0);
 
@@ -79,107 +51,69 @@ public class CHA
 	}
 
 
-	/**
-	 * Measure calculation happens in two stages. The first/upper stage does
-	 * data pre-fetch and calculations to populate the TrackDataCache.
-	 * TrackDataCache.calculate() actually does this job. The sort of
-	 * calculations is such that the other measures could benefit from
-	 * it and re-use it (instead of loading images again and doing some
-	 * calculations again), and the results are stored in the cache.
-	 * The second/bottom stage is measure-specific. It basically finishes
-	 * the measure calculation procedure, possible using data from the cache.
-	 *
-	 * This function is asked to use, if applicable, such cache data
-	 * as the caller believes the given cache is still valid. The measure
-	 * can only carry on with the bottom stage then (thus being overall faster
-	 * than when computing both stages).
-	 *
-	 * The class never re-uses its own cache to allow for fresh complete
-	 * re-calculation on the (new) data in the same folders.
-	 *
-	 * This is the main CHA calculator.
-	 */
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath,
-	                        final ImgQualityDataCache _cache)
-	throws IOException, ImgIOException
+	//---------------------------------------------------------------------/
+	/// This is the main CHA calculator.
+	@Override
+	protected double calculateBottomStage()
 	{
-		//invalidate own cache
-		cache = null;
-
-		//check we got some hint/cache
-		//and if it fits our input, then use it
-		if (_cache != null && _cache.validFor(imgPath,annPath)) cache = _cache;
-
-		//if no cache is available after all, compute it
-		if (cache == null)
-		{
-			//do the upper stage
-			cache = new ImgQualityDataCache(log, _cache);
-			cache.calculate(imgPath, resolution, annPath);
-		}
-
 		//do the bottom stage
 		//DEBUG//log.info("Computing the CHA bottom part...");
-		cha = 0.0;
+		double cha = 0.0;
+		long videoCnt = 0; //how many videos were processed
 
-		//shadows of the/short-cuts to the cache data
-		final Vector<HashMap<Integer,Double>> avgFG = cache.avgFG;
-
-		//TODO: process pairwise the image sequence and consider only
-		//      pairs where both images have some FG labels, hence
-		//      CHA can be calculated for such pair, and take the average
-		//      from this (and complain if no such pair has been detected)
-
-		double a = -1.0, b = -1.0;
-
-		if (avgFG.size() < 2)
+		//go over all encountered videos and calc
+		//their respective avg. CHAs and average them
+		for (videoDataContainer data : cache.cachedVideoData)
 		{
-			throw new IllegalArgumentException("Cannot calculate CHA from less than two images.");
+			//shadows of the/short-cuts to the cache data
+			final Vector<HashMap<Integer,Double>> avgFG = data.avgFG;
+
+			double a = -1.0, b = -1.0;
+			double l_cha = 0.0;
+
+			if (avgFG.size() < 2)
+			{
+				throw new IllegalArgumentException("Cannot calculate CHA from less than two images.");
+			}
+			else
+			if (avgFG.size() == 2)
+			{
+				a = avgFGfromTimeSpan(0,0,avgFG);
+				b = avgFGfromTimeSpan(1,1,avgFG);
+				l_cha = b - a;
+			}
+			else
+			{
+				//use largest possible (possibly overlapping, though) window
+				//windows size = 2 time points
+				final int last = avgFG.size() - 1;
+				a = avgFGfromTimeSpan(0,1,avgFG);
+				b = avgFGfromTimeSpan(last-1,last,avgFG);
+				l_cha = b - a;
+				l_cha /= (double)last;
+			}
+
+			if (a < 0.0 || b < 0.0)
+				throw new IllegalArgumentException("CHA for video "+data.video
+					+": Current implementation cannot deal with images with no FG labels.");
+
+			log.info("CHA_debug: avg. int. "+a+" -> "+b+", over "+avgFG.size()+" frames");
+			log.info("CHA for video "+data.video+": "+l_cha);
+
+			cha += l_cha;
+			++videoCnt;
+		}
+
+		//summarize over all datasets:
+		if (videoCnt > 0)
+		{
+			cha /= (double)videoCnt;
+			cha = Math.abs(cha);
+			log.info("CHA for dataset: "+cha);
 		}
 		else
-		if (avgFG.size() == 2)
-		{
-			a = avgFGfromTimeSpan(0,0);
-			b = avgFGfromTimeSpan(1,1);
-			cha = b - a;
-		}
-		else
-		if (avgFG.size() == 3)
-		{
-			//use largest possible (still overlapping, though) window
-			//windows size = 2 time points
-			a = avgFGfromTimeSpan(0,1);
-			b = avgFGfromTimeSpan(1,2);
-			cha = b - a;
-			cha /= 2.0;
-		}
-		else
-		//if (avgFG.size() > 3)
-		{
-			//use largest possible (possibly overlapping, though) window
-			//windows size = 3 time points
-			final int last = avgFG.size() - 1;
-			a = avgFGfromTimeSpan(0,2);
-			b = avgFGfromTimeSpan(last-2,last);
-			cha = b - a;
-			cha /= (double)last;
-		}
+			log.info("CHA for dataset: Couldn't calculate average CHA because there are missing labels.");
 
-		if (a < 0.0 || b < 0.0)
-			throw new IllegalArgumentException("Current CHA implementation cannot deal "
-				+"with images with no FG labels.");
-
-		log.info("CHA_debug: avg. int. "+a+" -> "+b+", over "+avgFG.size()+" frames");
-		log.info("CHA: "+cha);
 		return (cha);
-	}
-
-	/// This is the wrapper CHA calculator, assuring complete re-calculation.
-	public double calculate(final String imgPath, final double[] resolution,
-	                        final String annPath)
-	throws IOException, ImgIOException
-	{
-		return this.calculate(imgPath, resolution, annPath, null);
 	}
 }

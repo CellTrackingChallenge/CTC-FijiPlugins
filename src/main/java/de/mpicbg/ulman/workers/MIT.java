@@ -32,17 +32,8 @@ public class MIT
 	}
 
 
-	// ----------- the MIT essentially starts here -----------
-	//auxiliary data:
-
-	///the to-be-calculated measure value
-	private double mit = 0.0;
-
-
 	//---------------------------------------------------------------------/
-	/**
-	 * This is the main MIT calculator.
-	 */
+	/// This is the main MIT calculator.
 	public double calculate(final String annPath)
 	throws IOException
 	{
@@ -56,7 +47,7 @@ public class MIT
 
 		//do the bottom stage
 		//DEBUG//log.info("Computing the MIT completely...");
-		mit = 0.0;
+		double mit = 0.0;
 
 		//to detected span of time points: this is believed to give the length of the
 		//underlying video provided the video does not begin and/or end with empty frames...
