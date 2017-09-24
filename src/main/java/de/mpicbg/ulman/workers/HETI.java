@@ -51,8 +51,13 @@ public class HETI extends AbstractDSmeasure
 				//over all objects
 				for (Integer fgID : avgFG.get(time).keySet())
 				{
-					l_heti += stdFG.get(time).get(fgID) / Math.abs(avgFG.get(time).get(fgID) - avgBG.get(time));
-					++noFGs;
+					double denom = Math.abs(avgFG.get(time).get(fgID) - avgBG.get(time));
+					//exclude close-to-zero denominators (that otherwise escalate/outlay the average)
+					if (denom > 0.01)
+					{
+						l_heti += stdFG.get(time).get(fgID) / denom;
+						++noFGs;
+					}
 				}
 			}
 
