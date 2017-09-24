@@ -33,6 +33,8 @@ import io.scif.img.ImgIOException;
 import java.util.Vector;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.List;
+import java.util.LinkedList;
 
 public class ImgQualityDataCache
 {
@@ -126,50 +128,69 @@ public class ImgQualityDataCache
 	Img<FloatType> dilIgB = null;
 
 	/**
-	 * Representation of average & std. deviations within individual
-	 * foreground masks.
-	 * Usage: avgFG[timePoint].get(labelID) = averageIntensityValue
+	 * This class holds all relevant data that are a) needed for individual
+	 * measures to carry on their calculations and b) that are shared between
+	 * these measures (so there is no need to scan the raw images all over again
+	 * and again, once per every measure) and c) that are valid for one video
+	 * (see the this.cachedVideoData).
 	 */
-	public final Vector<HashMap<Integer,Double>> avgFG = new Vector<>(1000,100);
-	/// Similar to this.avgFG
-	public final Vector<HashMap<Integer,Double>> stdFG = new Vector<>(1000,100);
-
-	/// Stores NUMBER OF VOXELS (not a real volume) of the FG masks at time points.
-	public final Vector<HashMap<Integer,Long>> volumeFG = new Vector<>(1000,100);
-
-	/// Converts this.volumeFG values (no. of voxels) into a real volume (in cubic micrometers)
-	public double getRealVolume(final long vxlCnt)
+	public class videoDataContainer
 	{
-		double v = (double)vxlCnt;
-		for (double r : this.resolution) v *= r;
-		return (v);
+		public videoDataContainer(final int __v)
+		{ video = __v; }
+
+		///number/ID of the video this data belongs to
+		public int video;
+
+		/**
+		 * Representation of average & std. deviations within individual
+		 * foreground masks.
+		 * Usage: avgFG[timePoint].get(labelID) = averageIntensityValue
+		 */
+		public final Vector<HashMap<Integer,Double>> avgFG = new Vector<>(1000,100);
+		/// Similar to this.avgFG
+		public final Vector<HashMap<Integer,Double>> stdFG = new Vector<>(1000,100);
+
+		/// Stores NUMBER OF VOXELS (not a real volume) of the FG masks at time points.
+		public final Vector<HashMap<Integer,Long>> volumeFG = new Vector<>(1000,100);
+
+		/// Converts this.volumeFG values (no. of voxels) into a real volume (in cubic micrometers)
+		public double getRealVolume(final long vxlCnt)
+		{
+			double v = (double)vxlCnt;
+			for (double r : resolution) v *= r;
+			return (v);
+		}
+
+		/// Stores REAL SURFACE (in square micrometers) of the FG masks at time points.
+		public final Vector<HashMap<Integer,Double>> surfaceFG = new Vector<>(1000,100);
+
+		/**
+		 * Stores how many voxels are there in the intersection of masks of the same
+		 * marker at time point and previous time point.
+		 */
+		public final Vector<HashMap<Integer,Long>> overlapFG = new Vector<>(1000,100);
+
+		/**
+		 * Stores how many voxels are there in between the marker and its nearest
+		 * neighboring (other) marker at time points. The distance is measured with
+		 * Chamfer distance (which considers diagonals in voxels) and thus the value
+		 * is not necessarily an integer anymore. The resolution (size of voxels)
+		 * of the image is not taken into account.
+		 */
+		public final Vector<HashMap<Integer,Float>> nearDistFG = new Vector<>(1000,100);
+
+		/**
+		 * Representation of average & std. deviations of background region.
+		 * There is only one background marker expected in the images.
+		 */
+		public final Vector<Double> avgBG = new Vector<>(1000,100);
+		/// Similar to this.avgBG
+		public final Vector<Double> stdBG = new Vector<>(1000,100);
 	}
 
-	/// Stores REAL SURFACE (in square micrometers) of the FG masks at time points.
-	public final Vector<HashMap<Integer,Double>> surfaceFG = new Vector<>(1000,100);
-
-	/**
-	 * Stores how many voxels are there in the intersection of masks of the same
-	 * marker at time point and previous time point.
-	 */
-	public final Vector<HashMap<Integer,Long>> overlapFG = new Vector<>(1000,100);
-
-	/**
-	 * Stores how many voxels are there in between the marker and its nearest
-	 * neighboring (other) marker at time points. The distance is measured with
-	 * Chamfer distance (which considers diagonals in voxels) and thus the value
-	 * is not necessarily an integer anymore. The resolution (size of voxels)
-	 * of the image is not taken into account.
-	 */
-	public final Vector<HashMap<Integer,Float>> nearDistFG = new Vector<>(1000,100);
-
-	/**
-	 * Representation of average & std. deviations of background region.
-	 * There is only one background marker expected in the images.
-	 */
-	public final Vector<Double> avgBG = new Vector<>(1000,100);
-	/// Similar to this.avgBG
-	public final Vector<Double> stdBG = new Vector<>(1000,100);
+	/// this list holds relevant data for every discovered video
+	List<videoDataContainer> cachedVideoData = new LinkedList<>();
 
 	//---------------------------------------------------------------------/
 	//aux data fillers -- merely markers' properties calculator
@@ -184,7 +205,8 @@ public class ImgQualityDataCache
 	private <T extends RealType<T>>
 	void extractFGObjectStats(final Cursor<T> imgPosition, final int time, //who: "object" @ time
 		final RandomAccessibleInterval<UnsignedShortType> imgFGcurrent,     //where: input masks
-		final RandomAccessibleInterval<UnsignedShortType> imgFGprevious)
+		final RandomAccessibleInterval<UnsignedShortType> imgFGprevious,
+		final videoDataContainer data)
 	{
 		//working pointers into the mask images
 		final RandomAccess<UnsignedShortType> fgCursor = imgFGcurrent.randomAccess();
@@ -231,26 +253,26 @@ public class ImgQualityDataCache
 
 		//finish processing of the FG objects stats:
 		//mean intensity
-		avgFG.get(time).put(marker, (intSum / (double)vxlCnt) + valShift );
+		data.avgFG.get(time).put(marker, (intSum / (double)vxlCnt) + valShift );
 
 		//variance
 		int2Sum -= (intSum*intSum/(double)vxlCnt);
 		int2Sum /= (double)vxlCnt;
 		//
 		//std. dev.
-		stdFG.get(time).put(marker, Math.sqrt(int2Sum) );
+		data.stdFG.get(time).put(marker, Math.sqrt(int2Sum) );
 
 		//voxel count
-		volumeFG.get(time).put(marker, vxlCnt );
+		data.volumeFG.get(time).put(marker, vxlCnt );
 
 		//call dedicated function to calculate surface in real coordinates,
 		//the real area/surface
 		if (doShapePrecalculation)
-			surfaceFG.get(time).put(marker, 999.9 ); //TODO replace 999 with some function call
+			data.surfaceFG.get(time).put(marker, 999.9 ); //TODO replace 999 with some function call
 
 		//also process the "overlap feature" (if the object was found in the previous frame)
-		if (time > 0 && volumeFG.get(time-1).get(marker) != null)
-			overlapFG.get(time).put(marker,
+		if (time > 0 && data.volumeFG.get(time-1).get(marker) != null)
+			data.overlapFG.get(time).put(marker,
 				measureObjectsOverlap(imgPosition,imgFGcurrent, marker,imgFGprevious) );
 	}
 
@@ -517,10 +539,11 @@ public class ImgQualityDataCache
 
 	public <T extends RealType<T>>
 	void ClassifyLabels(final int time,
-	                           IterableInterval<T> imgRaw,
-	                           RandomAccessibleInterval<UnsignedByteType> imgBG,
-	                           Img<UnsignedShortType> imgFG,
-	                           RandomAccessibleInterval<UnsignedShortType> imgFGprev)
+	                    IterableInterval<T> imgRaw,
+	                    RandomAccessibleInterval<UnsignedByteType> imgBG,
+	                    Img<UnsignedShortType> imgFG,
+	                    RandomAccessibleInterval<UnsignedShortType> imgFGprev,
+	                    final videoDataContainer data)
 	{
 		//uses resolution from the class internal structures, check it is set already
 		if (resolution == null)
@@ -609,17 +632,17 @@ public class ImgQualityDataCache
 		if (volBGvoxelCnt > 0)
 		{
 			//great, some pure-background voxels have been found
-			avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
+			data.avgBG.add( (intSum / (double)volBGvoxelCnt) + valShift );
 
 			int2Sum -= (intSum*intSum/(double)volBGvoxelCnt);
 			int2Sum /= (double)volBGvoxelCnt;
-			stdBG.add( Math.sqrt(int2Sum) );
+			data.stdBG.add( Math.sqrt(int2Sum) );
 		}
 		else
 		{
 			log.info("Warning: Background annotation has no pure background voxels.");
-			avgBG.add( 0.0 );
-			stdBG.add( 0.0 );
+			data.avgBG.add( 0.0 );
+			data.stdBG.add( 0.0 );
 		}
 
 		//now, sweep the image, detect all labels and calculate & save their properties
@@ -630,12 +653,12 @@ public class ImgQualityDataCache
 		HashSet<Integer> mDiscovered = new HashSet<Integer>(1000);
 
 		//prepare the per-object data structures
-		avgFG.add( new HashMap<>() );
-		stdFG.add( new HashMap<>() );
-		volumeFG.add( new HashMap<>() );
-		surfaceFG.add( new HashMap<>() );
-		overlapFG.add( new HashMap<>() );
-		nearDistFG.add( new HashMap<>() );
+		data.avgFG.add( new HashMap<>() );
+		data.stdFG.add( new HashMap<>() );
+		data.volumeFG.add( new HashMap<>() );
+		data.surfaceFG.add( new HashMap<>() );
+		data.overlapFG.add( new HashMap<>() );
+		data.nearDistFG.add( new HashMap<>() );
 
 		rawCursor.reset();
 		while (rawCursor.hasNext())
@@ -650,10 +673,10 @@ public class ImgQualityDataCache
 			{
 				//found not-yet-processed FG voxel,
 				//that means: found not-yet-processed FG object
-				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev);
+				extractFGObjectStats(rawCursor, time, imgFG, imgFGprev, data);
 
 				if (doDensityPrecalculation)
-					nearDistFG.get(time).put(curMarker,
+					data.nearDistFG.get(time).put(curMarker,
 						extractObjectDistance(imgFG,curMarker, 50) );
 
 				//mark the object (and all its voxels consequently) as processed
@@ -665,10 +688,10 @@ public class ImgQualityDataCache
 	//---------------------------------------------------------------------/
 	/**
 	 * Measure calculation happens in two stages. The first/upper stage does
-	 * data pre-fetch and calculations to populate the TrackDataCache.
-	 * TrackDataCache.calculate() actually does this job. The sort of
+	 * data pre-fetch and calculations to populate the ImgQualityDataCache.
+	 * ImgQualityDataCache.calculate() actually does this job. The sort of
 	 * calculations is such that the other measures could benefit from
-	 * it and re-use it (instead of loading images again and doing some
+	 * it and re-use it (instead of loading images again and doing same
 	 * calculations again), and the results are stored in the cache.
 	 * The second/bottom stage is measure-specific. It basically finishes
 	 * the measure calculation procedure, possible using data from the cache.
@@ -680,12 +703,52 @@ public class ImgQualityDataCache
 	                      final String annPath)
 	throws IOException, ImgIOException
 	{
-		log.info("IMG path: "+imgPath);
-		log.info("ANN path: "+annPath);
-		//DEBUG//log.info("Computing the common upper part...");
+		//this functions actually only interates over video folders
+		//and calls this.calculateVideo() for every folder
 
 		//test and save the given resolution
 		setResolution(resolution);
+
+		//single or multiple video situation?
+		if (Files.isReadable(
+			new File(String.format("%s/01/t000.tif",imgPath)).toPath()))
+		{
+			//multiple video situation: paths point on a dataset
+			int video = 1;
+			while (Files.isReadable(
+				new File(String.format("%s/%02d/t000.tif",imgPath,video)).toPath()))
+			{
+				final videoDataContainer data = new videoDataContainer(video);
+				calculateVideo(String.format("%s/%02d",imgPath,video),
+				               String.format("%s/%02d_GT",annPath,video), data);
+				this.cachedVideoData.add(data);
+				++video;
+			}
+		}
+		else
+		{
+			//single video situation
+			final videoDataContainer data = new videoDataContainer(1);
+			calculateVideo(imgPath,annPath,data);
+			this.cachedVideoData.add(data);
+		}
+
+		//now that we got here, note for what data
+		//this cache is valid, see validFor() above
+		this.imgPath = imgPath;
+		this.annPath = annPath;
+	}
+
+	/// this functions processes given video folders and outputs to \e data
+	@SuppressWarnings({"unchecked","rawtypes"})
+	public void calculateVideo(final String imgPath,
+	                           final String annPath,
+	                           final videoDataContainer data)
+	throws IOException, ImgIOException
+	{
+		log.info("IMG path: "+imgPath);
+		log.info("ANN path: "+annPath);
+		//DEBUG//log.info("Computing the common upper part...");
 
 		//we gonna re-use image loading functions...
 		final TrackDataCache tCache = new TrackDataCache(log);
@@ -738,7 +801,7 @@ public class ImgQualityDataCache
 				imgFactory = null;
 			}
 
-			ClassifyLabels(time, (IterableInterval)img, imgBG, imgFG, imgFGprev);
+			ClassifyLabels(time, (IterableInterval)img, imgBG, imgFG, imgFGprev, data);
 
 			imgFGprev = null; //be explicit that we do not want this in memory anymore
 			imgFGprev = imgFG;
@@ -754,15 +817,10 @@ public class ImgQualityDataCache
 		if (time == 0)
 			throw new IllegalArgumentException("No raw image was found!");
 
-		if (volumeFG.size() != time)
+		if (data.volumeFG.size() != time)
 			throw new IllegalArgumentException("Internal consistency problem with FG data!");
 
-		if (avgBG.size() != time)
+		if (data.avgBG.size() != time)
 			throw new IllegalArgumentException("Internal consistency problem with BG data!");
-
-		//now that we got here, note for what data
-		//this cache is valid, see validFor() above
-		this.imgPath = imgPath;
-		this.annPath = annPath;
 	}
 }

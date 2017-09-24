@@ -600,7 +600,7 @@ public class TrackDataCache
 	 * data pre-fetch and calculations to populate the TrackDataCache.
 	 * TrackDataCache.calculate() actually does this job. The sort of
 	 * calculations is such that the other measures could benefit from
-	 * it and re-use it (instead of loading images again and doing some
+	 * it and re-use it (instead of loading images again and doing same
 	 * calculations again), and the results are stored in the cache.
 	 * The second/bottom stage is measure-specific. It basically finishes
 	 * the measure calculation procedure, possible using data from the cache.
