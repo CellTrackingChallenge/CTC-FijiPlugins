@@ -68,7 +68,7 @@ public class HETB extends AbstractDSmeasure
 					//object signal height "normalized" with respect to the
 					//usual signal height in this frame, we have to calculate
 					//std.dev. from these values
-					l_hetb = Math.abs(fg - avgBG.get(time)) / frameAvgFGSignal;
+					l_hetb = (fg - avgBG.get(time)) / frameAvgFGSignal;
 
 					if (valShift == -1) valShift = l_hetb;
 
