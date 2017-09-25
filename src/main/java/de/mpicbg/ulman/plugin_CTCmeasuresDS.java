@@ -357,7 +357,7 @@ public class plugin_CTCmeasuresDS implements Command
 		{
 			try {
 				final MIT mit = new MIT(log);
-				Mit = mit.calculate(ANNdir);
+				Mit = mit.calculate(null,null, ANNdir);
 			}
 			catch (RuntimeException e) {
 				log.error("CTC Mit measure problem: "+e.getMessage());
