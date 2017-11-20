@@ -8,25 +8,36 @@ This is a repository with Java source codes of the [Fiji](http://fiji.sc) tools 
 * Tracking accuracy evaluation with general [Acyclic Oriented Graphs Measure (AOGM)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0144959)
 * [_A Fiji Tool for Automatic Fusion of Segmentation and Tracking Labels_](http://labels2017.org/wp-content/uploads/2017/07/LABELS2017_14.pdf)
 
-The binaries of the measures can be downloaded from the [official challenge website](http://www.celltrackingchallenge.net). The binary of the fusion tool can be found on this website in the [`release` **folder**](https://github.com/xulman/CTC-FijiPlugins/tree/master/release).
+The binaries of the measures can be downloaded from the [official challenge website](http://www.celltrackingchallenge.net). The binary of the fusion tool can be found on this website in the [`release` **folder**](https://github.com/xulman/CTC-FijiPlugins/tree/master/release). The recommended method, however, is to install all tools via Fiji update mechanism, see below. The Fiji update system mirrors the most recent versions of the measures and tools, and regularly checks for their newer versions.
 
 All the tools are in the form of a Fiji GUI plugins. However, owing to the Fiji capabilities, it is possible to call the tools also from command line, in a batch mode. Notes on how to install the binaries just follows.
+
+The measures used in the paper [An objective comparison of cell-tracking algorithms](http://dx.doi.org/10.1038/nmeth.4473) are in the `CTC-paper` folder. Related tools (AOGM, fusion tool) are in the `CTC-related` folder.
 
 The ideas, that are implemented in the tools, are product of a collective collaboration between [CIMA](http://www.cima.es), [CBIA](http://cbia.fi.muni.cz), [Erasmus MC](https://www.erasmusmc.nl/oic/?lang=en), [UC3M](https://www.uc3m.es), [CSBD](http://www.csbdresden.de/) and [MPI-CBG](http://mpi-cbg.de) groups.
 
 The tools were developed and the page is maintained by [Vladimír Ulman](http://www.fi.muni.cz/~xulman/). The SEG, TRA/AOGM measure was originally developed in C++ by [Martin Maška](http://cbia.fi.muni.cz/).
 
 
-Fresh Fiji installation:
-------------------------
+Enabling update site in a new or existing Fiji installation:
+------------------------------------------------------------
+1. Open Fiji
+1. Click menus: 'Help' -> 'Update...'
+1. Click 'Manage update sites' in the opened 'ImageJ Updater' dialog
+1. Mark the 'CellTrackingChallenge' checkbox
+1. Click 'Close' to close the dialog
+
+
+OR, Fresh Fiji installation:
+----------------------------
 1. Download recent version of Fiji from [http://fiji.sc/](http://fiji.sc/)
 1. Install it, and pay attention where (which Folder) it got installed into
 1. Locate the folder where Fiji got installed, say it is folder `FIJIROOT`
 1. Download binary of the tool, and place it into folder: `FIJIROOT/plugins`
 
 
-Upgrading existing Fiji installation:
--------------------------------------
+OR, Upgrading existing Fiji installation:
+-----------------------------------------
 Proceed only with steps 3 and 4.
 
 
