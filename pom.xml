@@ -33,12 +33,20 @@
 		</license>
 	</licenses>
 
-
 	<developers>
 		<developer>
 			<id>xulman</id>
 			<name>Vladimír Ulman</name>
 			<url>http://www.fi.muni.cz/~xulman/</url>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
 		</developer>
 	</developers>
 	<contributors>

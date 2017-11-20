@@ -14,6 +14,11 @@
   <artifactId>CTC-related-FijiPlugins</artifactId>
   <version>1.2-SNAPSHOT</version>
 
+	<organization>
+		<name>MPI-CBG</name>
+		<url>http://www.mpi-cbg.de</url>
+	</organization>
+
   <name>CTC-related FijiPlugins</name>
   <description>Implementation of measures and front-end plugins related to the CTC paper.</description>
   <url>https://github.com/xulman/CTC-FijiPlugins</url>
@@ -28,7 +33,55 @@
 		</license>
 	</licenses>
 
+	<developers>
+		<developer>
+			<id>xulman</id>
+			<name>Vladimír Ulman</name>
+			<url>http://www.fi.muni.cz/~xulman/</url>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+	</developers>
+	<contributors>
+		<contributor>
+			<name>None</name>
+		</contributor>
+	</contributors>
 
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>http://forum.imagej.net/</archive>
+		</mailingList>
+	</mailingLists>
+
+
+	<scm>
+		<connection>scm:git:git://github.com/xulman/CTC-FijiPlugins</connection>
+		<developerConnection>scm:git:localhost:9999</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/xulman/CTC-FijiPlugins</url>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>http://github.com/xulman/CTC-FijiPlugins/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>None</system>
+	</ciManagement>
+
+	<properties>
+		<license.licenseName>cc0</license.licenseName>
+		<license.copyrightOwners>N/A</license.copyrightOwners>
+		<license.projectName>CTC-FijiPlugins</license.projectName>
+	</properties>
 
   <repositories>
     <repository>
