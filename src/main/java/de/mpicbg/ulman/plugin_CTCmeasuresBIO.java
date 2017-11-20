@@ -82,11 +82,15 @@ public class plugin_CTCmeasuresBIO implements Command
 
 
 	//citation footer...
-	/*
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
-	private final String citationFooter
-		= "Please, cite us.... TBA";
-	*/
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
+	private final String citationFooterA
+		= "Ulman V, Maška M, Magnusson KEG, ..., Ortiz-de-Solórzano C.";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
+	private final String citationFooterB
+		= "An objective comparison of cell-tracking algorithms.";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
+	private final String citationFooterC
+		= "Nature Methods. 2017. doi:10.1038/nmeth.4473";
 
 
 	//hidden output values
