@@ -108,7 +108,16 @@ public class machineGTViaMarkers implements Command
 		description = "Please, don't forget to include XXX into the filename.",
 		callback = "outFileOKAY")
 	private File outputPath = new File("CHANGE THIS PATH/mergedXXX.tif");
-	
+
+
+	//citation footer...
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, refer to:")
+	private final String citationFooterA
+		= "http://www.fi.muni.cz/~xulman/LABELS/abstract.pdf";
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
+	private final String citationFooterB
+		= "http://www.fi.muni.cz/~xulman/LABELS/poster.pdf";
+
 
 	//callbacks:
 	@SuppressWarnings("unused")
