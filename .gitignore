@@ -1,5 +1,6 @@
 # Compiled class file
 *.class
+CTC-*/*.class
 
 # Log file
 *.log
@@ -23,11 +24,15 @@ hs_err_pid*
 
 # Maven #
 /target/
+CTC-*/target/
 
 # Eclipse #
 /.classpath
 /.project
 /.settings/
+CTC-*/.classpath
+CTC-*/.project
+CTC-*/.settings/
 
 # IntelliJ #
 /.idea/
