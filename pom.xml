@@ -12,7 +12,7 @@
 
   <groupId>de.mpicbg.ulman</groupId>
   <artifactId>CTC-FijiPlugins</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
 
 	<organization>
 		<name>MPI-CBG</name>
@@ -20,11 +20,11 @@
 	</organization>
 
   <name>CTC FijiPlugins</name>
-  <description>Front-end to the CTC paper related measures implemented in the imagej-ops.</description>
+  <description>Implementation of measures and front-end plugins related to the CTC paper.</description>
   <url>https://github.com/xulman/CTC-FijiPlugins</url>
   <inceptionYear>2017</inceptionYear>
 
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 	<licenses>
 		<license>
 			<name>CC0 1.0 Universal License</name>
@@ -75,32 +75,8 @@
 		<license.projectName>CTC-FijiPlugins</license.projectName>
 	</properties>
 
-
-  <repositories>
-    <repository>
-      <id>imagej.public</id>
-      <url>http://maven.imagej.net/content/groups/public</url>
-    </repository>
-  </repositories>
-
-  <dependencies>
-    <dependency>
-      <groupId>net.imagej</groupId>
-      <artifactId>imagej</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.imagej</groupId>
-      <artifactId>imagej-ops</artifactId>
-    </dependency>
-
-		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>ij</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>imagej-legacy</artifactId>
-		</dependency>
-
-  </dependencies>
+	<modules>
+		<module>CTC-paper</module>
+		<module>CTC-related</module>
+	</modules>
 </project>

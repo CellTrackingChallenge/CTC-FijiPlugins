@@ -1,0 +1,56 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.scijava</groupId>
+    <artifactId>pom-scijava</artifactId>
+    <version>12.0.0</version>
+    <relativePath />
+  </parent>
+
+
+  <groupId>de.mpicbg.ulman</groupId>
+  <artifactId>CTC-paper-FijiPlugins</artifactId>
+  <version>1.2-SNAPSHOT</version>
+
+  <name>CTC-paper FijiPlugins</name>
+  <description>Implementation of measures and front-end plugins directly used in the CTC paper.</description>
+  <url>https://github.com/xulman/CTC-FijiPlugins</url>
+  <inceptionYear>2017</inceptionYear>
+
+  <packaging>jar</packaging>
+	<licenses>
+		<license>
+			<name>CC0 1.0 Universal License</name>
+			<url>http://creativecommons.org/publicdomain/zero/1.0/</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+
+
+  <repositories>
+    <repository>
+      <id>imagej.public</id>
+      <url>http://maven.imagej.net/content/groups/public</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.imagej</groupId>
+      <artifactId>imagej</artifactId>
+    </dependency>
+
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej-legacy</artifactId>
+		</dependency>
+
+  </dependencies>
+</project>
