@@ -40,7 +40,7 @@ import java.awt.Dimension;
 import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
-public class machineGTViaMarkers implements Command
+public class plugin_GTviaMarkers implements Command
 {
 
 	@Parameter
@@ -230,7 +230,7 @@ public class machineGTViaMarkers implements Command
 			job = Files.readAllLines(Paths.get(filePath.getAbsolutePath()));
 		}
 		catch (IOException e) {
-			log.error("machineGTViaMarkers error: "+e);
+			log.error("plugin_GTviaMarkers error: "+e);
 		}
 
 		int lineNo=0;
@@ -336,15 +336,15 @@ public class machineGTViaMarkers implements Command
 		//check that input is okay
 		if (!inFileOKAY() || !outFileOKAY())
 		{
-			log.error("machineGTViaMarkers error: Input parameters are wrong.");
+			log.error("plugin_GTviaMarkers error: Input parameters are wrong.");
 			uiService.showDialog("There is something wrong with either the job file or output file.");
 			return;
 		}
 		if (!mergeModel.startsWith("Threshold")
 		 && !mergeModel.startsWith("Majority"))
 		{
-			log.error("machineGTViaMarkers error: Unsupported merging model.");
-			uiService.showDialog("machineGTViaMarkers error: Unsupported merging model.");
+			log.error("plugin_GTviaMarkers error: Unsupported merging model.");
+			uiService.showDialog("plugin_GTviaMarkers error: Unsupported merging model.");
 			return;
 		}
 
@@ -358,7 +358,7 @@ public class machineGTViaMarkers implements Command
 			job = Files.readAllLines(Paths.get(filePath.getAbsolutePath()));
 		}
 		catch (IOException e) {
-			log.error("machineGTViaMarkers error: "+e);
+			log.error("plugin_GTviaMarkers error: "+e);
 		}
 
 		//prepare the output array
@@ -446,7 +446,7 @@ public class machineGTViaMarkers implements Command
 			frame.dispose();
 		}
 		catch (ImgIOException e) {
-			log.error("machineGTViaMarkers error: "+e);
+			log.error("plugin_GTviaMarkers error: "+e);
 		}
 	}
 
@@ -458,7 +458,7 @@ public class machineGTViaMarkers implements Command
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
 		//ij.ui().showUI();
-		//ij.command().run(machineGTViaMarkers.class, true);
+		//ij.command().run(plugin_GTviaMarkers.class, true);
 
 		try {
 			//start up the worker class
@@ -469,7 +469,7 @@ public class machineGTViaMarkers implements Command
 			Worker.work(args);
 		}
 		catch (ImgIOException e) {
-			ij.log().error("machineGTViaMarkers error: "+e);
+			ij.log().error("plugin_GTviaMarkers error: "+e);
 		}
 
 		//and quit
