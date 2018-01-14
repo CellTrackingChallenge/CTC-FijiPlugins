@@ -100,5 +100,10 @@
       <artifactId>CTC-paper-FijiPlugins</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>org.jhotdraw</groupId>
+      <artifactId>jhotdraw</artifactId>
+      <version>7.6.0</version>
+    </dependency>
   </dependencies>
 </project>
