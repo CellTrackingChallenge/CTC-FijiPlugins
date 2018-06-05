@@ -214,7 +214,7 @@ public class plugin_CTCmeasuresBIO implements Command
 
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		//DEBUG//ij.ui().showUI();
+		ij.ui().showUI();
 
 		//run this class as if from GUI
 		ij.command().run(plugin_CTCmeasuresBIO.class, true, "gtPath",args[0], "resPath",args[1],
@@ -222,6 +222,6 @@ public class plugin_CTCmeasuresBIO implements Command
 			"calcBCi",true, "iForBCi", 2, "calcCCA",true);
 
 		//and close the IJ instance...
-		ij.appEvent().quit();
+		//ij.appEvent().quit();
 	}
 }

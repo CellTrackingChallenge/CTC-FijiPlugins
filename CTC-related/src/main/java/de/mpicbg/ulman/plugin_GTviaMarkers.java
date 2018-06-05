@@ -457,7 +457,7 @@ public class plugin_GTviaMarkers implements Command
 		//head less variant:
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		//ij.ui().showUI();
+		ij.ui().showUI();
 		//ij.command().run(plugin_GTviaMarkers.class, true);
 
 		try {
@@ -473,6 +473,6 @@ public class plugin_GTviaMarkers implements Command
 		}
 
 		//and quit
-		ij.appEvent().quit();
+		//ij.appEvent().quit();
 	}
 }

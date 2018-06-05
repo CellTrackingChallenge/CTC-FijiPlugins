@@ -172,13 +172,13 @@ public class plugin_CTCmeasuresICT implements Command
 
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		//DEBUG//ij.ui().showUI();
+		ij.ui().showUI();
 
 		//run this class as if from GUI
 		ij.command().run(plugin_CTCmeasuresICT.class, true, "gtPath",args[0], "resPath",args[1],
 			"calcTRA",true, "calcSEG",true);
 
 		//and close the IJ instance...
-		ij.appEvent().quit();
+		//ij.appEvent().quit();
 	}
 }
