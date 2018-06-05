@@ -44,6 +44,10 @@ public class plugin_AOGMconsistency implements Command
 		description = "Path should contain result files directly: mask???.tif and res_track.txt")
 	private File resPath;
 
+	@Parameter(label = "Do empty images check:",
+		description = "Checks if no label is found in either ground-truth or result image before measuring TRA.")
+	private boolean checkEmptyImages = true;
+
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folder has to comply with certain data format, please see";
@@ -79,7 +83,7 @@ public class plugin_AOGMconsistency implements Command
 				Img<UnsignedShortType> res_img
 					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
 
-				cache.ClassifyLabels(res_img, res_img);
+				cache.ClassifyLabels(res_img, res_img, checkEmptyImages);
 				++time;
 
 				//to be on safe side (with memory)
@@ -136,7 +140,7 @@ public class plugin_AOGMconsistency implements Command
 		ij.ui().showUI();
 
 		//run this class is if from GUI
-		//ij.command().run(plugin_AOGM.class, true, "gtPath",args[0], "resPath",args[1]);
+		//ij.command().run(plugin_AOGMconsistency.class, true, "gtPath",args[0], "resPath",args[1]);
 
 		//and close the IJ instance...
 		//ij.appEvent().quit();

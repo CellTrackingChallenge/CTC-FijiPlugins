@@ -387,9 +387,18 @@ public class TrackDataCache
 	//---------------------------------------------------------------------/
 	//aux data fillers -- merely a node data processors and classifiers
 
-	@SuppressWarnings("unchecked")
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
 	                           RandomAccessibleInterval<UnsignedShortType> res_img)
+	{
+		//default behavior is to be very strict:
+		//  complain whenever empty result or GT image is found
+		ClassifyLabels(gt_img,res_img, true);
+	}
+
+	@SuppressWarnings("unchecked")
+	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
+	                           RandomAccessibleInterval<UnsignedShortType> res_img,
+	                           final boolean shouldComplainOnEmptyImages)
 	{
 		//check the sizes of the images
 		if (gt_img.numDimensions() != res_img.numDimensions())
@@ -461,7 +470,9 @@ public class TrackDataCache
 		}
 
 		//check the images are not completely blank
-		if (level.m_gt_lab.length == 0)
+		if (shouldComplainOnEmptyImages && level.m_res_lab.length == 0)
+			throw new IllegalArgumentException("RES image has no markers!");
+		if (shouldComplainOnEmptyImages && level.m_gt_lab.length == 0)
 			throw new IllegalArgumentException("GT image has no markers!");
 
 		//we don't need this one anymore
