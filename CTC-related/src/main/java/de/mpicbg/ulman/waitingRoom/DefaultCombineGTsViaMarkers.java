@@ -31,8 +31,8 @@
 //PUTBACK// package net.imagej.ops.images.combineGTs;
 package de.mpicbg.ulman.waitingRoom;
 
-import net.imagej.ops.Ops;
-import net.imagej.ops.special.computer.AbstractBinaryComputerOp;
+//import net.imagej.ops.Ops;
+//import net.imagej.ops.special.computer.AbstractBinaryComputerOp;
 
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.exception.IncompatibleTypeException;
@@ -47,7 +47,7 @@ import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 
 import org.scijava.plugin.Parameter;
-import org.scijava.plugin.Plugin;
+//import org.scijava.plugin.Plugin;
 
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgSaver;
