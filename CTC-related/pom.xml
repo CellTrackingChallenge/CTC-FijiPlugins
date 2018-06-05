@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.scijava</groupId>
     <artifactId>pom-scijava</artifactId>
-    <version>17.1.0</version>
+    <version>22.3.0</version>
     <relativePath />
   </parent>
 
 
   <groupId>de.mpicbg.ulman</groupId>
   <artifactId>CTC-related-FijiPlugins</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
 
 	<organization>
 		<name>MPI-CBG</name>
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>de.mpicbg.ulman</groupId>
       <artifactId>CTC-paper-FijiPlugins</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.3-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.jhotdraw</groupId>
