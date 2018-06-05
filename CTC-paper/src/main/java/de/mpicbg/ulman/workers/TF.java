@@ -250,7 +250,7 @@ public class TF
 		int partlyRecoveredCounter=0; //partly recovered tracks (PIT)
 		int tooShortCounter=0; //PIT but unable to follow to the GT track to the very end
 		int correctlyFollowedCounter=0; //PIT and followed exactly the GT track
-		int overlyLongCounter=0; //PIT, followed GT track and did not stop but continued erroneously to follow something
+		//int overlyLongCounter=0; //PIT, followed GT track and did not stop but continued erroneously to follow something
 
 		for (Float gt_fR : gt_followedRatio.values()) //goes essentially over all tracks, see CalcFRs()
 		{
@@ -261,7 +261,7 @@ public class TF
 				if (gt_fR < 1.0f) ++tooShortCounter;
 			}
 			if (gt_fR == 1.0f) ++correctlyFollowedCounter;
-			if (gt_fR > 1.0f) ++overlyLongCounter;
+			//if (gt_fR > 1.0f) ++overlyLongCounter;
 		}
 		tf/=(double)partlyRecoveredCounter;
 
