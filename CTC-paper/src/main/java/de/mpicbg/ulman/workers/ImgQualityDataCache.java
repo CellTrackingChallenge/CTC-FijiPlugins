@@ -793,9 +793,9 @@ public class ImgQualityDataCache
 				int[] dims = new int[imgFG.numDimensions()];
 				for (int n=0; n < imgFG.numDimensions(); ++n)
 					dims[n] = (int)imgFG.dimension(n);
-				ArrayImgFactory<FloatType> imgFactory = new ArrayImgFactory<>();
-				dilIgA = imgFactory.create(dims, new FloatType());
-				dilIgB = imgFactory.create(dims, new FloatType());
+				ArrayImgFactory<FloatType> imgFactory = new ArrayImgFactory<>(new FloatType());
+				dilIgA = imgFactory.create(dims);
+				dilIgB = imgFactory.create(dims);
 				dims = null;
 				imgFactory = null;
 			}

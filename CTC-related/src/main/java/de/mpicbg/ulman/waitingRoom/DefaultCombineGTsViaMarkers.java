@@ -167,7 +167,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		//third, create a temporary image...
 		markerImg.dimensions(maxBound);
 		final Img<FloatType> tmpImg
-			= (new ArrayImgFactory<FloatType>()).create(maxBound, new FloatType());
+			= (new ArrayImgFactory<>(new FloatType())).create(maxBound);
 
 		//...and prepare its cursor
 		final RandomAccess<FloatType> tmpCursor
