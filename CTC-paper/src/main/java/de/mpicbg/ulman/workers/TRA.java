@@ -528,6 +528,12 @@ public class TRA
 		final HashMap<Integer,Track> res_tracks = cache.res_tracks;
 		final Vector<TemporalLevel> levels = cache.levels;
 
+		if (doConsistencyCheck)
+		{
+			CheckConsistency(levels,  gt_tracks, true);
+			CheckConsistency(levels, res_tracks, false);
+		}
+
 		//this is: local ClassifyLabels() -- the part that already does some AOGM checks
 		//this is: the AOGM-specific last portion of the original FindMatch() C++ function:
 		//
@@ -568,12 +574,6 @@ public class TRA
 					max_split = num > max_split ? num : max_split;
 				}
 			}
-		}
-
-		if (doConsistencyCheck)
-		{
-			CheckConsistency(levels,  gt_tracks, true);
-			CheckConsistency(levels, res_tracks, false);
 		}
 
 		// check the minimality condition
