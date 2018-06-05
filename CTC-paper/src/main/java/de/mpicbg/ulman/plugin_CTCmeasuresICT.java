@@ -66,6 +66,19 @@ public class plugin_CTCmeasuresICT implements Command
 	private boolean calcTRA = true;
 
 
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
+		label = "Select optional preferences:")
+	private final String optionsHeader = "";
+
+	@Parameter(label = "Do verbose logging",
+		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
+	private boolean optionVerboseLogging = true;
+
+	@Parameter(label = "Do consistency check",
+		description = "Evaluates the consistency of user's images and tracks.txt before measuring TRA.")
+	private boolean optionConsistency = true;
+
+
 	//citation footer...
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
 	private final String citationFooterA
@@ -105,7 +118,7 @@ public class plugin_CTCmeasuresICT implements Command
 		{
 			try {
 				final SEG seg = new SEG(log);
-				seg.doLogReports = true;
+				seg.doLogReports = optionVerboseLogging;
 				SEG = seg.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {
@@ -120,8 +133,8 @@ public class plugin_CTCmeasuresICT implements Command
 		{
 			try {
 				final TRA tra = new TRA(log);
-				tra.doConsistencyCheck = true;
-				tra.doLogReports = true;
+				tra.doConsistencyCheck = optionConsistency;
+				tra.doLogReports = optionVerboseLogging;
 				TRA = tra.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {
