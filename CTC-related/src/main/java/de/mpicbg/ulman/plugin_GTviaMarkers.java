@@ -404,27 +404,36 @@ public class plugin_GTviaMarkers implements Command
 
 			//prepare a progress bar:
 			//init the components of the bar
-			JFrame frame = new JFrame("CTC Merging Progress Bar");
-			ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "",
-					0, fileIdxTo-fileIdxFrom+1, false);
-			Button pbtn = new Button("Stop merging");
-			ButtonHandler pbtnHandler = new ButtonHandler();
-			pbtn.setMaximumSize(new Dimension(150, 40));
-			pbtn.addActionListener(pbtnHandler);
+			JFrame frame = uiService.isHeadless() ? null : new JFrame("CTC Merging Progress Bar");
+			ProgressIndicator pbar = null;
+			Button pbtn = null;
+			ButtonHandler pbtnHandler = null;
+			if (frame != null)
+			{
+				pbar = new ProgressIndicator("Time points processed: ", "",
+						0, fileIdxTo-fileIdxFrom+1, false);
+				pbtn = new Button("Stop merging");
+				pbtnHandler = new ButtonHandler();
+				pbtn.setMaximumSize(new Dimension(150, 40));
+				pbtn.addActionListener(pbtnHandler);
 
-			//populate the bar and show it
-			frame.setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
-			frame.add(pbar);
-			frame.add(pbtn);
-			frame.setMinimumSize(new Dimension(300, 100));
-			frame.setLocationByPlatform(true);
-			if (uiService.isVisible()) frame.setVisible(true);
+				//populate the bar and show it
+				frame.setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+				frame.add(pbar);
+				frame.add(pbtn);
+				frame.setMinimumSize(new Dimension(300, 100));
+				frame.setLocationByPlatform(true);
+				if (uiService.isVisible()) frame.setVisible(true);
+			}
 
 			//iterate over all jobs
 			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
 			{
-				pbar.setProgress(idx-fileIdxFrom);
-				if (pbtnHandler.buttonPressed()) break;
+				if (frame != null)
+				{
+					pbar.setProgress(idx-fileIdxFrom);
+					if (pbtnHandler.buttonPressed()) break;
+				}
 
 				//first populate/expand to get a particular instance of a job
 				for (int i=0; i < args.length-2; i+=2)
@@ -442,8 +451,11 @@ public class plugin_GTviaMarkers implements Command
 			}
 
 			//hide away the progress bar once the job is done
-			pbtn.removeActionListener(pbtnHandler);
-			frame.dispose();
+			if (frame != null)
+			{
+				pbtn.removeActionListener(pbtnHandler);
+				frame.dispose();
+			}
 		}
 		catch (ImgIOException e) {
 			log.error("plugin_GTviaMarkers error: "+e);
@@ -457,7 +469,7 @@ public class plugin_GTviaMarkers implements Command
 		//head less variant:
 		//start up our own ImageJ without GUI
 		final ImageJ ij = new net.imagej.ImageJ();
-		ij.ui().showUI();
+		//ij.ui().showUI();
 		//ij.command().run(plugin_GTviaMarkers.class, true);
 
 		try {
