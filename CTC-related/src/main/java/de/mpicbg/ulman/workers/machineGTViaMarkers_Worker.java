@@ -47,7 +47,7 @@ public class machineGTViaMarkers_Worker
 		ops = _ops;
 		log = _log;
 
-		myOps = new DefaultCombineGTsViaMarkers();
+		myOps = new DefaultCombineGTsViaMarkers(ops);
 		//TODO: check myOps is not null, BTW: could it possibly be?
 	}
 
