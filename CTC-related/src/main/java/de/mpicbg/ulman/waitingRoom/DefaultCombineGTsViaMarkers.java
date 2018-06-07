@@ -38,6 +38,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.view.Views;
 import net.imglib2.FinalInterval;
 import net.imglib2.Cursor;
@@ -45,6 +46,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Intervals;
 
 import org.scijava.plugin.Parameter;
 //import org.scijava.plugin.Plugin;
@@ -57,6 +59,12 @@ import java.util.Iterator;
 import java.util.Vector;
 import java.util.HashSet;
 import java.util.HashMap;
+import net.imagej.ops.OpService;
+import net.imglib2.algorithm.labeling.ConnectedComponents;
+import net.imglib2.type.numeric.IntegerType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.roi.labeling.*;
+import net.imglib2.loops.LoopBuilder;
 
 /**
  * Every voxel in the output image is set with the number of non-zero
@@ -72,6 +80,7 @@ import java.util.HashMap;
  * Output: Combined image
  *
  * @author Vladimír Ulman
+ * @author Cem Emre Akbas
  */
 //PUTBACK// @Plugin(type = Ops.Images.CombineGTs.class)
 public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
@@ -79,6 +88,10 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 //PUTBACK//		Img<UnsignedShortType>, Img<UnsignedShortType>>
 //PUTBACK//	implements Ops.Images.CombineGTs
 {
+	public DefaultCombineGTsViaMarkers(final OpService _ops) {
+		ops = _ops;
+	}
+
 	@Parameter
 	private Vector<Float> inWeights;
 
@@ -90,6 +103,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 	@Parameter
 	private T type;
+
+	@Parameter
+	private OpService ops;
 
 	/// Flag the "operational mode" regarding labels touching image boundary
 	private final Boolean removeMarkersAtBoundary = false;
@@ -442,6 +458,8 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			}
 		}
 
+		removeIsolatedIslands(outImg);
+
 		//report details of colliding markers:
 		System.out.println("reporting colliding markers:");
 		for (Iterator<Integer> it = mCollidingVolume.keySet().iterator(); it.hasNext(); )
@@ -609,4 +627,85 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	//temporary buffer for position handling, shared between functions overhere
 	//(in a believe that we avoid many allocs)
 	private int pos[];
+
+	private <O extends IntegerType<O>> void removeIsolatedIslands(Img<O> inImg)
+	{
+		ImgLabeling<Integer, UnsignedByteType> lImg = new ImgLabeling<>(ArrayImgs.unsignedBytes(Intervals.dimensionsAsLongArray(inImg)));
+		Cursor<LabelingType<Integer>> out = lImg.cursor();
+		RandomAccess<O> in = inImg.randomAccess();
+		while( out.hasNext() )
+		{
+			LabelingType<Integer> labels = out.next();
+			in.setPosition(out);
+			labels.add( in.get().getInteger() );
+		}
+		final int noComponents = lImg.getMapping().numSets()-2;		// get the number of detected components
+		int total_removed = 0;	// stores the number of removed components from the input image
+		int max_removed = 0;	// stores the maximum number of removed components from one particular label region
+		int num_removed_img = 0;	// stores the number of manipulated label regions
+
+		LabelRegions<Integer> regions = new LabelRegions<>(lImg);  // get regions from the labeled image
+
+		Img<O> outputImg = inImg.factory().create(inImg);		// create the empty output image, its size is the same as the input image
+		// now loop through all the regions in the labeling of input image
+		for (LabelRegion<Integer> region : regions) {
+			Img<O> singlelabelImg = copyRegion(inImg, region);   // copy the current label region to a blank image
+			ImgLabeling<Integer,UnsignedByteType> singlelImg
+			  = ops.labeling().cca((RandomAccessibleInterval<O>) singlelabelImg, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);   // run cca over the image with only one label region
+			LabelRegions<Integer> singleregions = new LabelRegions<>(singlelImg);	// get new labels from the sub-image. Isolated islands now have different labels.
+			LabelRegion<Integer> biggest_subregion = null;		// create a blank region
+			// find the biggest subregion of the particular label
+			if (singleregions.getExistingLabels().size() > 0) {		// to skip the background which is also considered as a region.
+				for (LabelRegion<Integer> singleregion : singleregions) {    // loop through all the subregions in one particular label region
+					if( biggest_subregion == null ||
+							ops.geom().size(singleregion).get() > ops.geom().size(biggest_subregion).get()) {
+						biggest_subregion = singleregion;		// determine and update the biggest subregion
+					}
+				}
+				outputImg = addRegion(inImg, outputImg, biggest_subregion);   // collect biggest subregions in the output image
+			}
+			if (singleregions.getExistingLabels().size()>1) {	// This part is only executed for label regions that has at least 2 isolated components
+				num_removed_img = num_removed_img + 1;
+				int num_removed_comp = singleregions.getExistingLabels().size()-1;	// all subregions except the biggest one is deleted
+				total_removed = total_removed + num_removed_comp;
+				if (num_removed_comp > max_removed) {
+					max_removed = num_removed_comp;
+				}
+			}
+		}
+		//uiService.show("Result", outputImg);
+		System.out.println("Components removed in " + num_removed_img + "/" + noComponents + " regions. Max removed in a particular region is " + max_removed + ". In total, " + total_removed + " components removed.");
+		LoopBuilder.setImages(inImg, outputImg).forEachPixel((i, o) -> {i.setInteger(o.getInteger());});
+	}
+
+	private <O extends IntegerType<O>> Img<O> copyRegion(Img<O> input, LabelRegion<Integer> region) {
+		// This method copies out given region from the input image to a blank image. The returned subimage will be the input of the cca.
+		LabelRegionCursor singlecc =  region.localizingCursor();
+		RandomAccess<O> ra = input.randomAccess();
+		Img<O> singlelabelImg = input.factory().create(input);		// create an empty image
+		RandomAccess<O> singlerr = singlelabelImg.randomAccess();
+		while (singlecc.hasNext())		// iterate cursor over the given region
+		{
+			singlecc.next();
+			singlerr.setPosition(singlecc);  // set cursor position on the component
+			ra.setPosition(singlecc);		// access position that holds the desired pixel value
+			singlerr.get().setInteger(ra.get().getInteger());	// get the pixel value from the input image and copy it to the subimage 
+		}
+		return singlelabelImg;
+	}
+
+	private <O extends IntegerType<O>> Img<O> addRegion(Img<O> input, Img<O> collectedlabelImg, LabelRegion<Integer> region) {
+		// This method copies the given region from input image to the output image that collects biggest subregions
+		LabelRegionCursor singlecc =  region.localizingCursor();
+		RandomAccess<O> ra = input.randomAccess();
+		RandomAccess<O> singlerr = collectedlabelImg.randomAccess();
+		while (singlecc.hasNext())    // iterate cursor over the given region
+		{
+			singlecc.next();
+			singlerr.setPosition(singlecc);		// set cursor position on the component
+			ra.setPosition(singlecc);			// access position that holds the desired pixel value
+			singlerr.get().setInteger(ra.get().getInteger());	// get the pixel value from the input image and add it to the given collector image.
+		}
+		return collectedlabelImg;
+	}
 }

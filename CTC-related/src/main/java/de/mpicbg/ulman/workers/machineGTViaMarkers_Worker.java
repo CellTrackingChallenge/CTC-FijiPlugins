@@ -9,6 +9,7 @@
  */
 package de.mpicbg.ulman.workers;
 
+import org.scijava.io.IOService;
 import org.scijava.log.LogService;
 import static org.scijava.log.LogLevel.ERROR;
 import net.imagej.ops.OpService;
@@ -26,6 +27,7 @@ import io.scif.img.ImgOpener;
 import io.scif.img.ImgSaver;
 import net.imglib2.exception.IncompatibleTypeException;
 
+import java.io.IOException;
 import java.util.Vector;
 
 import de.mpicbg.ulman.waitingRoom.DefaultCombineGTsViaMarkers;
@@ -47,7 +49,7 @@ public class machineGTViaMarkers_Worker
 		ops = _ops;
 		log = _log;
 
-		myOps = new DefaultCombineGTsViaMarkers();
+		myOps = new DefaultCombineGTsViaMarkers(ops);
 		//TODO: check myOps is not null, BTW: could it possibly be?
 	}
 
@@ -153,10 +155,9 @@ public class machineGTViaMarkers_Worker
 
 		try {
 			log.info("Saving file: "+args[args.length-1]);
-			ImgSaver imgSaver = new ImgSaver();
-			imgSaver.saveImg(args[args.length-1], outImg);
+			ops.getContext().getService(IOService.class).save(outImg, args[args.length-1]);
 		}
-		catch (ImgIOException | IncompatibleTypeException e) {
+		catch (IOException e) {
 			log.error("Error writing file: "+args[args.length-1]);
 			log.error("Error msg: "+e);
 			throw new ImgIOException("Unable to write output file.");
