@@ -679,7 +679,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		}
 		//uiService.show("Result", outputImg);
 		System.out.println("Components removed in " + num_removed_img + "/" + noComponents + " regions. Max removed in a particular region is " + max_removed + ". In total, " + total_removed + " components removed.");
-		LoopBuilder.setImages(inImg, outputImg).forEachPixel((i, o) -> {i.setInteger(o.getInteger());});
+
+		//now, rewrite the original input with its cleaned (no isolated islands) version, that is, with the outputImg
+		LoopBuilder.setImages(inImg, outputImg).forEachPixel( (i, o) -> i.setInteger(o.getInteger()) );
 	}
 
 	private <O extends IntegerType<O>> Img<O> copyRegion(Img<O> input, LabelRegion<Integer> region) {
