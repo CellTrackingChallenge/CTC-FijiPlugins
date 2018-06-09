@@ -10,6 +10,7 @@
 package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
+import static org.scijava.log.LogLevel.ERROR;
 import net.imagej.ops.OpService;
 
 import net.imglib2.img.Img;
@@ -83,6 +84,7 @@ public class machineGTViaMarkers_Worker
 		openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
 		//create and silence image loader routines
 		final ImgOpener imgOpener = new ImgOpener(log.getContext());
+		imgOpener.log().setLevel("io.scif.formats", ERROR);
 
 		SCIFIOImgPlus<?> img = null;
 		Object firstImgVoxelType = null;
