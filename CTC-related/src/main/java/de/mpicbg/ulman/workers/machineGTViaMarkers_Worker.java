@@ -90,6 +90,7 @@ public class machineGTViaMarkers_Worker
 		imgOpener.log().setLevel("io.scif.formats", ERROR);
 
 		SCIFIOImgPlus<?> img = null;
+		Object firstImgVoxelType = null;
 
 		//load all of them
 		for (int i=0; i < inputImagesCount+1; ++i)
@@ -100,9 +101,14 @@ public class machineGTViaMarkers_Worker
 				img = imgOpener.openImgs(args[2*i],openingRegime).get(0);
 
 				//check the type of the image (the combineGTs plug-in requires RealType<>)
-				//TODO this code does not assure that all input images are of the same type
 				if (!(img.firstElement() instanceof RealType<?>))
 					throw new ImgIOException("Input image voxels must be scalars.");
+
+				//check that all input images are of the same type
+				//NB: the check excludes the tracking markers image
+				if (firstImgVoxelType == null) firstImgVoxelType = img.firstElement();
+				else if (i < inputImagesCount && !(img.firstElement().equals(firstImgVoxelType)))
+						throw new ImgIOException("Voxel types of all input images must be the same.");
 
 				//check the dimensions, against the first loaded image
 				//(if processing second or later image already)
