@@ -38,7 +38,6 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.view.Views;
 import net.imglib2.FinalInterval;
 import net.imglib2.Cursor;
@@ -46,7 +45,6 @@ import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
 
 import org.scijava.plugin.Parameter;
 //import org.scijava.plugin.Plugin;
@@ -62,7 +60,6 @@ import java.util.HashMap;
 import net.imagej.ops.OpService;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.type.numeric.IntegerType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.roi.labeling.*;
 import net.imglib2.loops.LoopBuilder;
 
@@ -630,7 +627,13 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 	private <O extends IntegerType<O>> void removeIsolatedIslands(Img<O> inImg)
 	{
-		ImgLabeling<Integer, UnsignedByteType> lImg = new ImgLabeling<>(ArrayImgs.unsignedBytes(Intervals.dimensionsAsLongArray(inImg)));
+		//since there are no overlaps in the input labels, ImgLabeling.mapping will
+		//be of the same length as there are different labels in the input image,
+		//that said, there will be no more of them than what the input voxel type can store,
+		//that said, the voxel type of the backing image can be used the same
+		ImgLabeling<Integer, O> lImg = new ImgLabeling<>(inImg.factory().create(inImg));
+
+		//this "translates" discovered labels into the lImg -- the labeling map
 		Cursor<LabelingType<Integer>> out = lImg.cursor();
 		RandomAccess<O> in = inImg.randomAccess();
 		while( out.hasNext() )
@@ -639,10 +642,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			in.setPosition(out);
 			labels.add( in.get().getInteger() );
 		}
+
 		final int noComponents = lImg.getMapping().numSets()-2;		// get the number of detected components
-		int total_removed = 0;	// stores the number of removed components from the input image
-		int max_removed = 0;	// stores the maximum number of removed components from one particular label region
-		int num_removed_img = 0;	// stores the number of manipulated label regions
+		int total_removed = 0;    // stores the number of removed components from the input image
+		int max_removed = 0;      // stores the maximum number of removed components from one particular label region
+		int num_removed_img = 0;  // stores the number of manipulated label regions
 
 		LabelRegions<Integer> regions = new LabelRegions<>(lImg);  // get regions from the labeled image
 
@@ -650,8 +654,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		// now loop through all the regions in the labeling of input image
 		for (LabelRegion<Integer> region : regions) {
 			Img<O> singlelabelImg = copyRegion(inImg, region);   // copy the current label region to a blank image
-			ImgLabeling<Integer,UnsignedByteType> singlelImg
+			ImgLabeling<Integer,O> singlelImg
 			  = ops.labeling().cca((RandomAccessibleInterval<O>) singlelabelImg, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);   // run cca over the image with only one label region
+
 			LabelRegions<Integer> singleregions = new LabelRegions<>(singlelImg);	// get new labels from the sub-image. Isolated islands now have different labels.
 			LabelRegion<Integer> biggest_subregion = null;		// create a blank region
 			// find the biggest subregion of the particular label
