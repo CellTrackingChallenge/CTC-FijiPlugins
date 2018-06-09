@@ -662,8 +662,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			// find the biggest subregion of the particular label
 			if (singleregions.getExistingLabels().size() > 0) {		// to skip the background which is also considered as a region.
 				for (LabelRegion<Integer> singleregion : singleregions) {    // loop through all the subregions in one particular label region
-					if( biggest_subregion == null ||
-							ops.geom().size(singleregion).get() > ops.geom().size(biggest_subregion).get()) {
+					if ( biggest_subregion == null || singleregion.size() > biggest_subregion.size() ) {
 						biggest_subregion = singleregion;		// determine and update the biggest subregion
 					}
 				}
