@@ -121,7 +121,7 @@ public class machineGTViaMarkers_Worker
 				if (i < inputImagesCount)
 					inWeights.add( Float.parseFloat(args[2*i +1]) );
 			}
-			catch (ImgIOException e) {
+			catch (UnsupportedOperationException | ImgIOException e) {
 				log.error("Error reading file: "+args[2*i]);
 				log.error("Error msg: "+e);
 				throw new ImgIOException("Unable to read input file.");

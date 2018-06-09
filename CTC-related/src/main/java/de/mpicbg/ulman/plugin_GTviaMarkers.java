@@ -191,8 +191,8 @@ public class plugin_GTviaMarkers implements Command
 		final String name = outputPath.getName();
 		if (name != null && (name.lastIndexOf("X") - name.indexOf("X")) != 2)
 		{
-			statusService.showStatus("Filename "+name+" does not contain XXX pattern.");
-			//uiService.showDialog(    "Filename "+name+" does not contain XXX pattern.");
+			statusService.showStatus("Filename \""+name+"\" does not contain XXX pattern.");
+			//uiService.showDialog(    "Filename \""+name+"\" does not contain XXX pattern.");
 			return false;
 		}
 
@@ -200,8 +200,8 @@ public class plugin_GTviaMarkers implements Command
 		final File path = outputPath.getParentFile();
 		if (path != null && !path.exists())
 		{
-			statusService.showStatus("Parent folder "+path.getAbsolutePath()+" does not exist.");
-			//uiService.showDialog(    "Parent folder "+path.getAbsolutePath()+" does not exist.");
+			statusService.showStatus("Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
+			//uiService.showDialog(    "Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
 
@@ -215,8 +215,8 @@ public class plugin_GTviaMarkers implements Command
 		//check the job file exists
 		if (filePath == null || !filePath.exists())
 		{
-			statusService.showStatus("Job file "+filePath.getAbsolutePath()+" does not exist.");
-			//uiService.showDialog(    "Job file "+filePath.getAbsolutePath()+" does not exist.");
+			statusService.showStatus("Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
+			//uiService.showDialog(    "Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
 
@@ -238,55 +238,45 @@ public class plugin_GTviaMarkers implements Command
 		{
 			++lineNo;
 
-			//read items on the line
-			int partNo=0;
-			for (String part : line.split("\\s+"))
-			{
-				++partNo;
+			//this currently represents the first column/complete line
+			String partOne = line;
 
-				//test for presence of the expanding pattern
-				if (partNo == 1 && (part.lastIndexOf("X") - part.indexOf("X")) != 2)
-				{
-					statusService.showStatus("Filename "+part+" does not contain XXX pattern on line "+lineNo+".");
-					uiService.showDialog(    "Filename "+part+" does not contain XXX pattern on line "+lineNo+".");
-					return false;
-				}
-				if (partNo == 2 && weightAvail && lineNo < job.size())
-				{
-					//is the column actually float-parsable number?
-					try {
-						Float.parseFloat(part);
-					}
-					catch (Exception e) {
-						statusService.showStatus("The weight column "+part+" cannot be parsed as a real number on line "+lineNo+".");
-						uiService.showDialog(    "The weight column "+part+" cannot be parsed as a real number on line "+lineNo+".");
-						return false;
-					}
-				}
-			}
-
-			//test for (optional) weight column, if not on the last line
+			//should there be the weight column on this line?
 			if (weightAvail && lineNo < job.size())
 			{
-				if (partNo < 2)
+				//yes, there should be one...
+				String[] lineTokens = line.split("\\s+");
+
+				//is there the second column at all?
+				if (lineTokens.length == 1)
 				{
 					statusService.showStatus("Missing column with weights on line "+lineNo+".");
 					uiService.showDialog(    "Missing column with weights on line "+lineNo+".");
 					return false;
 				}
-				if (partNo > 2)
-				{
-					statusService.showStatus("Detected extra column after weights on line "+lineNo+".");
-					uiService.showDialog(    "Detected extra column after weights on line "+lineNo+".");
+
+				//get the first part into the partOne variable
+				partOne = new String(); //NB: could be nice to be able to tell the String how much to reserve as we know it
+				for (int q=0; q < lineTokens.length-1; ++q)
+					partOne += lineTokens[q];
+
+				//is the column actually float-parsable number?
+				String partTwo = lineTokens[lineTokens.length-1];
+				try {
+					Float.parseFloat(partTwo);
+				}
+				catch (Exception e) {
+					statusService.showStatus("The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
+					uiService.showDialog(    "The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
 					return false;
 				}
 			}
-			//no extra columns when weights are not expected
-			//no extra columns on the last line (in any case)
-			if ((!weightAvail || lineNo == job.size()) && partNo != 1)
+
+			//test for presence of the expanding pattern
+			if ( (partOne.lastIndexOf("X") - partOne.indexOf("X")) != 2 )
 			{
-				statusService.showStatus("Detected extra column after filename pattern on line "+lineNo+".");
-				uiService.showDialog(    "Detected extra column after filename pattern on line "+lineNo+".");
+				statusService.showStatus("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+				uiService.showDialog(    "Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
 				return false;
 			}
 		}
@@ -363,23 +353,44 @@ public class plugin_GTviaMarkers implements Command
 
 		//prepare the output array
 		String[] argsPattern = new String[2*job.size()+1]; //= 2*(job.size()-1) +1 +2
-		
+
 		//parse the input job specification file (which we know is sane for sure)
 		int lineNo=0;
 		for (String line : job)
 		{
-			//read items on the line
-			int partNo=0;
-			for (String part : line.split("\\s+"))
-			{
-				argsPattern[2*lineNo +partNo] = part;
-				++partNo;
-			}
-			++lineNo;
+			//this currently represents the first column/complete line
+			String partOne = line;
 
-			//if user-weights not available, provide own ones
-			//(provided we are not parsing the very last line with TRA marker image)
-			if (!weightAvail && lineNo < job.size()) argsPattern[2*(lineNo-1) +1] = "1.0";
+			//should there be the weight column on this line?
+			//are we still on lines where weight column should be handled?
+			if (lineNo < job.size())
+			{
+				if (weightAvail)
+				{
+					//yes, there should be one...
+					String[] lineTokens = line.split("\\s+");
+					//NB: inFileOKAY() was true, so there is the second column
+
+					//get the first part into the partOne variable
+					partOne = new String(); //NB: could be nice to be able to tell the String how much to reserve as we know it
+					for (int q=0; q < lineTokens.length-1; ++q)
+						partOne += lineTokens[q];
+
+					//the weight itself
+					argsPattern[2*lineNo +1] = lineTokens[lineTokens.length-1];
+				}
+				else
+				{
+					//if user-weights not available, provide own ones
+					//(provided we are not parsing the very last line with TRA marker image)
+					argsPattern[2*lineNo +1] = "1.0";
+				}
+			}
+
+			//add the input file item as well
+			argsPattern[2*lineNo +0] = partOne;
+
+			++lineNo;
 		}
 
 		final float threshold =
