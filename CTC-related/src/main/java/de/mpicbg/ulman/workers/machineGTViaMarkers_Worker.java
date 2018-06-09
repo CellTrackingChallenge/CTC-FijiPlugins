@@ -9,9 +9,7 @@
  */
 package de.mpicbg.ulman.workers;
 
-import org.scijava.io.IOService;
 import org.scijava.log.LogService;
-import static org.scijava.log.LogLevel.ERROR;
 import net.imagej.ops.OpService;
 
 import net.imglib2.img.Img;
@@ -25,9 +23,7 @@ import io.scif.img.ImgIOException;
 import io.scif.img.SCIFIOImgPlus;
 import io.scif.img.ImgOpener;
 import io.scif.img.ImgSaver;
-import net.imglib2.exception.IncompatibleTypeException;
 
-import java.io.IOException;
 import java.util.Vector;
 
 import de.mpicbg.ulman.waitingRoom.DefaultCombineGTsViaMarkers;
@@ -86,8 +82,7 @@ public class machineGTViaMarkers_Worker
 		final SCIFIOConfig openingRegime = new SCIFIOConfig();
 		openingRegime.imgOpenerSetImgModes(ImgMode.ARRAY);
 		//create and silence image loader routines
-		final ImgOpener imgOpener = new ImgOpener();
-		imgOpener.log().setLevel("io.scif.formats", ERROR);
+		final ImgOpener imgOpener = new ImgOpener(log.getContext());
 
 		SCIFIOImgPlus<?> img = null;
 		Object firstImgVoxelType = null;
@@ -158,9 +153,10 @@ public class machineGTViaMarkers_Worker
 
 		try {
 			log.info("Saving file: "+args[args.length-1]);
-			ops.getContext().getService(IOService.class).save(outImg, args[args.length-1]);
+			ImgSaver imgSaver = new ImgSaver(log.getContext());
+			imgSaver.saveImg(args[args.length-1], outImg);
 		}
-		catch (IOException e) {
+		catch (ImgIOException e) {
 			log.error("Error writing file: "+args[args.length-1]);
 			log.error("Error msg: "+e);
 			throw new ImgIOException("Unable to write output file.");
