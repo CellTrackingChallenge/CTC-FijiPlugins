@@ -408,6 +408,12 @@ public class plugin_GTviaMarkers implements Command
 		//also weights are constant all the time
 		for (int i=1; i < args.length-3; i+=2) args[i] = argsPattern[i];
 
+		//defined here so that finally() block can see them...
+		JFrame frame = null;
+		Button pbtn = null;
+		ProgressIndicator pbar = null;
+		ButtonHandler pbtnHandler = null;
+
 		try {
 			//start up the worker class
 			final machineGTViaMarkers_Worker Worker
@@ -415,10 +421,7 @@ public class plugin_GTviaMarkers implements Command
 
 			//prepare a progress bar:
 			//init the components of the bar
-			JFrame frame = uiService.isHeadless() ? null : new JFrame("CTC Merging Progress Bar");
-			ProgressIndicator pbar = null;
-			Button pbtn = null;
-			ButtonHandler pbtnHandler = null;
+			frame = uiService.isHeadless() ? null : new JFrame("CTC Merging Progress Bar");
 			if (frame != null)
 			{
 				pbar = new ProgressIndicator("Time points processed: ", "",
@@ -460,16 +463,17 @@ public class plugin_GTviaMarkers implements Command
 
 				Worker.work(args);
 			}
-
+		}
+		catch (UnsupportedOperationException | ImgIOException e) {
+			log.error("plugin_GTviaMarkers error: "+e);
+		}
+		finally {
 			//hide away the progress bar once the job is done
 			if (frame != null)
 			{
 				pbtn.removeActionListener(pbtnHandler);
 				frame.dispose();
 			}
-		}
-		catch (ImgIOException e) {
-			log.error("plugin_GTviaMarkers error: "+e);
 		}
 	}
 
@@ -491,7 +495,7 @@ public class plugin_GTviaMarkers implements Command
 			//do the job
 			Worker.work(args);
 		}
-		catch (ImgIOException e) {
+		catch (UnsupportedOperationException | ImgIOException e) {
 			ij.log().error("plugin_GTviaMarkers error: "+e);
 		}
 

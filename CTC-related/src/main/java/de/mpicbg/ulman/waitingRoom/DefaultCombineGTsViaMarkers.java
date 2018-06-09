@@ -291,7 +291,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					ImgSaver imgSaver = new ImgSaver();
 					imgSaver.saveImg("/Users/ulman/DATA/dbgMerge__"+curMarker+".tif", tmpImg);
 				}
-				catch (ImgIOException | IncompatibleTypeException e) {
+				catch (UnsupportedOperationException | ImgIOException | IncompatibleTypeException e) {
 					System.out.println("Unable to write output file.");
 				}
 				//....end save....
@@ -406,7 +406,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 				imgSaver.saveImg(dbgImgFileName, outImg);
 			}
 		}
-		catch (ImgIOException | IncompatibleTypeException e) {
+		catch (UnsupportedOperationException | ImgIOException | IncompatibleTypeException e) {
 			System.out.println("Unable to write debug output file.");
 		}
 

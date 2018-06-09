@@ -156,7 +156,7 @@ public class machineGTViaMarkers_Worker
 			ImgSaver imgSaver = new ImgSaver(log.getContext());
 			imgSaver.saveImg(args[args.length-1], outImg);
 		}
-		catch (ImgIOException e) {
+		catch (UnsupportedOperationException | ImgIOException e) {
 			log.error("Error writing file: "+args[args.length-1]);
 			log.error("Error msg: "+e);
 			throw new ImgIOException("Unable to write output file.");
