@@ -88,6 +88,7 @@ public class machineGTViaMarkers_Worker
 
 		SCIFIOImgPlus<?> img = null;
 		Object firstImgVoxelType = null;
+		String firstImgVoxelTypeString = null;
 
 		//load all of them
 		for (int i=0; i < inputImagesCount+1; ++i)
@@ -103,9 +104,17 @@ public class machineGTViaMarkers_Worker
 
 				//check that all input images are of the same type
 				//NB: the check excludes the tracking markers image
-				if (firstImgVoxelType == null) firstImgVoxelType = img.firstElement();
-				else if (i < inputImagesCount && !(img.firstElement().equals(firstImgVoxelType)))
-						throw new ImgIOException("Voxel types of all input images must be the same.");
+				if (firstImgVoxelType == null)
+				{
+					firstImgVoxelType = img.firstElement();
+					firstImgVoxelTypeString = firstImgVoxelType.getClass().getSimpleName();
+				}
+				else if (i < inputImagesCount && !(img.firstElement().getClass().getSimpleName().startsWith(firstImgVoxelTypeString)))
+				{
+					log.info("first  image  voxel type: "+firstImgVoxelType.getClass().getName());
+					log.info("current image voxel type: "+img.firstElement().getClass().getName());
+					throw new ImgIOException("Voxel types of all input images must be the same.");
+				}
 
 				//check the dimensions, against the first loaded image
 				//(if processing second or later image already)
