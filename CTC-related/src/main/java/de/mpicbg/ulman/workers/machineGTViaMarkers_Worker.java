@@ -35,7 +35,6 @@ import de.mpicbg.ulman.waitingRoom.DefaultCombineGTsViaMarkers;
 public class machineGTViaMarkers_Worker
 {
 	///shortcuts to some Fiji services
-	final OpService ops;
 	final LogService log;
 
 	///shortcut to future mainstream imagej-ops function
@@ -45,18 +44,17 @@ public class machineGTViaMarkers_Worker
 	@SuppressWarnings("rawtypes")
 	public machineGTViaMarkers_Worker(final OpService _ops, final LogService _log)
 	{
-		//TODO: check that non-null was given for _ops and _log!
-		ops = _ops;
-		log = _log;
+		if (_ops == null || _log == null)
+			throw new ImgIOException("Please, give me existing OpService and LogService.");
 
-		myOps = new DefaultCombineGTsViaMarkers(ops);
-		//TODO: check myOps is not null, BTW: could it possibly be?
+		log = _log;
+		myOps = new DefaultCombineGTsViaMarkers(_ops);
 	}
 
 	///prevent from creating the class without any connection
 	@SuppressWarnings("unused")
 	private machineGTViaMarkers_Worker()
-	{ ops = null; log = null; myOps = null; } //this is to get rid of some warnings
+	{ log = null; myOps = null; } //this is to get rid of some warnings
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void work(final String... args) throws ImgIOException
@@ -132,10 +130,9 @@ public class machineGTViaMarkers_Worker
 		//parse threshold value
 		final float threshold = Float.parseFloat(args[args.length-2]);
 
-		//create the output image (TODO: need to use copy() of the first input image?)
+		//create an empty output image (of the same size and type as the markerImg)
 		SCIFIOImgPlus<UnsignedShortType> outImg
-			= new SCIFIOImgPlus<UnsignedShortType>(
-					ops.create().img(inImgs.get(0), new UnsignedShortType()));
+			= new SCIFIOImgPlus<UnsignedShortType>( markerImg.factory().create(markerImg) );
 
 		//setup the debug image filename
 		/*
