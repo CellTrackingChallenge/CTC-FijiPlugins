@@ -6,7 +6,7 @@ This is a repository with Java source codes of the [Fiji](http://fiji.sc) tools 
 * Biological (user-oriented) measures: CT, TF, BC(i), CCA
 * Dataset quality measures: SNR, CR, Hetb, Heti, Res, Sha, Den, Cha, Ove, Mit
 * Tracking accuracy evaluation with general [Acyclic Oriented Graphs Measure (AOGM)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0144959)
-* [_A Fiji Tool for Automatic Fusion of Segmentation and Tracking Labels_](http://labels2017.org/wp-content/uploads/2017/07/LABELS2017_14.pdf)
+* [_A Fiji Tool for Automatic Fusion of Segmentation and Tracking Labels_](https://labels.tue-image.nl/wp-content/uploads/2017/07/LABELS2017_14.pdf)
 
 The binaries of the measures can be downloaded from the [official challenge website](http://www.celltrackingchallenge.net). The binary of the fusion tool can be found on this website in the [`release` **folder**](https://github.com/xulman/CTC-FijiPlugins/tree/master/release). The recommended method, however, is to install all tools via Fiji update mechanism, see below. The Fiji update system mirrors the most recent versions of the measures and tools, and regularly checks for their newer versions.
 
