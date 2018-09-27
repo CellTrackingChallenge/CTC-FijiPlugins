@@ -28,6 +28,10 @@ import java.nio.file.Paths;
 import io.scif.img.ImgIOException;
 import java.util.List;
 
+import java.util.Set;
+import java.util.TreeSet;
+import java.text.ParseException;
+
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
@@ -95,14 +99,10 @@ public class plugin_GTviaMarkers implements Command
 		description = "Pixel is merged if there is more-or-equal to this threshold voters supporting it.")
 	private float mergeThreshold=1.0f;
 
-	@Parameter(label = "Starting index:",
-		description = "The range values are inclusive.",
-		callback = "idxFromChanged")
-	private int fileIdxFrom;
-	@Parameter(label = "Ending index:",
-		description = "The range values are inclusive.",
-		callback = "idxToChanged")
-	private int fileIdxTo;
+	@Parameter(label = "Timepoints to be processed (e.g. 1-9,23,25):",
+		description = "Comma separated list of numbers or intervals, interval is number-hyphen-number.",
+		validater = "idxChanged")
+	private String fileIdxStr = "0-9";
 
 	@Parameter(label = "Output filename pattern:", style = FileWidget.SAVE_STYLE,
 		description = "Please, don't forget to include XXX into the filename.",
@@ -165,23 +165,68 @@ public class plugin_GTviaMarkers implements Command
 	}
 
 	@SuppressWarnings("unused")
-	private void idxFromChanged()
+	private void idxChanged()
 	{
-		//non-sense value?
-		if (fileIdxFrom < 0) fileIdxFrom = 0;
-
-		//interval broken?
-		if (fileIdxTo < fileIdxFrom) fileIdxTo = fileIdxFrom;
+		//check the string is parse-able
+		try {
+			parseSequenceOfNumbers(fileIdxStr,null);
+		}
+		catch (ParseException e)
+		{
+			uiService.showDialog("Timepoints parsing problem after reading already:\n"+e.getMessage());
+		}
 	}
 
-	@SuppressWarnings("unused")
-	private void idxToChanged()
+	//reads inStr and parses it into outList (if outList is not null)
+	private
+	void parseSequenceOfNumbers(final String inStr, final Set<Integer> outList)
+	throws ParseException
 	{
-		//non-sense value?
-		if (fileIdxTo < 0) fileIdxTo = 0;
+		//marker where we pretend that the input string begins
+		//aka "how much has been parsed so far"
+		int strFakeBegin = 0;
 
-		//interval broken?
-		if (fileIdxFrom > fileIdxTo) fileIdxFrom = fileIdxTo;
+		try {
+			while (strFakeBegin < inStr.length())
+			{
+				int ic = inStr.indexOf(',',strFakeBegin);
+				int ih = inStr.indexOf('-',strFakeBegin);
+				//NB: returns -1 if not found
+
+				if (ic == -1)
+					//if no comma is found, then we are processing the last term
+					ic = inStr.length();
+
+				if (ih == -1)
+					//if no hyphen is found, then go to the "comma" branch
+					ih = ic+1;
+
+				if (ic < ih)
+				{
+					//"comma branch"
+					//we're parsing out N,
+					int N = Integer.parseInt( inStr.substring(strFakeBegin, ic).trim() );
+					if (outList != null)
+						outList.add(N);
+				}
+				else
+				{
+					//"hyphen branch"
+					//we're parsing out N-M,
+					int N = Integer.parseInt( inStr.substring(strFakeBegin, ih).trim() );
+					int M = Integer.parseInt( inStr.substring(ih+1, ic).trim() );
+					if (outList != null)
+						for (int n=N; n <= M; ++n)
+							outList.add(n);
+				}
+
+				strFakeBegin = ic+1;
+			}
+		}
+		catch (NumberFormatException e)
+		{
+			throw new ParseException(inStr.substring(0,strFakeBegin)+"\n"+e.getMessage(),0);
+		}
 	}
 
 	//will be also used for sanity checking, thus returns boolean
@@ -192,7 +237,6 @@ public class plugin_GTviaMarkers implements Command
 		if (name != null && (name.lastIndexOf("X") - name.indexOf("X")) != 2)
 		{
 			statusService.showStatus("Filename \""+name+"\" does not contain XXX pattern.");
-			//uiService.showDialog(    "Filename \""+name+"\" does not contain XXX pattern.");
 			return false;
 		}
 
@@ -201,7 +245,6 @@ public class plugin_GTviaMarkers implements Command
 		if (path != null && !path.exists())
 		{
 			statusService.showStatus("Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
-			//uiService.showDialog(    "Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
 
@@ -216,7 +259,6 @@ public class plugin_GTviaMarkers implements Command
 		if (filePath == null || !filePath.exists())
 		{
 			statusService.showStatus("Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
-			//uiService.showDialog(    "Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
 
@@ -415,6 +457,10 @@ public class plugin_GTviaMarkers implements Command
 		ButtonHandler pbtnHandler = null;
 
 		try {
+			//parse out the list of timepoints
+			TreeSet<Integer> fileIdxList = new TreeSet<>();
+			parseSequenceOfNumbers(fileIdxStr,fileIdxList);
+
 			//start up the worker class
 			final machineGTViaMarkers_Worker Worker
 				= new machineGTViaMarkers_Worker(ops,log);
@@ -425,7 +471,7 @@ public class plugin_GTviaMarkers implements Command
 			if (frame != null)
 			{
 				pbar = new ProgressIndicator("Time points processed: ", "",
-						0, fileIdxTo-fileIdxFrom+1, false);
+						0, fileIdxList.size(), false);
 				pbtn = new Button("Stop merging");
 				pbtnHandler = new ButtonHandler();
 				pbtn.setMaximumSize(new Dimension(150, 40));
@@ -441,11 +487,12 @@ public class plugin_GTviaMarkers implements Command
 			}
 
 			//iterate over all jobs
-			for (int idx = fileIdxFrom; idx <= fileIdxTo; ++idx)
+			int progresCnt = 0;
+			for (Integer idx : fileIdxList)
 			{
 				if (frame != null)
 				{
-					pbar.setProgress(idx-fileIdxFrom);
+					pbar.setProgress(progresCnt++);
 					if (pbtnHandler.buttonPressed()) break;
 				}
 
@@ -466,6 +513,10 @@ public class plugin_GTviaMarkers implements Command
 		}
 		catch (UnsupportedOperationException | ImgIOException e) {
 			log.error("plugin_GTviaMarkers error: "+e);
+		}
+		catch (ParseException e)
+		{
+			uiService.showDialog("Timepoints parsing problem after reading already:\n"+e.getMessage());
 		}
 		finally {
 			//hide away the progress bar once the job is done
