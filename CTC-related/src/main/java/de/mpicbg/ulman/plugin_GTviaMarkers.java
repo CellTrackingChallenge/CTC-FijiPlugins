@@ -28,7 +28,6 @@ import java.nio.file.Paths;
 import io.scif.img.ImgIOException;
 import java.util.List;
 
-import java.util.Set;
 import java.util.TreeSet;
 import java.text.ParseException;
 
@@ -42,6 +41,7 @@ import java.awt.Button;
 import java.awt.Dimension;
 
 import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
+import de.mpicbg.ulman.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
 public class plugin_GTviaMarkers implements Command
@@ -169,63 +169,12 @@ public class plugin_GTviaMarkers implements Command
 	{
 		//check the string is parse-able
 		try {
-			parseSequenceOfNumbers(fileIdxStr,null);
+			NumberSequenceHandler.parseSequenceOfNumbers(fileIdxStr,null);
 		}
 		catch (ParseException e)
 		{
-			uiService.showDialog("Timepoints parsing problem after reading already:\n"+e.getMessage());
-		}
-	}
-
-	//reads inStr and parses it into outList (if outList is not null)
-	private
-	void parseSequenceOfNumbers(final String inStr, final Set<Integer> outList)
-	throws ParseException
-	{
-		//marker where we pretend that the input string begins
-		//aka "how much has been parsed so far"
-		int strFakeBegin = 0;
-
-		try {
-			while (strFakeBegin < inStr.length())
-			{
-				int ic = inStr.indexOf(',',strFakeBegin);
-				int ih = inStr.indexOf('-',strFakeBegin);
-				//NB: returns -1 if not found
-
-				if (ic == -1)
-					//if no comma is found, then we are processing the last term
-					ic = inStr.length();
-
-				if (ih == -1)
-					//if no hyphen is found, then go to the "comma" branch
-					ih = ic+1;
-
-				if (ic < ih)
-				{
-					//"comma branch"
-					//we're parsing out N,
-					int N = Integer.parseInt( inStr.substring(strFakeBegin, ic).trim() );
-					if (outList != null)
-						outList.add(N);
-				}
-				else
-				{
-					//"hyphen branch"
-					//we're parsing out N-M,
-					int N = Integer.parseInt( inStr.substring(strFakeBegin, ih).trim() );
-					int M = Integer.parseInt( inStr.substring(ih+1, ic).trim() );
-					if (outList != null)
-						for (int n=N; n <= M; ++n)
-							outList.add(n);
-				}
-
-				strFakeBegin = ic+1;
-			}
-		}
-		catch (NumberFormatException e)
-		{
-			throw new ParseException(inStr.substring(0,strFakeBegin)+"\n"+e.getMessage(),0);
+			uiService.showDialog("Timepoints:\n"+e.getMessage());
+			throw new RuntimeException("Timepoints field is invalid.\n"+e.getMessage());
 		}
 	}
 
@@ -459,7 +408,7 @@ public class plugin_GTviaMarkers implements Command
 		try {
 			//parse out the list of timepoints
 			TreeSet<Integer> fileIdxList = new TreeSet<>();
-			parseSequenceOfNumbers(fileIdxStr,fileIdxList);
+			NumberSequenceHandler.parseSequenceOfNumbers(fileIdxStr,fileIdxList);
 
 			//start up the worker class
 			final machineGTViaMarkers_Worker Worker
@@ -516,7 +465,7 @@ public class plugin_GTviaMarkers implements Command
 		}
 		catch (ParseException e)
 		{
-			uiService.showDialog("Timepoints parsing problem after reading already:\n"+e.getMessage());
+			uiService.showDialog("Timepoints:\n"+e.getMessage());
 		}
 		finally {
 			//hide away the progress bar once the job is done
