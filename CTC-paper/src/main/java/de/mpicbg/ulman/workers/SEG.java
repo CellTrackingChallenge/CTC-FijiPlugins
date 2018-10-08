@@ -53,6 +53,11 @@ public class SEG
 	 */
 	public boolean doLogReports = false;
 
+	/** This switches SEG to review all result labels, in contrast to reviewing
+	    all GT labels. With this enabled, one can see false positives but don't
+	    see false negatives. */
+	public boolean doAllResReports = false;
+
 	/** Set of time points that caller wishes to process despite the folder
 	    with GT contains much more. If this attribute is left uninitialized,
 	    the whole GT folder is considered -- this is the SEG's default behaviour.
@@ -197,7 +202,35 @@ public class SEG
 				++counter;
 
 				if (doLogReports)
-					log.info(String.format("GT_label=%d J=%.6g", level.m_gt_lab[i], acc));
+				{
+					if (doAllResReports)
+						//extended SEG report
+						log.info(String.format("GT_label=%d J=%.6g considered_RES_label=%d",
+						  level.m_gt_lab[i], acc,
+						  level.m_gt_match[i] > -1? level.m_res_lab[level.m_gt_match[i]] : -1));
+					else
+						//standard SEG report
+						log.info(String.format("GT_label=%d J=%.6g", level.m_gt_lab[i], acc));
+				}
+			}
+
+			//extended SEG report
+			if (doLogReports && doAllResReports)
+			{
+				//report matches from the "RES side"
+				for (int j=0; j < level.m_res_lab.length; ++j)
+				{
+					final int matchCnt
+						= level.m_res_match[j] != null ? level.m_res_match[j].size() : -1;
+
+					String matchedGTlabs = "";
+					if (matchCnt < 1)
+						matchedGTlabs = " -";
+					else
+						for (Integer i : level.m_res_match[j]) matchedGTlabs.concat(" "+i);
+
+					log.info("RES_label="+j+" matches GT labels:"+matchedGTlabs);
+				}
 			}
 
 			//to be on safe side (with memory)
