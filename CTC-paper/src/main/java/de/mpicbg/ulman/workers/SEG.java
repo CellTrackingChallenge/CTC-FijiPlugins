@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.Iterator;
+import java.util.Set;
 
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
@@ -51,6 +52,13 @@ public class SEG
 	 * was incorrect in their results.
 	 */
 	public boolean doLogReports = false;
+
+	/** Set of time points that caller wishes to process despite the folder
+	    with GT contains much more. If this attribute is left uninitialized,
+	    the whole GT folder is considered -- this is the SEG's default behaviour.
+	    However, occasionally a caller might want to calculate SEG only for a few
+	    time points, and this when this attribute becomes useful. */
+	public Set<Integer> doOnlyTheseTimepoints = null;
 
 	// ----------- the SEG essentially starts here -----------
 	//auxiliary data:
@@ -119,6 +127,10 @@ public class SEG
 			if (time < 0)
 				throw new IllegalArgumentException("Error extracting time point information"
 					+" from file "+filename+"!");
+
+			//skip this time point if the list of wished time points exists
+			//and the current one is not present in it
+			if (doOnlyTheseTimepoints != null && !doOnlyTheseTimepoints.contains(time)) continue;
 
 			//read the image pair
 			IterableInterval<UnsignedShortType> gt_img
