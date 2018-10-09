@@ -205,9 +205,8 @@ public class SEG
 				{
 					if (doAllResReports)
 						//extended SEG report
-						log.info(String.format("GT_label=%d J=%.6g considered_RES_label=%d",
-						  level.m_gt_lab[i], acc,
-						  level.m_gt_match[i] > -1? level.m_res_lab[level.m_gt_match[i]] : -1));
+						log.info(String.format("GT_label=%d J=%.6g considered_RES_label=", level.m_gt_lab[i], acc)
+						  +(level.m_gt_match[i] > -1 ? level.m_res_lab[level.m_gt_match[i]] : "-"));
 					else
 						//standard SEG report
 						log.info(String.format("GT_label=%d J=%.6g", level.m_gt_lab[i], acc));
