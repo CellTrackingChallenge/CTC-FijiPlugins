@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.Iterator;
+import java.util.Set;
 
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
@@ -51,6 +52,18 @@ public class SEG
 	 * was incorrect in their results.
 	 */
 	public boolean doLogReports = false;
+
+	/** This switches SEG to review all result labels, in contrast to reviewing
+	    all GT labels. With this enabled, one can see false positives but don't
+	    see false negatives. */
+	public boolean doAllResReports = false;
+
+	/** Set of time points that caller wishes to process despite the folder
+	    with GT contains much more. If this attribute is left uninitialized,
+	    the whole GT folder is considered -- this is the SEG's default behaviour.
+	    However, occasionally a caller might want to calculate SEG only for a few
+	    time points, and this when this attribute becomes useful. */
+	public Set<Integer> doOnlyTheseTimepoints = null;
 
 	// ----------- the SEG essentially starts here -----------
 	//auxiliary data:
@@ -120,6 +133,10 @@ public class SEG
 				throw new IllegalArgumentException("Error extracting time point information"
 					+" from file "+filename+"!");
 
+			//skip this time point if the list of wished time points exists
+			//and the current one is not present in it
+			if (doOnlyTheseTimepoints != null && !doOnlyTheseTimepoints.contains(time)) continue;
+
 			//read the image pair
 			IterableInterval<UnsignedShortType> gt_img
 				= cache.ReadImageG16(file.toString());
@@ -185,7 +202,34 @@ public class SEG
 				++counter;
 
 				if (doLogReports)
-					log.info(String.format("GT_label=%d J=%.6g", level.m_gt_lab[i], acc));
+				{
+					if (doAllResReports)
+						//extended SEG report
+						log.info(String.format("GT_label=%d J=%.6g considered_RES_label=", level.m_gt_lab[i], acc)
+						  +(level.m_gt_match[i] > -1 ? level.m_res_lab[level.m_gt_match[i]] : "-"));
+					else
+						//standard SEG report
+						log.info(String.format("GT_label=%d J=%.6g", level.m_gt_lab[i], acc));
+				}
+			}
+
+			//extended SEG report
+			if (doLogReports && doAllResReports)
+			{
+				//report matches from the "RES side"
+				for (int j=0; j < level.m_res_lab.length; ++j)
+				{
+					final int matchCnt
+						= level.m_res_match[j] != null ? level.m_res_match[j].size() : -1;
+
+					String matchedGTlabs = "";
+					if (matchCnt < 1)
+						matchedGTlabs = " -";
+					else
+						for (Integer i : level.m_res_match[j]) matchedGTlabs = matchedGTlabs.concat(" "+level.m_gt_lab[i]);
+
+					log.info("RES_label="+level.m_res_lab[j]+" matches GT labels:"+matchedGTlabs);
+				}
 			}
 
 			//to be on safe side (with memory)
@@ -194,7 +238,7 @@ public class SEG
 		}
 		fileList.close();
 
-		seg /= (double)counter;
+		seg = counter > 0 ? seg/(double)counter : 0.0;
 
 		log.info("---");
 		log.info("SEG: "+seg);
