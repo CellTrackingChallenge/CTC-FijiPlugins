@@ -239,7 +239,7 @@ public class SEG
 		}
 		fileList.close();
 
-		seg /= (double)counter;
+		seg = counter > 0 ? seg/(double)counter : 0.0;
 
 		log.info("---");
 		log.info("SEG: "+seg);
