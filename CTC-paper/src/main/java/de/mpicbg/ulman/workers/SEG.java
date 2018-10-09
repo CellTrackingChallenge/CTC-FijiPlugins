@@ -227,9 +227,9 @@ public class SEG
 					if (matchCnt < 1)
 						matchedGTlabs = " -";
 					else
-						for (Integer i : level.m_res_match[j]) matchedGTlabs.concat(" "+i);
+						for (Integer i : level.m_res_match[j]) matchedGTlabs = matchedGTlabs.concat(" "+level.m_gt_lab[i]);
 
-					log.info("RES_label="+j+" matches GT labels:"+matchedGTlabs);
+					log.info("RES_label="+level.m_res_lab[j]+" matches GT labels:"+matchedGTlabs);
 				}
 			}
 
