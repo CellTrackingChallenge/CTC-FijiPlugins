@@ -43,7 +43,7 @@ public class plugin_SEGmeasure implements Command
 
 	@Parameter(label = "Path to ground-truth folder:",
 		columns = 40, style = FileWidget.DIRECTORY_STYLE,
-		description = "Path should contain folder SEG and files: SEG/man_seg.*tif")
+		description = "Path should contain folder SEG and files: SEG/man_seg*.tif")
 	private File gtPath;
 
 	@Parameter(label = "Timepoints to be processed (e.g. 1-9,23,25):",

@@ -42,7 +42,7 @@ public class plugin_CTCmeasuresICT implements Command
 
 	@Parameter(label = "Path to ground-truth folder:",
 		columns = 40, style = FileWidget.DIRECTORY_STYLE,
-		description = "Path should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt")
+		description = "Path should contain folders SEG, TRA and files: SEG/man_seg*.tif, TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
