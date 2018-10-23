@@ -75,7 +75,7 @@ public class plugin_CTCmeasuresICT implements Command
 	private boolean optionVerboseLogging = true;
 
 	@Parameter(label = "Do consistency check",
-		description = "Evaluates the consistency of user's images and tracks.txt before measuring TRA.")
+		description = "Checks multiple consistency-oriented criteria on both input and GT data before measuring TRA.")
 	private boolean optionConsistency = true;
 
 

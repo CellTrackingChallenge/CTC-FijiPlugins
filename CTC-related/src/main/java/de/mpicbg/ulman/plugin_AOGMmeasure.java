@@ -79,7 +79,7 @@ public class plugin_AOGMmeasure implements Command
 	private Double p6 = 1.0;
 
 	@Parameter(label = "Consistency check of input data:",
-		description = "Checks multiple consisteny-oriented criteria on both input and GT data.")
+		description = "Checks multiple consistency-oriented criteria on both input and GT data.")
 	private boolean doConsistencyCheck = true;
 
 	@Parameter(label = "Verbose report on tracking errors:",
