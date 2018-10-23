@@ -19,8 +19,10 @@ import net.imagej.ImageJ;
 
 import org.scijava.widget.FileWidget;
 import java.io.File;
+import java.util.Set;
 
 import de.mpicbg.ulman.workers.DET;
+import de.mpicbg.ulman.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Segmentation>Cell Tracking Challenge DET measure",
         name = "CTC_DET", headless = true,
@@ -56,6 +58,11 @@ public class plugin_DETmeasure implements Command
 		label = "Select optional preferences:")
 	private final String optionsHeader = "";
 
+	@Parameter(label = "Do only these timepoints (e.g. 1-9,23,25):",
+		description = "Comma separated list of numbers or intervals, interval is number-hyphen-number. Leave empty to have all images processed.",
+		validater = "timePointsStrValidator")
+	private String fileIdxStr = "";
+
 	@Parameter(label = "Do verbose logging",
 		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
 	private boolean optionVerboseLogging = true;
@@ -86,6 +93,14 @@ public class plugin_DETmeasure implements Command
 	double DET = -1;
 
 
+	@SuppressWarnings("unused")
+	private void timePointsStrValidator()
+	{
+		//check the string is parse-able
+		NumberSequenceHandler.toSet(fileIdxStr,null);
+	}
+
+
 	//the GUI path entry function:
 	@Override
 	public void run()
@@ -97,6 +112,10 @@ public class plugin_DETmeasure implements Command
 		try {
 			final DET det = new DET(log);
 			det.doLogReports = optionVerboseLogging;
+
+			Set<Integer> timePoints = NumberSequenceHandler.toSet(fileIdxStr);
+			if (timePoints.size() > 0)
+				det.doOnlyTheseTimepoints = timePoints;
 
 			DET = det.calculate(GTdir, RESdir);
 		}

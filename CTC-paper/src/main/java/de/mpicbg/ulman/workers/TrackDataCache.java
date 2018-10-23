@@ -392,13 +392,30 @@ public class TrackDataCache
 	{
 		//default behavior is to be very strict:
 		//  complain whenever empty result or GT image is found
-		ClassifyLabels(gt_img,res_img, true);
+		ClassifyLabels(gt_img,res_img, true, levels.size());
+	}
+
+	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
+	                           RandomAccessibleInterval<UnsignedShortType> res_img,
+	                           final boolean shouldComplainOnEmptyImages)
+	{
+		ClassifyLabels(gt_img,res_img, shouldComplainOnEmptyImages, levels.size());
+	}
+
+	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
+	                           RandomAccessibleInterval<UnsignedShortType> res_img,
+	                           final int time)
+	{
+		//default behavior is to be very strict:
+		//  complain whenever empty result or GT image is found
+		ClassifyLabels(gt_img,res_img, true, time);
 	}
 
 	@SuppressWarnings("unchecked")
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
 	                           RandomAccessibleInterval<UnsignedShortType> res_img,
-	                           final boolean shouldComplainOnEmptyImages)
+	                           final boolean shouldComplainOnEmptyImages,
+	                           final int time)
 	{
 		//check the sizes of the images
 		if (gt_img.numDimensions() != res_img.numDimensions())
@@ -411,7 +428,7 @@ public class TrackDataCache
 					+" of images of the same size.");
 
 		//create output TemporalLevel to which we gonna save our findings about both images
-		TemporalLevel level = new TemporalLevel(levels.size());
+		TemporalLevel level = new TemporalLevel(time);
 
 		//helper frequency histogram of discovered labels
 		HashMap<Integer,Integer> gt_hist = new HashMap<>();
