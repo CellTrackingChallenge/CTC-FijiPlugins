@@ -90,7 +90,7 @@ public class DET extends TRA
 				Img<UnsignedShortType> res_img
 					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
 
-				cache.ClassifyLabels(gt_img, res_img);
+				cache.ClassifyLabels(gt_img, res_img, time);
 				++time;
 
 				//to be on safe side (with memory)
