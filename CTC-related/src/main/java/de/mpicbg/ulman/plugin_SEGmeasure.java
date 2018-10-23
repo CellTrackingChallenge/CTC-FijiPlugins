@@ -99,7 +99,6 @@ public class plugin_SEGmeasure implements Command
 	@SuppressWarnings("unused")
 	private void timePointsStrValidator()
 	{
-		//TODO otestuj, jestli prazdny string nevadi
 		//check the string is parse-able
 		NumberSequenceHandler.toSet(fileIdxStr,null);
 	}
