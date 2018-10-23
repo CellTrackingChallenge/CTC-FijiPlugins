@@ -89,6 +89,7 @@ public class SEG
 		//DEBUG//log.info("Computing the SEG completely...");
 		seg = 0.0;
 		long counter = 0;
+		int imgCounter = 0;
 
 		//scan the SEG folder to get a list of files to process,
 		//NB: the processing order of the files is not important
@@ -170,6 +171,7 @@ public class SEG
 						+" does not consist of images of the same size.");
 
 			cache.ClassifyLabels(gt_img, res_img);
+			++imgCounter;
 
 			//after ClassifyLabels(), the voxel-matching info is here:
 			final TemporalLevel level = cache.levels.lastElement();
@@ -237,6 +239,12 @@ public class SEG
 			res_img = null;
 		}
 		fileList.close();
+
+		//complain if necessary, to behave identially as the other measures
+		if (imgCounter == 0)
+			throw new IllegalArgumentException("No reference (GT) image was found!");
+		if (counter == 0)
+			throw new IllegalArgumentException("No reference (GT) label was found at all!");
 
 		seg = counter > 0 ? seg/(double)counter : 0.0;
 
