@@ -5,7 +5,7 @@
  * See the license details:
  *     https://creativecommons.org/licenses/by-sa/4.0/
  *
- * Copyright (C) 2017 Vladimír Ulman
+ * Copyright (C) 2018 Vladimír Ulman
  */
 package de.mpicbg.ulman;
 
@@ -21,14 +21,13 @@ import org.scijava.widget.FileWidget;
 import java.io.File;
 
 import de.mpicbg.ulman.workers.TRA;
-import de.mpicbg.ulman.workers.SEG;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Technical measures",
-        name = "CTC_ICT", headless = true,
-		  description = "Calculates technical tracking performance measures from the CTC paper.\n"
+@Plugin(type = Command.class, menuPath = "Plugins>Tracking>Cell Tracking Challenge TRA measure",
+        name = "CTC_TRA", headless = true,
+		  description = "Calculates segmentation performance measure from the CTC paper.\n"
 				+"The plugin assumes certain data format, please see\n"
 				+"http://www.celltrackingchallenge.net/submission-of-results.html")
-public class plugin_CTCmeasuresICT implements Command
+public class plugin_TRAmeasure implements Command
 {
 	//------------- GUI stuff -------------
 	//
@@ -42,7 +41,7 @@ public class plugin_CTCmeasuresICT implements Command
 
 	@Parameter(label = "Path to ground-truth folder:",
 		columns = 40, style = FileWidget.DIRECTORY_STYLE,
-		description = "Path should contain folders SEG, TRA and files: SEG/man_seg*.tif, TRA/man_track???.tif and TRA/man_track.txt")
+		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
@@ -54,29 +53,17 @@ public class plugin_CTCmeasuresICT implements Command
 
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
-		label = "Select measures to calculate:")
-	private final String measuresHeader = "";
-
-	@Parameter(label = "SEG",
-		description = "Quantifies the amount of overlap between the reference annotations and the computed segmentation.")
-	private boolean calcSEG = true;
-
-	@Parameter(label = "TRA",
-		description = "Evaluates the ability of an algorithm to track cells in time.")
-	private boolean calcTRA = true;
-
-
-	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "Select optional preferences:")
 	private final String optionsHeader = "";
+
+	@Parameter(label = "Do consistency check",
+		description = "Checks multiple consistency-oriented criteria on both input and GT data before measuring TRA.")
+	private boolean optionConsistency = true;
 
 	@Parameter(label = "Do verbose logging",
 		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
 	private boolean optionVerboseLogging = true;
 
-	@Parameter(label = "Do consistency check",
-		description = "Checks multiple consistency-oriented criteria on both input and GT data before measuring TRA.")
-	private boolean optionConsistency = true;
 
 
 	//citation footer...
@@ -100,9 +87,6 @@ public class plugin_CTCmeasuresICT implements Command
 	String sep = "--------------------";
 
 	@Parameter(type = ItemIO.OUTPUT)
-	double SEG = -1;
-
-	@Parameter(type = ItemIO.OUTPUT)
 	double TRA = -1;
 
 
@@ -114,35 +98,18 @@ public class plugin_CTCmeasuresICT implements Command
 		GTdir  = gtPath.getPath();
 		RESdir = resPath.getPath();
 
-		if (calcSEG)
-		{
-			try {
-				final SEG seg = new SEG(log);
-				seg.doLogReports = optionVerboseLogging;
-				SEG = seg.calculate(GTdir, RESdir);
-			}
-			catch (RuntimeException e) {
-				log.error("CTC SEG measure problem: "+e.getMessage());
-			}
-			catch (Exception e) {
-				log.error("CTC SEG measure error: "+e.getMessage());
-			}
-		}
+		try {
+			final TRA tra = new TRA(log);
+			tra.doConsistencyCheck = optionConsistency;
+			tra.doLogReports = optionVerboseLogging;
 
-		if (calcTRA)
-		{
-			try {
-				final TRA tra = new TRA(log);
-				tra.doConsistencyCheck = optionConsistency;
-				tra.doLogReports = optionVerboseLogging;
-				TRA = tra.calculate(GTdir, RESdir);
-			}
-			catch (RuntimeException e) {
-				log.error("CTC TRA measure problem: "+e.getMessage());
-			}
-			catch (Exception e) {
-				log.error("CTC TRA measure error: "+e.getMessage());
-			}
+			TRA = tra.calculate(GTdir, RESdir);
+		}
+		catch (RuntimeException e) {
+			log.error("CTC TRA measure problem: "+e.getMessage());
+		}
+		catch (Exception e) {
+			log.error("CTC TRA measure error: "+e.getMessage());
 		}
 
 		//do not report anything explicitly (unless special format for parsing is
@@ -160,7 +127,7 @@ public class plugin_CTCmeasuresICT implements Command
 		{
 			System.out.println("Incorrect number of parameters, expecting exactly two parameters.");
 			System.out.println("Parameters: GTpath RESpath\n");
-			System.out.println("GTpath should contain folders SEG, TRA and files: SEG/man_seg.*tif, TRA/man_track???.tif and TRA/man_track.txt");
+			System.out.println("GTpath should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt");
 			System.out.println("RESpath should contain result files directly: mask???.tif and res_track.txt");
 			System.out.println("Certain data format is assumed, please see\n"
 				+"http://www.celltrackingchallenge.net/submission-of-results.html");
@@ -175,8 +142,7 @@ public class plugin_CTCmeasuresICT implements Command
 		ij.ui().showUI();
 
 		//run this class as if from GUI
-		ij.command().run(plugin_CTCmeasuresICT.class, true, "gtPath",args[0], "resPath",args[1],
-			"calcTRA",true, "calcSEG",true);
+		ij.command().run(plugin_TRAmeasure.class, true, "gtPath",args[0], "resPath",args[1]);
 
 		//and close the IJ instance...
 		//ij.appEvent().quit();
