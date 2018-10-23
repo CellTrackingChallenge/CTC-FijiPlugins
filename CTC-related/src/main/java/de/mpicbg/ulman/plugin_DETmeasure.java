@@ -56,10 +56,6 @@ public class plugin_DETmeasure implements Command
 		label = "Select optional preferences:")
 	private final String optionsHeader = "";
 
-	@Parameter(label = "Do consistency check",
-		description = "Checks multiple consistency-oriented criteria on both input and GT data before measuring DET.")
-	private boolean optionConsistency = true;
-
 	@Parameter(label = "Do verbose logging",
 		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
 	private boolean optionVerboseLogging = true;
@@ -100,7 +96,6 @@ public class plugin_DETmeasure implements Command
 
 		try {
 			final DET det = new DET(log);
-			det.doConsistencyCheck = optionConsistency;
 			det.doLogReports = optionVerboseLogging;
 
 			DET = det.calculate(GTdir, RESdir);
