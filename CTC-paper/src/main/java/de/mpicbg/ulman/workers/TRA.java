@@ -28,7 +28,7 @@ import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 public class TRA
 {
 	///shortcuts to some Fiji services
-	private final LogService log;
+	protected final LogService log;
 
 	///a constructor requiring connection to Fiji report/log services
 	public TRA(final LogService _log)
@@ -41,7 +41,7 @@ public class TRA
 	}
 
 	///reference on cache that we used recently
-	private TrackDataCache cache = null;
+	protected TrackDataCache cache = null;
 
 	///to provide the cache to others/to share it with others
 	public TrackDataCache getCache()
@@ -108,10 +108,10 @@ public class TRA
 		= new PenaltyConfig(5.0, 10.0, 1.0, 1.0, 1.5, 1.0);
 
 	///the to-be-calculated TRA value (based on the AOGM measure)
-	private double aogm = 0.0;
+	protected double aogm = 0.0;
 
 	///the largest incorrect split detected
-	private int max_split = 1;
+	protected int max_split = 1;
 
 	///logs to note discrepancies between GT and RES tracks
 	public List<String> logNS = new LinkedList<>();
@@ -213,7 +213,7 @@ public class TRA
 	 * Returns index of RES label that matches with given GT lbl,
 	 * or -1 if no such label was found.
 	 */
-	private int GetGTMatch(final TemporalLevel level, final int lbl)
+	protected int GetGTMatch(final TemporalLevel level, final int lbl)
 	{
 		return ( level.m_gt_match[level.gt_findLabel(lbl)] );
 	}
@@ -223,7 +223,7 @@ public class TRA
 	 * Returns collection of indices of GT labels that matches with given RES lbl,
 	 * or collection with single item (of -1 value) if no such label was found.
 	 */
-	private Collection<Integer> GetResMatch(final TemporalLevel level, final int lbl)
+	protected Collection<Integer> GetResMatch(final TemporalLevel level, final int lbl)
 	{
 		final int idx = level.res_findLabel(lbl);
 		if (idx != -1)
@@ -246,7 +246,7 @@ public class TRA
 	 * Check if there is an edge of a given type between given
 	 * temporal levels in the reference tracks.
 	 */
-	private boolean ExistGTEdge(final Vector<TemporalLevel> levels,
+	protected boolean ExistGTEdge(final Vector<TemporalLevel> levels,
 		final int start_level,
 		final int start_index,
 		final int end_level,
@@ -298,7 +298,7 @@ public class TRA
 	 * Check if there is an edge of a given type between given
 	 * temporal levels in the computed tracks.
 	 */
-	private boolean ExistResEdge(final Vector<TemporalLevel> levels,
+	protected boolean ExistResEdge(final Vector<TemporalLevel> levels,
 		final int start_level,
 		final int start_index,
 		final int end_level,
@@ -341,7 +341,7 @@ public class TRA
 
 
 	/** Find edges in the computed tracks that must be removed or altered. */
-	private void FindEDAndECEdges(final Vector<TemporalLevel> levels,
+	protected void FindEDAndECEdges(final Vector<TemporalLevel> levels,
 		final Map<Integer,Track> gt_tracks,
 		final Map<Integer,Track> res_tracks)
 	{
@@ -434,7 +434,7 @@ public class TRA
 
 
 	/** Find edges in the reference tracks that must be added. */
-	private void FindEAEdges(final Vector<TemporalLevel> levels,
+	protected void FindEAEdges(final Vector<TemporalLevel> levels,
 		final Map<Integer,Track> gt_tracks,
 		final Map<Integer,Track> res_tracks)
 	{
