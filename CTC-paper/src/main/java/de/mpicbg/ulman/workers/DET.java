@@ -16,6 +16,7 @@ import java.io.IOException;
 
 import java.util.Vector;
 import java.util.HashMap;
+import java.util.Set;
 
 import de.mpicbg.ulman.workers.TrackDataCache.Track;
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
@@ -28,6 +29,15 @@ public class DET extends TRA
 		super(_log);
 	}
 
+	/** Set of time points that caller wishes to process despite the folder
+	    with GT contains much more. If this attribute is left uninitialized,
+	    the whole GT folder is considered -- this is the SEG's default behaviour.
+	    However, occasionally a caller might want to calculate SEG only for a few
+	    time points, and this when this attribute becomes useful. */
+	public Set<Integer> doOnlyTheseTimepoints = null;
+
+	//---------------------------------------------------------------------/
+	///the main DET calculator/calculation pipeline
 	@Override
 	public double calculate(final String gtPath, final String resPath,
 	                        final TrackDataCache _cache)
@@ -72,6 +82,10 @@ public class DET extends TRA
 		//this is: basically checks matching between all nodes discovered in both GT and RES images
 		for (TemporalLevel level : levels)
 		{
+			//skip this time point if the list of wished time points exists
+			//and the current one is not present in it
+			if (doOnlyTheseTimepoints != null && !doOnlyTheseTimepoints.contains(level.m_level)) continue;
+
 			//sweep over all gt labels
 			for (int i=0; i < level.m_gt_lab.length; ++i)
 			{

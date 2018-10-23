@@ -19,6 +19,7 @@ import net.imagej.ImageJ;
 
 import org.scijava.widget.FileWidget;
 import java.io.File;
+import java.util.Set;
 
 import de.mpicbg.ulman.workers.DET;
 import de.mpicbg.ulman.util.NumberSequenceHandler;
@@ -111,6 +112,10 @@ public class plugin_DETmeasure implements Command
 		try {
 			final DET det = new DET(log);
 			det.doLogReports = optionVerboseLogging;
+
+			Set<Integer> timePoints = NumberSequenceHandler.toSet(fileIdxStr);
+			if (timePoints.size() > 0)
+				det.doOnlyTheseTimepoints = timePoints;
 
 			DET = det.calculate(GTdir, RESdir);
 		}
