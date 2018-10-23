@@ -10,15 +10,16 @@
 package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
+import net.imglib2.img.Img;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import io.scif.img.ImgIOException;
+import java.io.File;
+import java.nio.file.Files;
 import java.io.IOException;
 
-import java.util.Vector;
-import java.util.HashMap;
 import java.util.Set;
 
-import de.mpicbg.ulman.workers.TrackDataCache.Track;
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
 public class DET extends TRA
@@ -56,31 +57,69 @@ public class DET extends TRA
 		//and if it fits our input, then use it
 		if (_cache != null && _cache.validFor(gtPath,resPath)) cache = _cache;
 
-		//if no cache is available after all, compute it
+		//if no cache is available after all, compute it,
+		//but remember that it cannot be re-used -- see below
 		if (cache == null)
 		{
 			//do the upper stage
 			cache = new TrackDataCache(log);
-			cache.calculate(gtPath,resPath);
+
+			log.info(" GT path: "+gtPath+"/TRA");
+			log.info("RES path: "+resPath);
+			//DEBUG//log.info("Computing the common upper part...");
+
+			//iterate through the GT folder and read files, one by one,
+			//find the appropriate file in the RES folder,
+			//and call ClassifyLabels() for every such pair
+			int time = 0;
+			while (Files.isReadable(
+				new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time)).toPath()))
+			{
+				//skip this time point if the list of wished time points exists
+				//and the current one is not present in it
+				if (doOnlyTheseTimepoints != null && !doOnlyTheseTimepoints.contains(time))
+				{
+					++time;
+					continue;
+				}
+
+				//read the image pair
+				Img<UnsignedShortType> gt_img
+					= cache.ReadImageG16(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
+
+				Img<UnsignedShortType> res_img
+					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
+
+				cache.ClassifyLabels(gt_img, res_img);
+				++time;
+
+				//to be on safe side (with memory)
+				gt_img = null;
+				res_img = null;
+			}
+
+			if (cache.levels.size() == 0)
+				throw new IllegalArgumentException("No reference (GT) image was found!");
+
+			//don't update this.gtPath and this.resPath (make it incompatible this way)
+			//as the content of this cache is not exactly
+			//what it is supposed to be (it is incomplete)
 		}
 
 		//do the bottom stage
 		//DEBUG//log.info("Computing the TRA bottom part...");
 		aogm = 0.0;
+		long gtLabelsFound = 0; //for calculating aogm_empty
 
 		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
 		logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
 		logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
 
-		//shadows of the/short-cuts to the cache data
-		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
-		final Vector<TemporalLevel> levels = cache.levels;
-
 		//this is: local ClassifyLabels() -- the part that already does some AOGM checks
 		//this is: the AOGM-specific last portion of the original FindMatch() C++ function:
 		//
 		//this is: basically checks matching between all nodes discovered in both GT and RES images
-		for (TemporalLevel level : levels)
+		for (TemporalLevel level : cache.levels)
 		{
 			//skip this time point if the list of wished time points exists
 			//and the current one is not present in it
@@ -97,6 +136,7 @@ public class DET extends TRA
 					logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
 				}
 			}
+			gtLabelsFound += level.m_gt_lab.length;
 
 			//for every res label, check we have found exactly one corresponding gt label
 			int num;
@@ -141,19 +181,10 @@ public class DET extends TRA
 
 		if (doAOGM == false)
 		{
-			//calculate the (old) TRA when no result is supplied
-			// (approx. an energy required to CREATE tracking result from the scratch)
+			//calculate the DET when no result is supplied
+			// (approx. an energy required to CREATE detection result from the scratch)
 			//
-			//how many track links (edges) to add
-			int sum = 0;
-
-			for (Integer id : gt_tracks.keySet())
-			{
-				Track t = gt_tracks.get(id);
-				sum += t.m_end - t.m_begin;
-			}
-
-			final double aogm_empty = penalty.m_fn * (sum + gt_tracks.size()); //adding nodes
+			final double aogm_empty = penalty.m_fn * (double)gtLabelsFound;
 
 			log.info("---");
 			log.info("AOGM-D to curate  the  given  result: "+aogm);
