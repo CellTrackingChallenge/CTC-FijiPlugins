@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.io.IOException;
 
 import java.util.Set;
+import java.util.Iterator;
 
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
@@ -68,20 +69,44 @@ public class DET extends TRA
 			log.info("RES path: "+resPath);
 			//DEBUG//log.info("Computing the common upper part...");
 
+			//unified approach to either trying filename one by one,
+			//or creating filenames from given list of time points
+			class FileTryer {
+				private final Iterator<Integer> sampler;
+				private int time = -1;
+
+				FileTryer(final Set<Integer> set)
+				{
+					sampler = set != null ? set.iterator() : null;
+				}
+
+				int next()
+				{
+					if (sampler == null)
+						++time;
+					else
+						time = sampler.next();
+
+					return time;
+				}
+
+				boolean hasNext()
+				{
+					if (sampler == null)
+						return Files.isReadable(
+							new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time+1)).toPath() );
+					else
+						return sampler.hasNext();
+				}
+			}
+			final FileTryer fileSampler = new FileTryer(doOnlyTheseTimepoints);
+
 			//iterate through the GT folder and read files, one by one,
 			//find the appropriate file in the RES folder,
 			//and call ClassifyLabels() for every such pair
-			int time = 0;
-			while (Files.isReadable(
-				new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time)).toPath()))
+			while (fileSampler.hasNext())
 			{
-				//skip this time point if the list of wished time points exists
-				//and the current one is not present in it
-				if (doOnlyTheseTimepoints != null && !doOnlyTheseTimepoints.contains(time))
-				{
-					++time;
-					continue;
-				}
+				final int time = fileSampler.next();
 
 				//read the image pair
 				Img<UnsignedShortType> gt_img
@@ -91,7 +116,6 @@ public class DET extends TRA
 					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
 
 				cache.ClassifyLabels(gt_img, res_img, time);
-				++time;
 
 				//to be on safe side (with memory)
 				gt_img = null;
