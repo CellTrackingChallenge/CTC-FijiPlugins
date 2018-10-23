@@ -65,13 +65,13 @@ public class plugin_DETmeasure implements Command
 	//citation footer...
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
 	private final String citationFooterA
-		= "Ulman V, Maška M, Magnusson KEG, ..., Ortiz-de-Solórzano C.";
+		= "Matula P, Maška M, Sorokin DV, Matula P, Ortiz-de-Solórzano C, Kozubek M.";
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
 	private final String citationFooterB
-		= "An objective comparison of cell-tracking algorithms.";
+		= "Cell tracking accuracy measurement based on comparison of acyclic";
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = ":")
 	private final String citationFooterC
-		= "Nature Methods. 2017. doi:10.1038/nmeth.4473";
+		= "oriented graphs. PloS one. 2015 Dec 18;10(12):e0144959.";
 
 
 	//hidden output values
