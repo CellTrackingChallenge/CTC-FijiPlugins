@@ -210,6 +210,9 @@ public class DET extends TRA
 			//
 			final double aogm_empty = penalty.m_fn * (double)gtLabelsFound;
 
+			if (gtLabelsFound == 0)
+				throw new IllegalArgumentException("No reference (GT) label was found at all!");
+
 			log.info("---");
 			log.info("AOGM-D to curate  the  given  result: "+aogm);
 			log.info("AOGM-D to build a new correct result: "+aogm_empty);
@@ -227,7 +230,7 @@ public class DET extends TRA
 		{
 			//just report the AOGM as it is...
 			log.info("---");
-			log.info("AOGM: "+aogm);
+			log.info("AOGM-D: "+aogm);
 		}
 		return (aogm);
 	}
