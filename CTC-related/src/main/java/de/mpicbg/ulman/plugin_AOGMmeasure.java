@@ -86,6 +86,10 @@ public class plugin_AOGMmeasure implements Command
 		description = "Logs all discrepancies (and organizes them by category) between the input and GT data.")
 	private boolean doLogReports = true;
 
+	@Parameter(label = "Do 1.0-min(AOGM,AOGM_empty)/AOGM_empty (TRA):",
+		description = "The Cell Tracking Challenge TRA is exactly a normalized AOGM with specific penalties. If checked, returns between 0.0 to 1.0, higher is better.")
+	private boolean doTRAnormalization = false;
+
 
 	//citation footer...
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
@@ -141,7 +145,7 @@ public class plugin_AOGMmeasure implements Command
 			//set up its operational details
 			tra.doConsistencyCheck = doConsistencyCheck;
 			tra.doLogReports = doLogReports;
-			tra.doAOGM = true;
+			tra.doAOGM = (doTRAnormalization == false);
 
 			//also the AOGM weights
 			final PenaltyConfig penalty = tra.new PenaltyConfig(p1,p2,p3,p4,p5,p6);
