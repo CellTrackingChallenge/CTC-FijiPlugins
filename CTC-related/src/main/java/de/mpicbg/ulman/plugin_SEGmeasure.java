@@ -46,11 +46,6 @@ public class plugin_SEGmeasure implements Command
 		description = "Path should contain folder SEG and files: SEG/man_seg*.tif")
 	private File gtPath;
 
-	@Parameter(label = "Timepoints to be processed (e.g. 1-9,23,25):",
-		description = "Comma separated list of numbers or intervals, interval is number-hyphen-number. Leave empty to have all images processed.",
-		validater = "timePointsStrValidator")
-	private String fileIdxStr = "";
-
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
@@ -62,6 +57,11 @@ public class plugin_SEGmeasure implements Command
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "Select optional preferences:")
 	private final String optionsHeader = "";
+
+	@Parameter(label = "Do only these timepoints (e.g. 1-9,23,25):",
+		description = "Comma separated list of numbers or intervals, interval is number-hyphen-number. Leave empty to have all images processed.",
+		validater = "timePointsStrValidator")
+	private String fileIdxStr = "";
 
 	@Parameter(label = "Do verbose logging",
 		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
