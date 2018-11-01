@@ -136,6 +136,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 
 		ep.outputPath = selectedFolder.getAbsolutePath();
 		ep.imgSource  = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
+		ep.doOneZslicePerMarker = true;
 
 		ep.model      = pluginAppModel.getAppModel().getModel();
 		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();

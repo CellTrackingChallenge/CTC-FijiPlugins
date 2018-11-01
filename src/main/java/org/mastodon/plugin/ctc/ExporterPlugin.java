@@ -55,6 +55,9 @@ extends ContextCommand
 	private final int viewMipLevel = 0;
 	private final T outImgVoxelType;
 
+	@Parameter
+	boolean doOneZslicePerMarker = false;
+
 	// ----------------- what to store in the products -----------------
 	@Parameter
 	Model model;
@@ -247,6 +250,12 @@ extends ContextCommand
 			radii[d           ] = spot.getDoublePosition(d) - radius;
 			radii[d+outImgDims] = spot.getDoublePosition(d) + radius;
 		}
+		//if, however, only one zSlice is requested, squash the BBox to a plane in 2nd (z) axis
+		if (doOneZslicePerMarker && outImgDims > 2)
+		{
+			radii[2           ] = spot.getDoublePosition(2);
+			radii[2+outImgDims] = spot.getDoublePosition(2);
+		}
 
 		//create spot's bounding box in the image coordinates
 		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
@@ -273,6 +282,8 @@ extends ContextCommand
 				return ;
 			}
 		}
+		//if, however, only one zSlice is requested, make sure the spotImgBBox is indeed single plane thick
+		if (doOneZslicePerMarker && outImgDims > 2) spotMax[2] = spotMin[2];
 
 		System.out.println("px sweeping box: "+Util.printCoordinates(spotMin)+" <-> "+Util.printCoordinates(spotMax));
 
