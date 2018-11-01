@@ -5,13 +5,23 @@ import java.io.File;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.plugin.Plugin;
+import org.scijava.plugin.Parameter;
+
+import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.FinalRealInterval;
+import net.imglib2.RealInterval;
+import net.imglib2.RealPoint;
 
 import bdv.viewer.Source;
+import io.scif.img.ImgSaver;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.img.planar.PlanarImgFactory;
+import net.imglib2.img.Img;
+import net.imglib2.Cursor;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
-
-import org.scijava.plugin.Parameter;
+import net.imglib2.view.Views;
 
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
@@ -21,8 +31,10 @@ import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
 
 @Plugin( type = Command.class )
-public class ExporterPlugin extends ContextCommand
+public class ExporterPlugin <T extends NativeType<T> & RealType<T>>
+extends ContextCommand
 {
+	// ----------------- where to store products -----------------
 	@Parameter
 	String outputPath;
 
@@ -35,49 +47,61 @@ public class ExporterPlugin extends ContextCommand
 	@Parameter
 	int fileNoDigits = 3;
 
+	// ----------------- how to store products -----------------
+	@Parameter
+	Source<?> imgSource;
+
+	private final int viewNo = 0;
+	private final int viewMipLevel = 0;
+	private final T outImgVoxelType;
+
+	// ----------------- what to store in the products -----------------
+	@Parameter
+	Model model;
+
 	@Parameter
 	int timeFrom;
 
 	@Parameter
 	int timeTill;
 
-	@Parameter
-	Model model;
-
-	@Parameter
-	Source<?> imgSource;
+	public ExporterPlugin(final T outImgVoxelType)
+	{
+		this.outImgVoxelType = outImgVoxelType.createVariable();
+	}
 
 	@Override
 	public void run()
 	{
-		//debug
-		System.out.println("Output folder is   : "+outputPath);
+		//debug report
 		System.out.println("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
+		System.out.println("Output folder is   : "+outputPath);
 
-		//enumerate output files
-		final String outFilenameFormat = String.format("%s%s%s%%0%dd%s", outputPath,File.separator,filePrefix,fileNoDigits,filePostfix);
+		//aux stuff to create and name the output files
+		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
+		final String outImgFilenameFormat = String.format("%s%s%s%%0%dd%s", outputPath,File.separator,filePrefix,fileNoDigits,filePostfix);
 
-		//params of output files
-		//transformation used with the 1st setup
+		//some more shortcuts to template image params
+		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(viewNo,viewMipLevel);
+		if (outImgDims != outImgTemplate.numDimensions())
+		{
+			//reset dimensionality-based attributes to become compatible again
+			outImgDims = outImgTemplate.numDimensions();
+			spotMin = new long[outImgDims];
+			spotMax = new long[outImgDims];
+			radii = new double[2*outImgDims];
+			coord = new RealPoint(outImgDims);
+		}
+
+		//debug report
+		outImgTemplate.dimensions(spotMin);
+		System.out.println("Output image size  : "+Util.printCoordinates(spotMin));
+
+		//some more shortcuts to template voxel params
+		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
-		imgSource.getSourceTransform(0,0, coordTransImg2World);
-
-		//voxel size = 1/resolution
-		if (imgSource.getVoxelDimensions().unit().startsWith("um") == false)
-			throw new IllegalArgumentException("Incompatible resolution units used in this project: "+imgSource.getVoxelDimensions().unit());
-		final double[] voxelSize = new double[3];
-		imgSource.getVoxelDimensions().dimensions(voxelSize);
-
-		//RAI corresponding to the output image
-		final RandomAccessibleInterval<?> imgTemplate = imgSource.getSource(0,0);
-
-		final long[] voxelCounts = new long[3]; //REMOVE ME
-		imgTemplate.dimensions(voxelCounts);
-		final double[] tt = new double[16];
-		coordTransImg2World.toArray(tt);
-		System.out.println("Output image size  : "+Util.printCoordinates(voxelCounts));
-		System.out.println("Output voxel size  : "+Util.printCoordinates(voxelSize));
-		System.out.println("Coord transform    : "+Util.printCoordinates(tt));
+		imgSource.getSourceTransform(viewNo,viewMipLevel, coordTransImg2World);
+		final AffineTransform3D coordTransWorld2Img = coordTransImg2World.inverse();
 
 		//aux conversion data
 		final TrackRecords tracks = new TrackRecords();
@@ -161,26 +185,27 @@ public class ExporterPlugin extends ContextCommand
 			}
 
 			//finally, render currently seen spots into the current image with their CTC's trackIDs
-			System.out.println(String.format(outFilenameFormat, time));
-			final float[] coord = new float[3];
+			final String outImgFilename = String.format(outImgFilenameFormat, time);
+			System.out.println(outImgFilename);
+			Img<T> outImg = outImgFactory.create(outImgTemplate);
 			for (final Spot spot : frames.currentlySeenSpots.keySet())
 			{
-				spot.localize(coord);
-				coordTransImg2World.applyInverse(coord, coord);
-
-				System.out.println( String.valueOf(time)+": rendering "+String.valueOf(frames.currentlySeenSpots.get(spot))
-				  +" ("+spot.getLabel()+") at "+Util.printCoordinates(coord)
-				  +" with radius^2="+spot.getBoundingSphereRadiusSquared());
+				renderSpot(outImg, coordTransWorld2Img, spot, frames.currentlySeenSpots.get(spot));
 			}
+
+			//save the image
+			//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
+			ImgSaver imgSaver = new ImgSaver(this.context());
+			imgSaver.saveImg(outImgFilename, outImg);
 
 			//lastSeen will be what is currentlySeen
 			frames.swapSeenMaps();
 		}
 
-		//finish the tracks from the last processed frame
-		for (final Integer trackID : frames.currentlySeenSpots.values())
+		//finish the tracks from the last processed frame (NB: lists are already swapped)
+		for (final Integer trackID : frames.lastlySeenSpots.values())
 			tracks.finishTrack(trackID, timeTill);
-		tracks.exportToConsole();
+		tracks.exportToFile( String.format("%s%s%s.txt", outputPath,File.separator,filePrefix) );
 
 		//release the aux "binder" objects
 		model.getGraph().vertices().releaseRef(sRef);
@@ -201,5 +226,78 @@ public class ExporterPlugin extends ContextCommand
 			currentlySeenSpots = lastlySeenSpots;
 			lastlySeenSpots = tmp;
 		}
+	}
+
+	//some shortcut variables worth remembering
+	private int outImgDims = -1;
+	private long[] spotMin,spotMax; //image coordinates (in voxel units)
+	private double[] radii;         //BBox corners relative to spot's center
+	private RealPoint coord;        //aux tmp coordinate
+
+	private
+	void renderSpot(final Img<T> img,final AffineTransform3D transform,
+	                final Spot spot, final int label)
+	{
+		//the spot size
+		final double radius = Math.sqrt(spot.getBoundingSphereRadiusSquared());
+
+		//create spot's bounding box in the world coordinates
+		for (int d=0; d < outImgDims; ++d)
+		{
+			radii[d           ] = spot.getDoublePosition(d) - radius;
+			radii[d+outImgDims] = spot.getDoublePosition(d) + radius;
+		}
+
+		//create spot's bounding box in the image coordinates
+		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
+		final FinalRealInterval spotImgBBox = transform.estimateBounds(spotBBox);
+
+		System.out.println("rendering "+label
+		  +" ("+spot.getLabel()+") at "+Util.printCoordinates(spot)
+		  +" with radius="+radius);
+
+		System.out.println("world sweeping box: "+printRealInterval(spotBBox));
+		System.out.println("image sweeping box: "+printRealInterval(spotImgBBox));
+
+		//now, spotImgBBox has to be in pixel (integer) units and intersect with img,
+		//also check if there is some intersection with the image at all
+		for (int d=0; d < outImgDims; ++d)
+		{
+			spotMin[d] = Math.max( (long)Math.floor(spotImgBBox.realMin(d)), img.min(d) );
+			spotMax[d] = Math.min( (long)Math.ceil( spotImgBBox.realMax(d)), img.max(d) );
+
+			if (spotMin[d] > spotMax[d])
+			{
+				//no intersection along this axis
+				System.out.println("px sweeping box: no intersection");
+				return ;
+			}
+		}
+
+		System.out.println("px sweeping box: "+Util.printCoordinates(spotMin)+" <-> "+Util.printCoordinates(spotMax));
+
+		//NB: the tests above assure that spotMin and spotMax make sense and live inside the img
+		final Cursor<T> p = Views.interval(img, spotMin, spotMax).localizingCursor();
+		T voxelAtP;
+		while (p.hasNext())
+		{
+			//get next voxel
+			voxelAtP = p.next();
+
+			//get it's (real) image coordinate
+			for (int d=0; d < outImgDims; ++d)
+				coord.setPosition( p.getDoublePosition(d) + 0.5, d );
+			//get it's real world coordinate
+			transform.applyInverse(coord, coord);
+
+			//if close to the spot's center, draw into this voxel
+			if (Util.distance(coord,spot) <= radius) voxelAtP.setReal(label);
+		}
+	}
+
+	public
+	String printRealInterval(final RealInterval ri)
+	{
+		return "["+ri.realMin(0)+","+ri.realMin(1)+","+ri.realMin(2)+"] <-> ["+ri.realMax(0)+","+ri.realMax(1)+","+ri.realMax(2)+"]";
 	}
 }

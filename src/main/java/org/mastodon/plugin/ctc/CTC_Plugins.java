@@ -19,6 +19,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 @Plugin( type = CTC_Plugins.class )
 public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
@@ -130,13 +131,17 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 				throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+selectedFolder.getAbsolutePath());
 		}
 
-		ExporterPlugin ep = new ExporterPlugin();
+		ExporterPlugin<UnsignedShortType> ep = new ExporterPlugin<>(new UnsignedShortType());
 		ep.setContext(this.getContext());
-		ep.model      = pluginAppModel.getAppModel().getModel();
+
 		ep.outputPath = selectedFolder.getAbsolutePath();
-		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
-		ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
 		ep.imgSource  = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
+
+		ep.model      = pluginAppModel.getAppModel().getModel();
+		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
+		//ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
+		ep.timeTill   = 1;
+
 		ep.run();
 	}
 }
