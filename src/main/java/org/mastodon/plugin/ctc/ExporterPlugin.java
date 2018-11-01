@@ -4,6 +4,8 @@ import java.io.File;
 
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogLevel;
+import org.scijava.log.LogService;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
 
@@ -73,6 +75,7 @@ extends ContextCommand
 		this.outImgVoxelType = outImgVoxelType.createVariable();
 	}
 
+
 	@Override
 	public void run()
 	{
@@ -82,7 +85,8 @@ extends ContextCommand
 
 		//aux stuff to create and name the output files
 		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
-		final String outImgFilenameFormat = String.format("%s%s%s%%0%dd%s", outputPath,File.separator,filePrefix,fileNoDigits,filePostfix);
+		final String outImgFilenameFormat = String.format("%s%s%s%%0%dd%s",
+			outputPath,File.separator,filePrefix,fileNoDigits,filePostfix);
 
 		//some more shortcuts to template image params
 		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(viewNo,viewMipLevel);
@@ -100,6 +104,9 @@ extends ContextCommand
 		outImgTemplate.dimensions(spotMin);
 		System.out.println("Output image size  : "+Util.printCoordinates(spotMin));
 
+		//error report
+		final LogService logServiceRef = this.getContext().getService(LogService.class).log();
+
 		//some more shortcuts to template voxel params
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
@@ -108,128 +115,166 @@ extends ContextCommand
 
 		//aux conversion data
 		final TrackRecords tracks = new TrackRecords();
-		final lastTwoFramesRecords frames = new lastTwoFramesRecords();
+
+		//map: Mastodon's spotID to CTC's trackID
+		RefIntMap< Spot > knownTracks = RefMaps.createRefIntMap( model.getGraph().vertices(), -1 );
 
 		//aux Mastodon data: shortcuts and caches/proxies
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
-		final Link lRef = model.getGraph().edgeRef();
-		final Spot sRef = model.getGraph().vertices().createRef();
+		final Link lRef = model.getGraph().edgeRef();              //link reference
+		final Spot sRef = model.getGraph().vertices().createRef(); //spot reference
+		final Spot fRef = model.getGraph().vertices().createRef(); //some spot's future buddy
 
 		//over all time points
 		for ( int time = timeFrom; time <= timeTill; ++time )
 		{
-			//init the "list" of spots seen in the current frame
-			frames.currentlySeenSpots.clear();
+			final String outImgFilename = String.format(outImgFilenameFormat, time);
+			System.out.println("Working on: "+outImgFilename);
 
-			//init the counter of references on the spots seen in the previous frame
-			//NB: only deletes here, the entries will be created (and initialized) on demand
-			frames.lSScounter.clear();
+			final Img<T> outImg = outImgFactory.create(outImgTemplate);
 
 			//over all spots in the current time point
 			for ( final Spot spot : spots.getSpatialIndex( time ) )
 			{
-				//CTC trackID is not decided yet
-				int trackID = -1;
+				//find how many back- and forward-references (time-wise) this spot has
+				int countBackwardLinks = 0;
+				int countForwardLinks = 0;
 
-				//scan all neighbors of this spot to see if some is part of some existing CTC track
-				for (int n=0; n < spot.incomingEdges().size() && trackID == -1; ++n)
+				for (int n=0; n < spot.incomingEdges().size(); ++n)
 				{
 					spot.incomingEdges().get(n, lRef).getSource( sRef );
-					trackID = frames.lastlySeenSpots.get( sRef );
-				}
-				for (int n=0; n < spot.outgoingEdges().size() && trackID == -1; ++n)
-				{
-					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
-					trackID = frames.lastlySeenSpots.get( sRef );
-				}
-
-				if (trackID == -1)
-				{
-					//no neighbor of the current spot was seen in the previous frame,
-					//we are thus starting a new track
-					trackID = tracks.getNextAvailTrackID();
-					tracks.startNewTrack(trackID, time);
-				}
-				else
-				{
-					//the neighbor was seen in the previous frame, (conditionally) "prolong" its track,
-					//it holds trackID == frames.lastlySeenSpots.get( sRef );
-					frames.lSScounter.adjustOrPutValue(sRef, 1, 1);
-					//NB: if neig's counter ends up > 1, we have found a division,
-					//    and trackID hints who are the daughters
-				}
-				frames.currentlySeenSpots.put(spot, trackID);
-			}
-
-			//now check the lastlySeenSpots.counter, that is how many times a spot in the previous
-			//frame was referenced (via link) from the current frame
-			for (final Spot mSpot : frames.lSScounter.keySet())
-			{
-				if (frames.lSScounter.get(mSpot) > 1)
-				{
-					//mSpot is a mother
-					final int mTrackID = frames.lastlySeenSpots.get(mSpot);
-
-					//let's find her daughters
-					for (final Spot dID : frames.currentlySeenSpots.keySet())
-					if (frames.currentlySeenSpots.get(dID) == mTrackID)
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom) ++countBackwardLinks;
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 					{
-						//daughter has been found, start a new track for her
-						final int dTrackID = tracks.getNextAvailTrackID();
-						tracks.insertDivision(mTrackID, dTrackID, time);
-						frames.currentlySeenSpots.put(dID, dTrackID); //NB: rewrites existing record
+						++countForwardLinks;
+						fRef.refTo( sRef );
 					}
 				}
-				else if (frames.lSScounter.get(mSpot) == 0)
+				for (int n=0; n < spot.outgoingEdges().size(); ++n)
 				{
-					//mSpot is abandoned
-					tracks.finishTrack(frames.lastlySeenSpots.get(mSpot), time);
+					spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+					if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom) ++countBackwardLinks;
+					if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
+					{
+						++countForwardLinks;
+						fRef.refTo( sRef );
+					}
 				}
-			}
 
-			//finally, render currently seen spots into the current image with their CTC's trackIDs
-			final String outImgFilename = String.format(outImgFilenameFormat, time);
-			System.out.println(outImgFilename);
-			Img<T> outImg = outImgFactory.create(outImgTemplate);
-			for (final Spot spot : frames.currentlySeenSpots.keySet())
-			{
-				renderSpot(outImg, coordTransWorld2Img, spot, frames.currentlySeenSpots.get(spot));
+				//process events:
+				//
+				//feasibility test: too many joining paths? (aka merging event)
+				if (countBackwardLinks > 1)
+				{
+					logServiceRef.log(LogLevel.ERROR,
+					                  "spot "+spot.getLabel()
+					                  +" has multiple ("+countBackwardLinks
+					                  +") older-time-point links!");
+
+					//ideally should stop here, but we opted to finish all tracks
+					//that join this one, and start the new (parentID = 0) track here
+
+					//list backward links and just forget them (aka delete them from knownTracks)
+					for (int n=0; n < spot.incomingEdges().size(); ++n)
+					{
+						spot.incomingEdges().get(n, lRef).getSource( sRef );
+						if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+							knownTracks.remove( sRef );
+					}
+					for (int n=0; n < spot.outgoingEdges().size(); ++n)
+					{
+						spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+						if (sRef.getTimepoint() < time && sRef.getTimepoint() >= timeFrom)
+							knownTracks.remove( sRef );
+					}
+
+					//a new track from this spot must be existing (as some from the backward
+					//links must have created it), just assure it has no parental information
+					//... by removing it completely
+					//(or we would need to be allowed to modify internal structures of TrackRecords)
+					tracks.removeTrack( knownTracks.get(spot) );
+
+					//pretend there are no backward links (to make it start a new zero-parent track)
+					countBackwardLinks = 0;
+				}
+
+				//spot with no backward links?
+				if (countBackwardLinks == 0)
+				{
+					//start a new track
+					knownTracks.put( spot, tracks.startNewTrack(time) );
+				}
+				else //countBackwardLinks == 1
+				{
+					//prolong the existing track
+					tracks.updateTrack( knownTracks.get(spot), time );
+				}
+
+				//multiple "followers"? feels like a division...
+				if (countForwardLinks > 1)
+				{
+					//list forward links and create them at their respective times,
+					//mark spot as their parent
+					for (int n=0; n < spot.incomingEdges().size(); ++n)
+					{
+						spot.incomingEdges().get(n, lRef).getSource( sRef );
+						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
+						if (knownTracks.get(sRef) == -1)
+							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+					}
+					for (int n=0; n < spot.outgoingEdges().size(); ++n)
+					{
+						spot.outgoingEdges().get(n, lRef).getTarget( sRef );
+						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
+						if (knownTracks.get(sRef) == -1)
+							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+					}
+				}
+				else if (countForwardLinks == 1)
+				{
+					//just one follower, is he right in the next frame?
+					if (fRef.getTimepoint() == time+1)
+					{
+						//yes, just replace myself in the map
+						if (knownTracks.get(fRef) == -1)
+							knownTracks.put( fRef, knownTracks.get(spot) );
+					}
+					else
+					{
+						//no, start a new track for the follower
+						if (knownTracks.get(fRef) == -1)
+							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), knownTracks.get(spot) ) );
+					}
+				}
+
+				//finally, render the spot into the current image with its CTC's trackID
+				renderSpot( outImg, coordTransWorld2Img, spot, knownTracks.get(spot) );
+
+				//forget the currently closed track
+				knownTracks.remove( spot );
+
+				//debug: report currently knownTracks
+				/*
+				for (final Spot s : knownTracks.keySet())
+					System.out.println(s.getLabel()+" -> "+knownTracks.get(s));
+				*/
 			}
 
 			//save the image
 			//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
 			ImgSaver imgSaver = new ImgSaver(this.context());
 			imgSaver.saveImg(outImgFilename, outImg);
-
-			//lastSeen will be what is currentlySeen
-			frames.swapSeenMaps();
 		}
 
-		//finish the tracks from the last processed frame (NB: lists are already swapped)
-		for (final Integer trackID : frames.lastlySeenSpots.values())
-			tracks.finishTrack(trackID, timeTill);
+		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath,File.separator,filePrefix) );
 
 		//release the aux "binder" objects
+		model.getGraph().vertices().releaseRef(fRef);
 		model.getGraph().vertices().releaseRef(sRef);
 		model.getGraph().releaseRef(lRef);
 	}
 
-	//management of the last two frames only
-	class lastTwoFramesRecords
-	{
-		//maps Mastodon's spotID to CTC's trackID
-		RefIntMap< Spot > currentlySeenSpots = RefMaps.createRefIntMap( model.getGraph().vertices(), -1 );
-		RefIntMap< Spot > lastlySeenSpots    = RefMaps.createRefIntMap( model.getGraph().vertices(), -1 );
-		final RefIntMap< Spot > lSScounter   = RefMaps.createRefIntMap( model.getGraph().vertices(), -1 );
-
-		public void swapSeenMaps()
-		{
-			final RefIntMap< Spot > tmp = currentlySeenSpots;
-			currentlySeenSpots = lastlySeenSpots;
-			lastlySeenSpots = tmp;
-		}
-	}
 
 	//some shortcut variables worth remembering
 	private int outImgDims = -1;
@@ -261,12 +306,12 @@ extends ContextCommand
 		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
 		final FinalRealInterval spotImgBBox = transform.estimateBounds(spotBBox);
 
-		System.out.println("rendering "+label
-		  +" ("+spot.getLabel()+") at "+Util.printCoordinates(spot)
+		System.out.println("rendering spot "+spot.getLabel()
+		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 
-		System.out.println("world sweeping box: "+printRealInterval(spotBBox));
-		System.out.println("image sweeping box: "+printRealInterval(spotImgBBox));
+		//System.out.println("world sweeping box: "+printRealInterval(spotBBox));
+		//System.out.println("image sweeping box: "+printRealInterval(spotImgBBox));
 
 		//now, spotImgBBox has to be in pixel (integer) units and intersect with img,
 		//also check if there is some intersection with the image at all
@@ -278,14 +323,14 @@ extends ContextCommand
 			if (spotMin[d] > spotMax[d])
 			{
 				//no intersection along this axis
-				System.out.println("px sweeping box: no intersection");
+				//System.out.println("px sweeping box: no intersection");
 				return ;
 			}
 		}
 		//if, however, only one zSlice is requested, make sure the spotImgBBox is indeed single plane thick
 		if (doOneZslicePerMarker && outImgDims > 2) spotMax[2] = spotMin[2];
 
-		System.out.println("px sweeping box: "+Util.printCoordinates(spotMin)+" <-> "+Util.printCoordinates(spotMax));
+		//System.out.println("px sweeping box: "+Util.printCoordinates(spotMin)+" <-> "+Util.printCoordinates(spotMax));
 
 		//NB: the tests above assure that spotMin and spotMax make sense and live inside the img
 		final Cursor<T> p = Views.interval(img, spotMin, spotMax).localizingCursor();
@@ -305,6 +350,7 @@ extends ContextCommand
 			if (Util.distance(coord,spot) <= radius) voxelAtP.setReal(label);
 		}
 	}
+
 
 	public
 	String printRealInterval(final RealInterval ri)
