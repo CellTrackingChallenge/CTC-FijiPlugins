@@ -41,8 +41,13 @@ public class plugin_AOGMconsistency implements Command
 
 	@Parameter(label = "Path to tracking data folder:",
 		columns = 40, style = FileWidget.DIRECTORY_STYLE,
-		description = "Path should contain result files directly: mask???.tif and res_track.txt")
+		description = "Path should contain result files directly, or TRA folder with the files.")
 	private File resPath;
+
+	@Parameter(label = "Path contains GT or result data:",
+		choices = {"RES: mask???.tif and res_track.txt" , "GT: TRA/man_track???.tif and TRA/man_track.txt"},
+		description = "Choose what naming convention is implemented in the data folder.")
+	private String resPathType;
 
 	@Parameter(label = "Do empty images check:",
 		description = "Checks if no label is found in either ground-truth or result image before measuring TRA.")
@@ -59,6 +64,9 @@ public class plugin_AOGMconsistency implements Command
 	@Parameter(type = ItemIO.OUTPUT)
 	boolean consistent = false;
 
+	static private
+	final String[] inputNames = { "/res_track.txt", "%s/mask%03d.tif",
+	                              "/man_track.txt", "%s/TRA/man_track%03d.tif" };
 
 	//the GUI path entry function:
 	@Override
@@ -69,19 +77,20 @@ public class plugin_AOGMconsistency implements Command
 
 			final TrackDataCache cache = new TrackDataCache(log);
 			final TRA tra = new TRA(log);
+			final int inputNamesChooser = resPathType.startsWith("RES") ? 0 : 2;
 
 			//load metadata with the lineages
-			cache.LoadTrackFile(resPath+"/res_track.txt", cache.res_tracks);
+			cache.LoadTrackFile(resPath+inputNames[inputNamesChooser], cache.res_tracks);
 
 			//iterate through the data folder and read files, one by one,
 			//and call ClassifyLabels() for every file
 			int time = 0;
 			while (Files.isReadable(
-				new File(String.format("%s/mask%03d.tif",resPath,time)).toPath()))
+				new File(String.format(inputNames[inputNamesChooser+1],resPath,time)).toPath()))
 			{
 				//read the image
 				Img<UnsignedShortType> res_img
-					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
+					= cache.ReadImageG16(String.format(inputNames[inputNamesChooser+1],resPath,time));
 
 				cache.ClassifyLabels(res_img, res_img, checkEmptyImages);
 				++time;
