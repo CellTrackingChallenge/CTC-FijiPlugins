@@ -60,6 +60,9 @@ extends ContextCommand
 	@Parameter
 	boolean doOneZslicePerMarker = false;
 
+	@Parameter
+	boolean doOutputOnlyTXTfile = false;
+
 	// ----------------- what to store in the products -----------------
 	@Parameter
 	Model model;
@@ -129,9 +132,13 @@ extends ContextCommand
 		for ( int time = timeFrom; time <= timeTill; ++time )
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time);
-			System.out.println("Working on: "+outImgFilename);
+			if (doOutputOnlyTXTfile)
+				System.out.println("Processing time point: "+time);
+			else
+				System.out.println("Populating image: "+outImgFilename);
 
-			final Img<T> outImg = outImgFactory.create(outImgTemplate);
+			final Img<T> outImg
+				= doOutputOnlyTXTfile? null : outImgFactory.create(outImgTemplate);
 
 			//over all spots in the current time point
 			for ( final Spot spot : spots.getSpatialIndex( time ) )
@@ -248,7 +255,8 @@ extends ContextCommand
 				}
 
 				//finally, render the spot into the current image with its CTC's trackID
-				renderSpot( outImg, coordTransWorld2Img, spot, knownTracks.get(spot) );
+				if (!doOutputOnlyTXTfile)
+					renderSpot( outImg, coordTransWorld2Img, spot, knownTracks.get(spot) );
 
 				//forget the currently closed track
 				knownTracks.remove( spot );
@@ -261,9 +269,12 @@ extends ContextCommand
 			}
 
 			//save the image
-			//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
-			ImgSaver imgSaver = new ImgSaver(this.context());
-			imgSaver.saveImg(outImgFilename, outImg);
+			if (!doOutputOnlyTXTfile)
+			{
+				//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
+				ImgSaver imgSaver = new ImgSaver(this.context());
+				imgSaver.saveImg(outImgFilename, outImg);
+			}
 		}
 
 		//finish the export by creating the supplementary .txt file
