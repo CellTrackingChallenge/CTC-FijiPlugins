@@ -82,9 +82,12 @@ extends ContextCommand
 	@Override
 	public void run()
 	{
+		//info or error report
+		logServiceRef = this.getContext().getService(LogService.class).log();
+
 		//debug report
-		System.out.println("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
-		System.out.println("Output folder is   : "+outputPath);
+		logServiceRef.info("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
+		logServiceRef.info("Output folder is   : "+outputPath);
 
 		//aux stuff to create and name the output files
 		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
@@ -105,10 +108,7 @@ extends ContextCommand
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
-		System.out.println("Output image size  : "+Util.printCoordinates(spotMin));
-
-		//error report
-		final LogService logServiceRef = this.getContext().getService(LogService.class).log();
+		logServiceRef.info("Output image size  : "+Util.printCoordinates(spotMin));
 
 		//some more shortcuts to template voxel params
 		//transformation used
@@ -133,9 +133,9 @@ extends ContextCommand
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time);
 			if (doOutputOnlyTXTfile)
-				System.out.println("Processing time point: "+time);
+				logServiceRef.info("Processing time point: "+time);
 			else
-				System.out.println("Populating image: "+outImgFilename);
+				logServiceRef.info("Populating image: "+outImgFilename);
 
 			final Img<T> outImg
 				= doOutputOnlyTXTfile? null : outImgFactory.create(outImgTemplate);
@@ -284,6 +284,8 @@ extends ContextCommand
 		model.getGraph().vertices().releaseRef(fRef);
 		model.getGraph().vertices().releaseRef(sRef);
 		model.getGraph().releaseRef(lRef);
+
+		logServiceRef.info("Done.");
 	}
 
 
@@ -292,6 +294,7 @@ extends ContextCommand
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
+	private LogService logServiceRef;
 
 	private
 	void renderSpot(final Img<T> img,final AffineTransform3D transform,
@@ -317,7 +320,7 @@ extends ContextCommand
 		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
 		final FinalRealInterval spotImgBBox = transform.estimateBounds(spotBBox);
 
-		System.out.println("rendering spot "+spot.getLabel()
+		logServiceRef.info("rendering spot "+spot.getLabel()
 		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 
