@@ -550,6 +550,11 @@ public class TRA
 					aogm += penalty.m_fn;
 					logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
 				}
+
+				if (level.m_gt_match[i] > -1)
+					System.out.println(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
+				else
+					System.out.println(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
 			}
 
 			//for every res label, check we have found exactly one corresponding gt label
@@ -558,6 +563,14 @@ public class TRA
 			{
 				//number of overlapping gt labels
 				num = level.m_res_match[j].size();
+
+				if (level.m_res_match[j].size() == 1)
+					System.out.println(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
+				else
+				if (level.m_res_match[j].size() > 1)
+					System.out.println(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
+				else
+					System.out.println(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
 
 				if (num == 0)
 				{
