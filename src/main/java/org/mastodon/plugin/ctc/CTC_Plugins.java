@@ -14,6 +14,7 @@ import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.ui.util.FileChooser;
+import org.mastodon.revised.ui.util.ExtensionFileFilter;
 import org.scijava.AbstractContextual;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
@@ -96,15 +97,40 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	}
 	//------------------------------------------------------------------------
 
-	/** opens the import dialog, runs the export in a separate
-	    thread provided params were harvested successfully */
+	/** opens the import dialog to find the tracks.txt file,
+	    and runs the import on the currently viewed images
+	    provided params were harvested successfully */
 	private void importer()
 	{
-		System.out.println( "CTC_export.import()" );
+		//open a folder choosing dialog
+		File selectedFile = FileChooser.chooseFile(null, null,
+				new ExtensionFileFilter("txt"),
+				"Choose tracks.txt lineage file that corresponds to the current data:",
+				FileChooser.DialogType.LOAD,
+				FileChooser.SelectionMode.FILES_ONLY);
+
+		//cancel button ?
+		if (selectedFile == null) return;
+
+		//check we can open the file; and complain if not
+		if (selectedFile.canRead() == false)
+			throw new IllegalArgumentException("Cannot read the selected lineage file: "+selectedFile.getAbsolutePath());
+
+		ImporterPlugin ip = new ImporterPlugin();
+		ip.setContext(this.getContext());
+
+		ip.inputPath = selectedFile.getAbsolutePath();
+		ip.imgSource = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
+
+		ip.model     = pluginAppModel.getAppModel().getModel();
+		ip.timeFrom  = pluginAppModel.getAppModel().getMinTimepoint();
+		ip.timeTill  = pluginAppModel.getAppModel().getMaxTimepoint();
+
+		ip.run();
 	}
 
-	/** opens the export dialog, runs the export in a separate
-	    thread provided params were harvested successfully */
+	/** opens the export dialog, and runs the export
+	    provided params were harvested successfully */
 	private void exporter()
 	{
 		//open a folder choosing dialog
@@ -140,8 +166,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 
 		ep.model      = pluginAppModel.getAppModel().getModel();
 		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
-		//ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
-		ep.timeTill   = 1;
+		ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
 
 		ep.run();
 	}
