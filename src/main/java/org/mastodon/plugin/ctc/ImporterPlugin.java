@@ -19,6 +19,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 
+import org.mastodon.revised.model.AbstractModelImporter;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.revised.model.mamut.Model;
@@ -79,6 +80,8 @@ extends ContextCommand
 			throw new IllegalArgumentException("Error reading the lineage file "+inputPath);
 		}
 
+		new AbstractModelImporter< Model >( model ){{ startImport(); }};
+
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
 		imgSource.getSourceTransform(timeFrom,0, coordTransImg2World);
@@ -106,6 +109,7 @@ extends ContextCommand
 		model.getGraph().vertices().releaseRef(nSpot);
 		model.getGraph().releaseRef(linkRef);
 
+		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
 		logServiceRef.info("Done.");
 	}
 
