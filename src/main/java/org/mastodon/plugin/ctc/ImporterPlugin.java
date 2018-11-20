@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
+import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
@@ -50,6 +51,9 @@ extends ContextCommand
 
 	@Parameter
 	int timeTill;
+
+	@Parameter
+	boolean doMatchCheck = true;
 
 	public ImporterPlugin()
 	{
@@ -141,6 +145,9 @@ extends ContextCommand
 
 			//volume/area of the marker
 			long size;
+
+			//overlap of this marker with its corresponding spot
+			long markerOverlap;
 
 			//accumulated coordinates
 			double accCoords[];
@@ -240,6 +247,54 @@ extends ContextCommand
 
 			//NB: we're not removing finished tracks TODO??
 			//NB: we shall not remove finished tracks until we're sure they are no longer parents to some future tracks
+		}
+
+		//check markers vs. created spots how well do they overlap
+		if (doMatchCheck)
+		{
+			final double[] positionV = new double[inImgDims];
+			final double[] positionS = new double[inImgDims];
+			final double[][] cov     = new double[3][3];
+
+			//sweep the image and define the markers
+			voxelCursor.reset();
+			while (voxelCursor.hasNext())
+			if (voxelCursor.next().getRealFloat() > 0)
+			{
+				//Mastodon's world coordinate of this voxel (of this voxel's centre)
+				voxelCursor.localize(positionV);
+				transform.apply(positionV, positionV);
+
+				//found some marker voxel, find its spot,
+				//and increase overlap counter if voxel falls into the spot
+				recentlyUsedSpots.get((int)voxelCursor.get().getRealFloat(), nSpot);
+				nSpot.localize(positionS);
+				nSpot.getCovariance(cov);
+
+				double sum=0;
+				for (int i=0; i < inImgDims && i < 3; ++i)
+				{
+					positionV[i] -= positionS[i];
+					positionV[i] *= positionV[i];
+					positionV[i] /= cov[i][i];
+					sum += positionV[i];
+				}
+
+				//is the voxel "covered" with the spot?
+				if (sum <= 1.0)
+					currentMarkers.get(voxelCursor.get()).markerOverlap++;
+			}
+
+			//now scan over the markers and check the matching criterion
+			for (final Marker m : currentMarkers.values())
+			{
+				//System.out.println((int)m.label.getRealFloat()+": "+m.markerOverlap+" / "+m.size);
+				if (2*m.markerOverlap < m.size)
+					logServiceRef.log(LogLevel.ERROR,
+					                  "time "+time
+					                  +": spot "+recentlyUsedSpots.get((int)m.label.getRealFloat(),nSpot).getLabel()
+					                  +" does not cover image marker "+(int)m.label.getRealFloat());
+			}
 		}
 	}
 
