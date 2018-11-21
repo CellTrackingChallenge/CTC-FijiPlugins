@@ -108,7 +108,7 @@
     <dependency>
       <groupId>net.trackmate</groupId>
       <artifactId>trackmate</artifactId>
-      <version>1.0.0-beta-7-SNAPSHOT</version>
+      <version>1.0.0-beta-8</version>
     </dependency>
   </dependencies>
 </project>
