@@ -65,8 +65,8 @@ public class plugin_AOGMconsistency implements Command
 	boolean consistent = false;
 
 	static private
-	final String[] inputNames = { "/res_track.txt", "%s/mask%03d.tif",
-	                              "/man_track.txt", "%s/TRA/man_track%03d.tif" };
+	final String[] inputNames = { "/res_track.txt",     "%s/mask%03d.tif",
+	                              "/TRA/man_track.txt", "%s/TRA/man_track%03d.tif" };
 
 	//the GUI path entry function:
 	@Override
