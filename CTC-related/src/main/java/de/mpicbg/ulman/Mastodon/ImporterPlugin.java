@@ -1,4 +1,4 @@
-package org.mastodon.plugin.ctc;
+package de.mpicbg.ulman.Mastodon;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.collection.IntRefMap;
 import org.mastodon.collection.RefMaps;
 
-import de.mpicbg.ulman.workers.TrackDataCache;
+import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class )
 public class ImporterPlugin
@@ -81,10 +81,10 @@ extends ContextCommand
 		logServiceRef.info("Supp. lineage file is: "+inputPath);
 
 		//load metadata with the lineages
-		final TrackDataCache trackData = new TrackDataCache(logServiceRef);
+		final TrackRecords tracks = new TrackRecords();
 		try
 		{
-			trackData.LoadTrackFile(inputPath, trackData.res_tracks);
+			tracks.loadTrackFile(inputPath, logServiceRef);
 		}
 		catch (IOException e)
 		{
@@ -113,7 +113,7 @@ extends ContextCommand
 
 			imgSource.getSourceTransform(time,0, coordTransImg2World);
 			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,0) ),
-			           time, coordTransImg2World, modelGraph, trackData.res_tracks );
+			           time, coordTransImg2World, modelGraph, tracks );
 		}
 
 		modelGraph.vertices().releaseRef(oSpot);
@@ -139,7 +139,7 @@ extends ContextCommand
 	private <T extends NativeType<T> & RealType<T>>
 	void readSpots(final IterableInterval<T> img, final int time,
 	               final AffineTransform3D transform,
-	               final ModelGraph modelGraph, final HashMap<Integer,TrackDataCache.Track> trackData)
+	               final ModelGraph modelGraph, final TrackRecords tracks)
 	{
 		//description of a marker:
 		class Marker
@@ -252,12 +252,11 @@ extends ContextCommand
 			else
 			{
 				//is detected for the first time: is it after a division?
-				final TrackDataCache.Track t = trackData.get(label);
-				if (t != null && t.m_parent > 0 && recentlyUsedSpots.containsKey(t.m_parent))
+				if (recentlyUsedSpots.containsKey(tracks.getParentOfTrack(label)))
 				{
 					//System.out.println("linking spot with its mother "+t.m_parent);
 
-					recentlyUsedSpots.get(t.m_parent, oSpot);
+					recentlyUsedSpots.get(tracks.getParentOfTrack(label), oSpot);
 					modelGraph.addEdge( oSpot, nSpot, linkRef ).init();
 				}
 			}
