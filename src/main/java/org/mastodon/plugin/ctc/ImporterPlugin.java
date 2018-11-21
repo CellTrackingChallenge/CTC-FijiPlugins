@@ -18,6 +18,7 @@ import bdv.viewer.Source;
 import net.imglib2.Cursor;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.Views;
 
 import org.mastodon.revised.model.AbstractModelImporter;
@@ -131,7 +132,9 @@ extends ContextCommand
 	private IntRefMap< Spot > recentlyUsedSpots;
 	private Spot nSpot,oSpot;       //spots references
 	private Link linkRef;           //link reference
-	final private double[][] cov = new double[ 3 ][ 3 ];
+	final private double[][] cov = new double[3][3];
+	final private double[][] T   = new double[3][3];
+	final private double[][] Tc  = new double[3][3];
 
 	private <T extends NativeType<T> & RealType<T>>
 	void readSpots(final IterableInterval<T> img, final int time,
@@ -160,8 +163,8 @@ extends ContextCommand
 			double accCoords[];
 
 			//z-coordinate span
-			int minZ=Integer.MAX_VALUE;
-			int maxZ=Integer.MIN_VALUE;
+			int minZ=inImgDims < 3 ? 0 : Integer.MAX_VALUE;
+			int maxZ=inImgDims < 3 ? 0 : Integer.MIN_VALUE;
 		}
 
 		//markers discovered in this image
@@ -213,11 +216,7 @@ extends ContextCommand
 				final double r = Math.sqrt( (double)m.size / Math.PI );
 				cov[0][0] = r*r;
 				cov[1][1] = r*r;
-				cov[2][2] = 1.0;
-				//TODO: the circle might appear out of the image plane
-				//      if image's x,y axes are not parallel to Mastodon's
-				//      world x,y axes
-				//TODO: image anisotropy is not taken care of
+				cov[2][2] = 0.5; //NB: 0.7 * 0.7 = 0.5 -> z thickness is 1.4 px around the marker's centre
 			}
 			else
 			{
@@ -226,8 +225,18 @@ extends ContextCommand
 				cov[0][0] = r*r;
 				cov[1][1] = r*r;
 				cov[2][2] = r*r;
-				//TODO: image anisotropy is not taken care of
 			}
+			//reset non-diagonal elements
+			cov[0][1] = 0; cov[0][2] = 0;
+			cov[1][0] = 0; cov[1][2] = 0;
+			cov[2][0] = 0; cov[2][1] = 0;
+
+			//adapt the canonical/img-based covariance to Mastodon's world coordinate system
+			for ( int r = 0; r < 3; ++r )
+				for ( int c = 0; c < 3; ++c )
+					T[r][c] = transform.get( r, c );
+			LinAlgHelpers.mult( T, cov, Tc );
+			LinAlgHelpers.multABT( Tc, T, cov );
 
 			//System.out.println("adding spot at "+Util.printCoordinates(m.accCoords)+" with label="+label);
 			nSpot = modelGraph.addVertex( nSpot ).init( time, m.accCoords, cov );
