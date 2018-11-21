@@ -378,7 +378,15 @@ public class TrackDataCache
 	}
 
 
-	public void LoadTrackFile(final String fname, Map<Integer,Track> track_list)
+	public void LoadTrackFile(final String fname, final Map<Integer,Track> track_list)
+	throws IOException
+	{
+		LoadTrackFile(fname, track_list, log);
+	}
+
+	public static
+	void LoadTrackFile(final String fname, final Map<Integer,Track> track_list,
+	                   final LogService log)
 	throws IOException
 	{
 		Scanner s = null;
