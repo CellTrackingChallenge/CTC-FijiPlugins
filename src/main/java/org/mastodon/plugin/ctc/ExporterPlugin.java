@@ -127,7 +127,7 @@ extends ContextCommand
 		final TrackRecords tracks = new TrackRecords();
 
 		//map: Mastodon's spotID to CTC's trackID
-		RefIntMap< Spot > knownTracks = RefMaps.createRefIntMap( modelGraph.vertices(), -1 );
+		RefIntMap< Spot > knownTracks = RefMaps.createRefIntMap( modelGraph.vertices(), -1, 500 );
 
 		//aux Mastodon data: shortcuts and caches/proxies
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
@@ -363,7 +363,7 @@ extends ContextCommand
 
 			//get it's (real) image coordinate
 			for (int d=0; d < outImgDims; ++d)
-				coord.setPosition( p.getDoublePosition(d) + 0.5, d );
+				coord.setPosition( p.getDoublePosition(d), d );
 			//get it's real world coordinate
 			transform.applyInverse(coord, coord);
 

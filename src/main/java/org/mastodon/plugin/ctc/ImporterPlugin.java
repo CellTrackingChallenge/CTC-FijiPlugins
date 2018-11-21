@@ -95,14 +95,12 @@ extends ContextCommand
 
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
-		imgSource.getSourceTransform(timeFrom,0, coordTransImg2World);
-		//final AffineTransform3D coordTransWorld2Img = coordTransImg2World.inverse();
 
 		//some more dimensionality-based attributes
 		inImgDims = imgSource.getSource(timeFrom,0).numDimensions();
 		position = new int[inImgDims];
 
-		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1 );
+		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1, 500 );
 		linkRef = modelGraph.edgeRef();
 		nSpot = modelGraph.vertices().createRef();
 		oSpot = modelGraph.vertices().createRef();
@@ -112,6 +110,7 @@ extends ContextCommand
 		{
 			logServiceRef.info("Processing time point: "+time);
 
+			imgSource.getSourceTransform(time,0, coordTransImg2World);
 			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,0) ),
 			           time, coordTransImg2World, modelGraph, trackData.res_tracks );
 		}
@@ -132,6 +131,7 @@ extends ContextCommand
 	private IntRefMap< Spot > recentlyUsedSpots;
 	private Spot nSpot,oSpot;       //spots references
 	private Link linkRef;           //link reference
+	final private double[][] cov = new double[ 3 ][ 3 ];
 
 	private <T extends NativeType<T> & RealType<T>>
 	void readSpots(final IterableInterval<T> img, final int time,
@@ -207,7 +207,6 @@ extends ContextCommand
 			transform.apply(m.accCoords,m.accCoords);
 
 			//estimate radius...
-			final double[][] cov = new double[ 3 ][ 3 ];
 			if (m.minZ == m.maxZ)
 			{
 				//...as if marker is 2D
@@ -215,6 +214,10 @@ extends ContextCommand
 				cov[0][0] = r*r;
 				cov[1][1] = r*r;
 				cov[2][2] = 1.0;
+				//TODO: the circle might appear out of the image plane
+				//      if image's x,y axes are not parallel to Mastodon's
+				//      world x,y axes
+				//TODO: image anisotropy is not taken care of
 			}
 			else
 			{
@@ -223,6 +226,7 @@ extends ContextCommand
 				cov[0][0] = r*r;
 				cov[1][1] = r*r;
 				cov[2][2] = r*r;
+				//TODO: image anisotropy is not taken care of
 			}
 
 			//System.out.println("adding spot at "+Util.printCoordinates(m.accCoords)+" with label="+label);
@@ -261,7 +265,6 @@ extends ContextCommand
 		{
 			final double[] positionV = new double[inImgDims];
 			final double[] positionS = new double[inImgDims];
-			final double[][] cov     = new double[3][3];
 
 			//sweep the image and define the markers
 			voxelCursor.reset();
