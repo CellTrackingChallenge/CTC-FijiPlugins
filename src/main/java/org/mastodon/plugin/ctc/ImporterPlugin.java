@@ -24,6 +24,7 @@ import org.mastodon.revised.model.AbstractModelImporter;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.revised.model.mamut.Model;
+import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.collection.IntRefMap;
 import org.mastodon.collection.RefMaps;
 
@@ -46,6 +47,9 @@ extends ContextCommand
 	@Parameter
 	Model model;
 
+	//shortcut
+	private ModelGraph modelGraph;
+
 	@Parameter
 	int timeFrom;
 
@@ -67,6 +71,9 @@ extends ContextCommand
 	{
 		//info or error report
 		logServiceRef = this.getContext().getService(LogService.class).log();
+
+		//reset the shortcut variable
+		modelGraph = model.getGraph();
 
 		//debug report
 		logServiceRef.info("Time points span is  : "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
@@ -95,10 +102,10 @@ extends ContextCommand
 		inImgDims = imgSource.getSource(timeFrom,0).numDimensions();
 		position = new int[inImgDims];
 
-		recentlyUsedSpots = RefMaps.createIntRefMap( model.getGraph().vertices(), -1 );
-		linkRef = model.getGraph().edgeRef();
-		nSpot = model.getGraph().vertices().createRef();
-		oSpot = model.getGraph().vertices().createRef();
+		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1 );
+		linkRef = modelGraph.edgeRef();
+		nSpot = modelGraph.vertices().createRef();
+		oSpot = modelGraph.vertices().createRef();
 
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill; ++time)
@@ -106,12 +113,12 @@ extends ContextCommand
 			logServiceRef.info("Processing time point: "+time);
 
 			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,0) ),
-			           time, coordTransImg2World, model, trackData.res_tracks );
+			           time, coordTransImg2World, modelGraph, trackData.res_tracks );
 		}
 
-		model.getGraph().vertices().releaseRef(oSpot);
-		model.getGraph().vertices().releaseRef(nSpot);
-		model.getGraph().releaseRef(linkRef);
+		modelGraph.vertices().releaseRef(oSpot);
+		modelGraph.vertices().releaseRef(nSpot);
+		modelGraph.releaseRef(linkRef);
 
 		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
 		logServiceRef.info("Done.");
@@ -129,7 +136,7 @@ extends ContextCommand
 	private <T extends NativeType<T> & RealType<T>>
 	void readSpots(final IterableInterval<T> img, final int time,
 	               final AffineTransform3D transform,
-	               final Model model, final HashMap<Integer,TrackDataCache.Track> trackData)
+	               final ModelGraph modelGraph, final HashMap<Integer,TrackDataCache.Track> trackData)
 	{
 		//description of a marker:
 		class Marker
@@ -219,7 +226,7 @@ extends ContextCommand
 			}
 
 			//System.out.println("adding spot at "+Util.printCoordinates(m.accCoords)+" with label="+label);
-			nSpot = model.getGraph().addVertex( nSpot ).init( time, m.accCoords, cov );
+			nSpot = modelGraph.addVertex( nSpot ).init( time, m.accCoords, cov );
 
 			if (recentlyUsedSpots.containsKey(label))
 			{
@@ -227,7 +234,7 @@ extends ContextCommand
 				//System.out.println("linking spot with its previous occurrence");
 
 				recentlyUsedSpots.get(label, oSpot);
-				model.getGraph().addEdge( oSpot, nSpot, linkRef ).init();
+				modelGraph.addEdge( oSpot, nSpot, linkRef ).init();
 			}
 			else
 			{
@@ -238,7 +245,7 @@ extends ContextCommand
 					//System.out.println("linking spot with its mother "+t.m_parent);
 
 					recentlyUsedSpots.get(t.m_parent, oSpot);
-					model.getGraph().addEdge( oSpot, nSpot, linkRef ).init();
+					modelGraph.addEdge( oSpot, nSpot, linkRef ).init();
 				}
 			}
 

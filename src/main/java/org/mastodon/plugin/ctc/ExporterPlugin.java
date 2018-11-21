@@ -28,6 +28,7 @@ import net.imglib2.view.Views;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.revised.model.mamut.Model;
+import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
@@ -67,6 +68,9 @@ extends ContextCommand
 	@Parameter
 	Model model;
 
+	//shortcut
+	private ModelGraph modelGraph;
+
 	@Parameter
 	int timeFrom;
 
@@ -84,6 +88,9 @@ extends ContextCommand
 	{
 		//info or error report
 		logServiceRef = this.getContext().getService(LogService.class).log();
+
+		//reset the shortcut variable
+		modelGraph = model.getGraph();
 
 		//debug report
 		logServiceRef.info("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
@@ -120,13 +127,13 @@ extends ContextCommand
 		final TrackRecords tracks = new TrackRecords();
 
 		//map: Mastodon's spotID to CTC's trackID
-		RefIntMap< Spot > knownTracks = RefMaps.createRefIntMap( model.getGraph().vertices(), -1 );
+		RefIntMap< Spot > knownTracks = RefMaps.createRefIntMap( modelGraph.vertices(), -1 );
 
 		//aux Mastodon data: shortcuts and caches/proxies
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
-		final Link lRef = model.getGraph().edgeRef();              //link reference
-		final Spot sRef = model.getGraph().vertices().createRef(); //spot reference
-		final Spot fRef = model.getGraph().vertices().createRef(); //some spot's future buddy
+		final Link lRef = modelGraph.edgeRef();              //link reference
+		final Spot sRef = modelGraph.vertices().createRef(); //spot reference
+		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
 
 		//over all time points
 		for ( int time = timeFrom; time <= timeTill; ++time )
@@ -281,9 +288,9 @@ extends ContextCommand
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath,File.separator,filePrefix) );
 
 		//release the aux "binder" objects
-		model.getGraph().vertices().releaseRef(fRef);
-		model.getGraph().vertices().releaseRef(sRef);
-		model.getGraph().releaseRef(lRef);
+		modelGraph.vertices().releaseRef(fRef);
+		modelGraph.vertices().releaseRef(sRef);
+		modelGraph.releaseRef(lRef);
 
 		logServiceRef.info("Done.");
 	}
