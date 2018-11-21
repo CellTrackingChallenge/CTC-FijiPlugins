@@ -68,9 +68,29 @@ public class TrackDataCache
 	// ----------- the common upper stage essentially starts here -----------
 	//auxiliary data:
 
-	/** Track representation. */
-	public class Track
+	/**
+	 * Record of just one track. It stores exactly all attributes that
+	 * are used in the text file that accompanies the image data. This
+	 * file typically contains suffix track.txt, e.g. man_track.txt is
+	 * used for ground truth data.
+	 */
+	public static class Track
 	{
+		/** Track identifier (ID), this value one should find in the image data.
+		    The value must be strictly positive. */
+		final int m_id;
+
+		/** The number of time point (frame) in which the track begins.
+		    The track is supposed to exist since this time point (inclusive). */
+		final int m_begin;
+
+		/** The number of time point (frame) in which the track ends.
+		    The track is supposed to exist up to this time point (inclusive). */
+		int m_end;
+
+		/** Identifier (ID) of the parent track, leave 0 if no parent exists. */
+		final int m_parent;
+
 		/** Explicit constructor. */
 		Track(final int id, final int begin, final int end, final int parent)
 		{
@@ -80,14 +100,35 @@ public class TrackDataCache
 			m_parent = parent;
 		}
 
-		/** Track identifier. */
-		final int m_id;
-		/** The number of frame in which the track begins. */
-		final int m_begin;
-		/** The number of frame in which the track ends. */
-		final int m_end;
-		/** Identifier of the parent track. */
-		final int m_parent;
+		/** Starts up a new, one-time-point-long track record. */
+		public
+		Track(final int ID, final int curTime, final int parentID)
+		{
+			this.m_id = ID;
+			this.m_begin = curTime;
+			this.m_end   = curTime;
+			this.m_parent = parentID;
+		}
+
+		/** Updates the life span of a track record up to the given time point.
+		    The method checks that track time span should be a continuous
+		    interval and throws RuntimeException if 'curTime' would introduce
+		    a hole in the interval. */
+		public
+		void prolongTrack(final int curTime)
+		{
+			if (curTime != m_end && curTime != m_end+1)
+				throw new RuntimeException("Attempted to prolong the track "+m_id
+				                          +" from time "+m_end+" to time "+curTime+".");
+			this.m_end = curTime;
+		}
+
+		/** Exports tab-delimited four-column string: ID m_begin m_end parentID */
+		public
+		String exportToString()
+		{
+			return ( m_id+" "+m_begin+" "+m_end+" "+m_parent );
+		}
 	}
 
 	/** Fork representation. */
