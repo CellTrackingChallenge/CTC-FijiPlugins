@@ -107,7 +107,7 @@ extends ContextCommand
 		oSpot = modelGraph.vertices().createRef();
 
 		//iterate through time points and extract spots
-		for (int time = timeFrom; time <= timeTill; ++time)
+		for (int time = timeFrom; time <= timeTill && isCanceled() == false; ++time)
 		{
 			logServiceRef.info("Processing time point: "+time);
 

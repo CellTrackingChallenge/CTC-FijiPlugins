@@ -136,7 +136,7 @@ extends ContextCommand
 		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
 
 		//over all time points
-		for ( int time = timeFrom; time <= timeTill; ++time )
+		for ( int time = timeFrom; time <= timeTill && isCanceled() == false; ++time )
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time);
 			if (doOutputOnlyTXTfile)
