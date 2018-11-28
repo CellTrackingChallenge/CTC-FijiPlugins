@@ -503,10 +503,13 @@ public class TrackDataCache
 			res_hist.put(label, count == null ? 1 : count+1);
 		}
 
+		//we want to skip background bin, is there some?
+		int zeroBinPresence = gt_hist.get(0) == null? 0 : 1;
+
 		//copy the histogram to the level data class
-		level.m_gt_lab = new int[gt_hist.size()-1];
-		level.m_gt_size = new int[gt_hist.size()-1];
-		level.m_gt_match = new int[gt_hist.size()-1];
+		level.m_gt_lab = new int[gt_hist.size()-zeroBinPresence];
+		level.m_gt_size = new int[gt_hist.size()-zeroBinPresence];
+		level.m_gt_match = new int[gt_hist.size()-zeroBinPresence];
 
 		int idx = 0; //label's index in the arrays
 		for (Integer lbl : gt_hist.keySet())
@@ -519,11 +522,14 @@ public class TrackDataCache
 			++idx;
 		}
 
+		//we want to skip background bin, is there some?
+		zeroBinPresence = res_hist.get(0) == null? 0 : 1;
+
 		//now, the same for the res image
 		//copy the histogram to the level data class
-		level.m_res_lab = new int[res_hist.size()-1];
-		level.m_res_size = new int[res_hist.size()-1];
-		level.m_res_match = (HashSet<Integer>[])new HashSet<?>[res_hist.size()-1];
+		level.m_res_lab = new int[res_hist.size()-zeroBinPresence];
+		level.m_res_size = new int[res_hist.size()-zeroBinPresence];
+		level.m_res_match = (HashSet<Integer>[])new HashSet<?>[res_hist.size()-zeroBinPresence];
 
 		idx = 0; //label's index in the arrays
 		for (Integer lbl : res_hist.keySet())
