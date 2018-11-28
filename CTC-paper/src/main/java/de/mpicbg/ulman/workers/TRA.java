@@ -66,6 +66,14 @@ public class TRA
 	public boolean doLogReports = false;
 
 	/**
+	 * Calculation option: do report on how matching is being established between
+	 * the reference and detected (computed) tracking segments (aka tracking nodes).
+	 * This is helpful for algorithm developers as it shows what, where and when
+	 * was incorrect in their results.
+	 */
+	public boolean doMatchingReports = false;
+
+	/**
 	 * This flag, when set to true, changes the default calculation mode, that is,
 	 * the AOGM will be calculated instead of the TRA (which is essentially
 	 * a normalized AOGM).
@@ -120,6 +128,7 @@ public class TRA
 	public List<String> logED = new LinkedList<>();
 	public List<String> logEA = new LinkedList<>();
 	public List<String> logEC = new LinkedList<>();
+	public List<String> logMatch = new LinkedList<>();
 
 	///convenience function to report given log -- one of the above
 	public void reportLog(final List<String> log)
@@ -522,6 +531,7 @@ public class TRA
 		logED.add(String.format("----------Redundant Edges To Be Deleted (Penalty=%g)----------", penalty.m_ed));
 		logEA.add(String.format("----------Edges To Be Added (Penalty=%g)----------", penalty.m_ea));
 		logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
+		logMatch.add(String.format("----------Vertices Matching Status (No Penalty)----------", penalty.m_ns));
 
 		//shadows of the/short-cuts to the cache data
 		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
@@ -552,9 +562,9 @@ public class TRA
 				}
 
 				if (level.m_gt_match[i] > -1)
-					System.out.println(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
+					logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
 				else
-					System.out.println(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
+					logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
 			}
 
 			//for every res label, check we have found exactly one corresponding gt label
@@ -565,12 +575,12 @@ public class TRA
 				num = level.m_res_match[j].size();
 
 				if (level.m_res_match[j].size() == 1)
-					System.out.println(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
+					logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
 				else
 				if (level.m_res_match[j].size() > 1)
-					System.out.println(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
+					logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
 				else
-					System.out.println(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
+					logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
 
 				if (num == 0)
 				{
@@ -607,6 +617,7 @@ public class TRA
 			reportLog(logEA);
 			reportLog(logEC);
 		}
+		if (doMatchingReports) reportLog(logMatch);
 
 		//now, the (old) TRA between GT and RES is calculated:
 		//the old refers to the un-normalized TRA value, interval [0,infinity)
