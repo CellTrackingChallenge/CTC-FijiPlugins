@@ -58,11 +58,15 @@ public class plugin_TRAmeasure implements Command
 
 	@Parameter(label = "Do consistency check",
 		description = "Checks multiple consistency-oriented criteria on both input and GT data before measuring TRA.")
-	private boolean optionConsistency = true;
+	private boolean doConsistencyCheck = true;
 
-	@Parameter(label = "Do verbose logging",
-		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
-	private boolean optionVerboseLogging = true;
+	@Parameter(label = "Verbose report on tracking errors:",
+		description = "Logs all discrepancies (and organizes them by category) between the input and GT data.")
+	private boolean doLogReports = true;
+
+	@Parameter(label = "Verbose report on matching of segments:",
+		description = "Logs which res/GT segment maps onto which GT/res in the data.")
+	private boolean doMatchingReports = false;
 
 
 
@@ -100,8 +104,9 @@ public class plugin_TRAmeasure implements Command
 
 		try {
 			final TRA tra = new TRA(log);
-			tra.doConsistencyCheck = optionConsistency;
-			tra.doLogReports = optionVerboseLogging;
+			tra.doConsistencyCheck = doConsistencyCheck;
+			tra.doLogReports       = doLogReports;
+			tra.doMatchingReports  = doMatchingReports;
 
 			TRA = tra.calculate(GTdir, RESdir);
 		}

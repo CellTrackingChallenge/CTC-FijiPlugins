@@ -63,9 +63,13 @@ public class plugin_DETmeasure implements Command
 		validater = "timePointsStrValidator")
 	private String fileIdxStr = "";
 
-	@Parameter(label = "Do verbose logging",
-		description = "Besides reporting the measure value itself, it also reports measurement details that lead to this value.")
-	private boolean optionVerboseLogging = true;
+	@Parameter(label = "Verbose report on tracking errors:",
+		description = "Logs all discrepancies (and organizes them by category) between the input and GT data.")
+	private boolean doLogReports = true;
+
+	@Parameter(label = "Verbose report on matching of segments:",
+		description = "Logs which res/GT segment maps onto which GT/res in the data.")
+	private boolean doMatchingReports = false;
 
 
 
@@ -111,7 +115,8 @@ public class plugin_DETmeasure implements Command
 
 		try {
 			final DET det = new DET(log);
-			det.doLogReports = optionVerboseLogging;
+			det.doLogReports      = doLogReports;
+			det.doMatchingReports = doMatchingReports;
 
 			Set<Integer> timePoints = NumberSequenceHandler.toSet(fileIdxStr);
 			if (timePoints.size() > 0)
