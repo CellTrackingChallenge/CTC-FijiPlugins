@@ -310,7 +310,7 @@ extends ContextCommand
 	                final Spot spot, final int label)
 	{
 		//the spot size
-		final double radius = Math.sqrt(spot.getBoundingSphereRadiusSquared());
+		final double radius = 1.45f; //Math.sqrt(spot.getBoundingSphereRadiusSquared());
 
 		//create spot's bounding box in the world coordinates
 		for (int d=0; d < outImgDims; ++d)
@@ -370,7 +370,10 @@ extends ContextCommand
 			transform.applyInverse(coord, coord);
 
 			//if close to the spot's center, draw into this voxel
-			if (Util.distance(coord,spot) <= radius) voxelAtP.setReal(label);
+			if (Math.abs(coord.getFloatPosition(0)-spot.getFloatPosition(0)) > 1.5f) continue;
+			if (Math.abs(coord.getFloatPosition(1)-spot.getFloatPosition(1)) > 1.5f) continue;
+			if (Math.abs(coord.getFloatPosition(2)-spot.getFloatPosition(2)) > 1.5f) continue;
+			voxelAtP.setReal(label);
 		}
 	}
 
