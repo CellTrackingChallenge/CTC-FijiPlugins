@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.List;
 
 import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
 
@@ -251,5 +252,105 @@ public class SEG
 		log.info("---");
 		log.info("SEG: "+seg);
 		return (seg);
+	}
+
+
+	/**
+	 * Calculates pairing of/matching between the segments from the two images,
+	 * and returns lists of TP and FP labels from the res_img and FN[0] count
+	 * of FN labels from the gt_img. Two segments, one from the gt_img and one
+	 * from the res_img, are considered matching/overlapping only if the ratio
+	 * of their intersection over the area/volume of the segment from the gt_img
+	 * is strictly greater than the overlapRatio parameter.
+	 *
+	 * The sibling method calculateDetections() with the 'cache' parameter should
+	 * be used when runtime performance is considered.
+	 */
+	public double calculateDetections(final IterableInterval<UnsignedShortType> gt_img,
+	                                  final RandomAccessibleInterval<UnsignedShortType> res_img,
+	                                  final double overlapRatio,
+	                                  final List<Integer> TP, //LIST of good RES hits
+	                                  final List<Integer> FP, //LIST of bad RES hits
+	                                  final int[] FN)         //COUNT of missed GT ones
+	{
+		return calculateDetections(gt_img,res_img,null,overlapRatio,TP,FP,FN);
+	}
+
+	/**
+	 * Calculates pairing of/matching between the segments from the two images,
+	 * and returns lists of TP and FP labels from the res_img and FN[0] count
+	 * of FN labels from the gt_img. Two segments, one from the gt_img and one
+	 * from the res_img, are considered matching/overlapping only if the ratio
+	 * of their intersection over the area/volume of the segment from the gt_img
+	 * is strictly greater than the overlapRatio parameter.
+	 *
+	 * The pairing is actually established using the method class.ClassifyLabels()
+	 * for which a class object should be given to be re-used. Note that the cache
+	 * is always clear before any calculation takes place. If class = null then
+	 * the method instantiates one internally.
+	 */
+	public double calculateDetections(final IterableInterval<UnsignedShortType> gt_img,
+	                                  final RandomAccessibleInterval<UnsignedShortType> res_img,
+	                                  TrackDataCache cache,
+	                                  final double overlapRatio,
+	                                  final List<Integer> TP, //LIST of good RES hits
+	                                  final List<Integer> FP, //LIST of bad RES hits
+	                                  final int[] FN)         //COUNT of missed GT ones
+	{
+		//always use the same slot (that represents the first time point) in the cache
+		final int fakeTimePoint = 0;
+		cache.levels.clear();
+
+		//if no cache is given, create one
+		if (cache == null)
+			cache = new TrackDataCache(log);
+
+		//does the overlap-based pairing of GT and RES segments
+		cache.ClassifyLabels(gt_img, res_img, false, fakeTimePoint, overlapRatio);
+
+		//retrieve the "pointer" on the pairing information
+		final TemporalLevel level = cache.levels.lastElement();
+
+		double seg = 0.0;
+		long counter = 0;
+		int fnCnt = 0;
+
+		//over all GT labels
+		final int m_match_lineSize = level.m_gt_lab.length;
+		for (int i=0; i < level.m_gt_lab.length; ++i)
+		{
+			//Jaccard for this GT label at this time point
+			double acc = 0.0;
+
+			if (level.m_gt_match[i] > -1)
+			{
+				//actually, we have a match,
+				//update the Jaccard accordingly
+				final int intersectSize
+					= level.m_match[i + m_match_lineSize*level.m_gt_match[i]];
+
+				acc  = (double)intersectSize;
+				acc /= (double)level.m_gt_size[i]
+				          + (double)level.m_res_size[level.m_gt_match[i]] - acc;
+			}
+			else fnCnt++;
+
+			//update overall stats
+			seg += acc;
+			++counter;
+		}
+		if (FN.length > 0) FN[0] = fnCnt;
+
+		//over all RES labels
+		for (int j=0; j < level.m_res_lab.length; ++j)
+		{
+			if (level.m_res_match[j] != null && level.m_res_match[j].size() > 0)
+				TP.add( level.m_res_lab[j] );
+			else
+				FP.add( level.m_res_lab[j] );
+		}
+
+		seg = counter > 0 ? seg/(double)counter : 0.0;
+		return seg;
 	}
 }
