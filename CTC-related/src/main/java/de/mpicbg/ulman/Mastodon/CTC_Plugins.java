@@ -126,7 +126,8 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		ip.timeFrom  = pluginAppModel.getAppModel().getMinTimepoint();
 		ip.timeTill  = pluginAppModel.getAppModel().getMaxTimepoint();
 
-		ip.run();
+		//starts the importer in a separate thread
+		(new Thread(ip,"Mastodon CTC importer")).start();
 	}
 
 	/** opens the export dialog, and runs the export
@@ -168,6 +169,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
 		ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
 
-		ep.run();
+		//starts the exporter in a separate thread
+		(new Thread(ep,"Mastodon CTC exporter")).start();
 	}
 }
