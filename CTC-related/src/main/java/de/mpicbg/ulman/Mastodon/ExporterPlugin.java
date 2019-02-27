@@ -2,6 +2,7 @@ package de.mpicbg.ulman.Mastodon;
 
 import java.io.File;
 
+import ij.IJ;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogLevel;
@@ -15,7 +16,6 @@ import net.imglib2.RealInterval;
 import net.imglib2.RealPoint;
 
 import bdv.viewer.Source;
-import io.scif.img.ImgSaver;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.planar.PlanarImgFactory;
 import net.imglib2.img.Img;
@@ -24,6 +24,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.Views;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
@@ -281,8 +282,7 @@ extends ContextCommand
 			if (!doOutputOnlyTXTfile)
 			{
 				//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
-				ImgSaver imgSaver = new ImgSaver(this.context());
-				imgSaver.saveImg(outImgFilename, outImg);
+				IJ.save( ImageJFunctions.wrap(outImg,outImgFilename), outImgFilename );
 			}
 		}
 
