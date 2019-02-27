@@ -35,6 +35,7 @@ CTC-*/.project
 CTC-*/.settings/
 
 # IntelliJ #
+CTC-*/.idea/
 /.idea/
 /*.iml
 
