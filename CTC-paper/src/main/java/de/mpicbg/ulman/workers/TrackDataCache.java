@@ -441,14 +441,14 @@ public class TrackDataCache
 	{
 		//default behavior is to be very strict:
 		//  complain whenever empty result or GT image is found
-		ClassifyLabels(gt_img,res_img, true, levels.size());
+		ClassifyLabels(gt_img,res_img, true, levels.size(), 0.5);
 	}
 
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
 	                           RandomAccessibleInterval<UnsignedShortType> res_img,
 	                           final boolean shouldComplainOnEmptyImages)
 	{
-		ClassifyLabels(gt_img,res_img, shouldComplainOnEmptyImages, levels.size());
+		ClassifyLabels(gt_img,res_img, shouldComplainOnEmptyImages, levels.size(), 0.5);
 	}
 
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
@@ -457,14 +457,25 @@ public class TrackDataCache
 	{
 		//default behavior is to be very strict:
 		//  complain whenever empty result or GT image is found
-		ClassifyLabels(gt_img,res_img, true, time);
+		ClassifyLabels(gt_img,res_img, true, time, 0.5);
+	}
+
+	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
+	                           RandomAccessibleInterval<UnsignedShortType> res_img,
+	                           final boolean shouldComplainOnEmptyImages,
+	                           final int time)
+	{
+		//default behavior is to be very strict:
+		//  complain whenever empty result or GT image is found
+		ClassifyLabels(gt_img,res_img, shouldComplainOnEmptyImages, time, 0.5);
 	}
 
 	@SuppressWarnings("unchecked")
 	public void ClassifyLabels(IterableInterval<UnsignedShortType> gt_img,
 	                           RandomAccessibleInterval<UnsignedShortType> res_img,
 	                           final boolean shouldComplainOnEmptyImages,
-	                           final int time)
+	                           final int time,
+	                           final double overlapRatio)
 	{
 		//check the sizes of the images
 		if (gt_img.numDimensions() != res_img.numDimensions())
@@ -607,7 +618,7 @@ public class TrackDataCache
 				//check the overlap size
 				overlap = (double)level.m_match[i + m_match_lineSize*j];
 				overlap /= (double)level.m_gt_size[i];
-				if (overlap > 0.5)
+				if (overlap > overlapRatio)
 				{
 					//we have significant overlap between i-th gt label and j-th res label
 					level.m_gt_match[i] = j;
