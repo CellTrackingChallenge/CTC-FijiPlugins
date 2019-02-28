@@ -25,7 +25,7 @@ extends ContextCommand
 	@Parameter
 	int fileNoDigits = 3;
 
-	//@Parameter
+	@Parameter
 	T voxelType;
 
 	@Override
@@ -36,6 +36,9 @@ extends ContextCommand
 		System.out.println("filePrefix = "+filePrefix);
 		System.out.println("filePostfix = "+filePostfix);
 		System.out.println("fileNoDigits = "+fileNoDigits);
-		//System.out.println("voxelType = "+voxelType.getClass().getSimpleName());
+		if (voxelType != null)
+			System.out.println("voxelType = "+voxelType.getClass().getSimpleName());
+		else
+			System.out.println("voxelType = null");
 	}
 }

@@ -55,10 +55,13 @@ public class testGUI
 			//here's the reference to the created instance
 			plugin = (TestingPlugin)m.getDelegateObject();
 			plugin.fileNoDigits = 55;
+			plugin.voxelType = new UnsignedShortType();
 
 			//inject the mandatory context
 			m.setInput("context", context);
 			m.resolveInput("context");
+			m.resolveInput("voxelType");
+			m.resolveInput("filePostfix");
 
 			//inject some default params...
 			//m.setInput("outputPath","blabla");
