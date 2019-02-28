@@ -15,7 +15,6 @@ import net.imglib2.RealInterval;
 import net.imglib2.RealPoint;
 
 import bdv.viewer.Source;
-import io.scif.img.ImgSaver;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.planar.PlanarImgFactory;
 import net.imglib2.img.Img;
@@ -114,6 +113,8 @@ extends ContextCommand
 			radii = new double[2*outImgDims];
 			coord = new RealPoint(outImgDims);
 		}
+
+		final ParallelImgSaver saver = new ParallelImgSaver(5);
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
@@ -280,10 +281,17 @@ extends ContextCommand
 			//save the image
 			if (!doOutputOnlyTXTfile)
 			{
-				//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
-				ImgSaver imgSaver = new ImgSaver(this.context());
-				imgSaver.saveImg(outImgFilename, outImg);
+				//add, or wait until the list of images to be saved is small
+				try { saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename); }
+				catch (InterruptedException e) {
+					this.cancel("cancel requested");
+				}
 			}
+		}
+
+		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
+		catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 		//finish the export by creating the supplementary .txt file
