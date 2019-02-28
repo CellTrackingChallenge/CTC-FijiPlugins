@@ -2,7 +2,6 @@ package de.mpicbg.ulman.Mastodon;
 
 import java.io.File;
 
-import ij.IJ;
 import org.scijava.command.Command;
 import org.scijava.command.ContextCommand;
 import org.scijava.log.LogLevel;
@@ -24,7 +23,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.Views;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
@@ -115,6 +113,8 @@ extends ContextCommand
 			radii = new double[2*outImgDims];
 			coord = new RealPoint(outImgDims);
 		}
+
+		final ParallelImgSaver saver = new ParallelImgSaver(5);
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
@@ -281,9 +281,17 @@ extends ContextCommand
 			//save the image
 			if (!doOutputOnlyTXTfile)
 			{
-				//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
-				IJ.save( ImageJFunctions.wrap(outImg,outImgFilename), outImgFilename );
+				//add, or wait until the list of images to be saved is small
+				try { saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename); }
+				catch (InterruptedException e) {
+					this.cancel("cancel requested");
+				}
 			}
+		}
+
+		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
+		catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 		//finish the export by creating the supplementary .txt file
