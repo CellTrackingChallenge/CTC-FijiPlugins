@@ -77,6 +77,7 @@ public class ParallelImgSaver
 	{
 		while (imgQueue.size() >= maxQueueLength)
 		{
+			System.out.println("main(): is waiting...");
 			Thread.sleep(clientPollingMillis);
 		}
 		//NB: not atomic between size() and add()....
@@ -101,6 +102,7 @@ public class ParallelImgSaver
 		public
 		void run()
 		{
+			System.out.println(this.getName()+" is started");
 			boolean shouldStopSaving = false;
 			while (!this.isInterrupted() && !shouldStopSaving)
 			{
@@ -118,18 +120,23 @@ public class ParallelImgSaver
 				if (ipp != null)
 				{
 					//save it
+					System.out.println(this.getName()+" is saving "+ipp.path);
 					IJ.save( ipp.img, ipp.path );
+					System.out.println(this.getName()+"   saved   "+ipp.path);
 				}
 				else
 				{
 					//wait 10 secs
+					System.out.println(this.getName()+" is waiting...");
 					try { Thread.sleep(workersPollingMillis); }
 					catch (InterruptedException e)
 					{
+						System.out.println(this.getName()+" is interrupted");
 						shouldStopSaving = true;
 					}
 				}
 			}
+			System.out.println(this.getName()+" is stopped");
 		}
 	}
 
@@ -167,6 +174,7 @@ public class ParallelImgSaver
 		while (imgQueue.size() > 0 && !shouldStopWaiting)
 		{
 			//wait 10 secs
+			System.out.println("main(): is waiting...");
 			try { Thread.sleep(clientPollingMillis); }
 			catch (InterruptedException e)
 			{
