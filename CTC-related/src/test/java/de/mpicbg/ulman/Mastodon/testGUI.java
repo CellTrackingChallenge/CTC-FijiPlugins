@@ -70,6 +70,15 @@ public class testGUI
 			//...harvest the param values
 			sih.harvest(m);
 
+			/*
+			if harvesting GUI is to be embedded into some other GUI element,
+			one can follow the example below:
+			(and use InputPanel and sih.createInputPanel(); instead of sih.harvest())
+
+			example here:
+			https://github.com/juglab/Blob_Detector/blob/14f246d2dad24ae258cd1810d7f43447d00bba87/src/main/java/command/OverlayCommand.java#L589-L657
+			*/
+
 			System.out.println("Done harvesting.");
 
 		} catch (ModuleCanceledException e) {
