@@ -16,11 +16,16 @@ import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.ui.util.FileChooser;
 import org.mastodon.revised.ui.util.ExtensionFileFilter;
 import org.scijava.AbstractContextual;
+import org.scijava.Context;
+import org.scijava.command.CommandModule;
+import org.scijava.command.CommandService;
+import org.scijava.module.ModuleException;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
+import org.scijava.ui.swing.widget.SwingInputHarvester;
 
 @Plugin( type = CTC_Plugins.class )
 public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
@@ -134,42 +139,59 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	    provided params were harvested successfully */
 	private void exporter()
 	{
-		//open a folder choosing dialog
-		File selectedFolder = FileChooser.chooseFile(null, null, null,
-				"Choose GT folder with TRA folder inside:",
-				FileChooser.DialogType.LOAD,
-				FileChooser.SelectionMode.DIRECTORIES_ONLY);
-
-		//cancel button ?
-		if (selectedFolder == null) return;
-
-		//check there is a TRA sub-folder; and if not, create it
-		final File traFolder = new File(selectedFolder.getPath()+File.separator+"TRA");
-		if (traFolder.exists())
-		{
-			//"move" into the existing TRA folder
-			selectedFolder = traFolder;
-		}
-		else
-		{
-			if (traFolder.mkdirs())
-				selectedFolder = traFolder;
-			else
-				throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+selectedFolder.getAbsolutePath());
-		}
-
+		//particular instance of the plugin
 		ExporterPlugin<UnsignedShortType> ep = new ExporterPlugin<>(new UnsignedShortType());
 		ep.setContext(this.getContext());
 
-		ep.outputPath = selectedFolder.getAbsolutePath();
-		ep.imgSource  = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
-		ep.doOneZslicePerMarker = true;
+		//wrap Module around the (existing) command
+		final CommandModule cm = new CommandModule( this.getContext().getService(CommandService.class).getCommand(ep.getClass()), ep );
 
+		//update default values to the current situation
+		ep.imgSource  = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
 		ep.model      = pluginAppModel.getAppModel().getModel();
+
+		ep.doOneZslicePerMarker = true;
 		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
 		ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
 
-		//starts the exporter in a separate thread
-		(new Thread(ep,"Mastodon CTC exporter")).start();
+		//mark which fields of the plugin shall not be displayed
+		cm.resolveInput("context");
+		cm.resolveInput("filePrefix");
+		cm.resolveInput("filePostfix");
+		cm.resolveInput("fileNoDigits");
+		cm.resolveInput("imgSource");
+		cm.resolveInput("model");
+
+		try {
+			//GUI harvest (or just confirm) values for (some) parameters
+			final SwingInputHarvester sih = new SwingInputHarvester();
+			sih.setContext(this.getContext());
+			sih.harvest(cm);
+		} catch (ModuleException e) {
+			//NB: includes ModuleCanceledException which signals 'Cancel' button
+			//flag that the plugin should not be started at all
+			ep = null;
+		}
+
+		if (ep != null)
+		{
+			//check there is a TRA sub-folder; and if not, create it
+			final File traFolder = new File(ep.outputPath.getPath()+File.separator+"TRA");
+			if (traFolder.exists())
+			{
+				//"move" into the existing TRA folder
+				ep.outputPath = traFolder;
+			}
+			else
+			{
+				if (traFolder.mkdirs())
+					ep.outputPath = traFolder;
+				else
+					throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+ep.outputPath.getAbsolutePath());
+			}
+
+			//starts the exporter in a separate thread
+			new Thread(ep,"Mastodon CTC exporter").start();
+		}
 	}
 }
