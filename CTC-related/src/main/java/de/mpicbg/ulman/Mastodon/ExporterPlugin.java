@@ -56,8 +56,10 @@ extends ContextCommand
 	@Parameter
 	Source<?> imgSource;
 
-	private final int viewNo = 0;
+	//use always the highest resolution possible
 	private final int viewMipLevel = 0;
+
+	//constructor-created voxel type
 	private final T outImgVoxelType;
 
 	@Parameter(label = "Splash markers into one slice along z-axis:")
@@ -104,7 +106,7 @@ extends ContextCommand
 			outputPath.getAbsolutePath(),File.separator,filePrefix,fileNoDigits,filePostfix);
 
 		//some more shortcuts to template image params
-		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(viewNo,viewMipLevel);
+		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(timeFrom,viewMipLevel);
 		if (outImgDims != outImgTemplate.numDimensions())
 		{
 			//reset dimensionality-based attributes to become compatible again
@@ -124,7 +126,7 @@ extends ContextCommand
 		//some more shortcuts to template voxel params
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
-		imgSource.getSourceTransform(viewNo,viewMipLevel, coordTransImg2World);
+		imgSource.getSourceTransform(timeFrom,viewMipLevel, coordTransImg2World);
 		final AffineTransform3D coordTransWorld2Img = coordTransImg2World.inverse();
 
 		//aux conversion data
