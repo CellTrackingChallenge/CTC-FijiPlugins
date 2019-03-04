@@ -1,5 +1,12 @@
 package de.mpicbg.ulman.Mastodon;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.JFrame;
+import javax.swing.BoxLayout;
+import org.jhotdraw.samples.svg.gui.ProgressIndicator;
+
 import java.io.File;
 
 import org.scijava.command.Command;
@@ -123,6 +130,24 @@ extends ContextCommand
 		outImgTemplate.dimensions(spotMin);
 		logServiceRef.info("Output image size  : "+Util.printCoordinates(spotMin));
 
+		//PROGRESS BAR stuff
+		final ButtonHandler pbtnHandler = new ButtonHandler();
+
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final Button pbtn = new Button("Stop exporting");
+		pbtn.setMaximumSize(new Dimension(150, 40));
+		pbtn.addActionListener(pbtnHandler);
+
+		//populate the bar and show it
+		final JFrame pbframe = new JFrame("CTC Exporter Progress Bar @ Mastodon");
+		pbframe.setLayout(new BoxLayout(pbframe.getContentPane(), BoxLayout.Y_AXIS));
+		pbframe.add(pbar);
+		pbframe.add(pbtn);
+		pbframe.setMinimumSize(new Dimension(300, 100));
+		pbframe.setLocationByPlatform(true);
+		pbframe.setVisible(true);
+		//PROGRESS BAR stuff
+
 		//some more shortcuts to template voxel params
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
@@ -142,7 +167,7 @@ extends ContextCommand
 		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
 
 		//over all time points
-		for ( int time = timeFrom; time <= timeTill && isCanceled() == false; ++time )
+		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time);
 			if (doOutputOnlyTXTfile)
@@ -290,12 +315,17 @@ extends ContextCommand
 					this.cancel("cancel requested");
 				}
 			}
+
+			pbar.setProgress(time);
 		}
 
 		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
 		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+
+		pbtn.removeActionListener(pbtnHandler);
+		pbframe.dispose();
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );

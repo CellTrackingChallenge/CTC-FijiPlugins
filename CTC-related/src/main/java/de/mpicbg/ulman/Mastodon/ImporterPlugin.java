@@ -1,5 +1,12 @@
 package de.mpicbg.ulman.Mastodon;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.JFrame;
+import javax.swing.BoxLayout;
+import org.jhotdraw.samples.svg.gui.ProgressIndicator;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -96,6 +103,24 @@ extends ContextCommand
 			throw new IllegalArgumentException("Error reading the lineage file "+inputPath.getAbsolutePath());
 		}
 
+		//PROGRESS BAR stuff
+		final ButtonHandler pbtnHandler = new ButtonHandler();
+
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final Button pbtn = new Button("Stop importing");
+		pbtn.setMaximumSize(new Dimension(150, 40));
+		pbtn.addActionListener(pbtnHandler);
+
+		//populate the bar and show it
+		final JFrame pbframe = new JFrame("CTC Importer Progress Bar @ Mastodon");
+		pbframe.setLayout(new BoxLayout(pbframe.getContentPane(), BoxLayout.Y_AXIS));
+		pbframe.add(pbar);
+		pbframe.add(pbtn);
+		pbframe.setMinimumSize(new Dimension(300, 100));
+		pbframe.setLocationByPlatform(true);
+		pbframe.setVisible(true);
+		//PROGRESS BAR stuff
+
 		new AbstractModelImporter< Model >( model ){{ startImport(); }};
 
 		//transformation used
@@ -111,14 +136,19 @@ extends ContextCommand
 		oSpot = modelGraph.vertices().createRef();
 
 		//iterate through time points and extract spots
-		for (int time = timeFrom; time <= timeTill && isCanceled() == false; ++time)
+		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
 			logServiceRef.info("Processing time point: "+time);
 
 			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
 			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,viewMipLevel) ),
 			           time, coordTransImg2World, modelGraph, tracks );
+
+			pbar.setProgress(time);
 		}
+
+		pbtn.removeActionListener(pbtnHandler);
+		pbframe.dispose();
 
 		modelGraph.vertices().releaseRef(oSpot);
 		modelGraph.vertices().releaseRef(nSpot);
