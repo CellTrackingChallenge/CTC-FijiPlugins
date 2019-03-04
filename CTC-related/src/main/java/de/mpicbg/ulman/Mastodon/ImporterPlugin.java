@@ -1,5 +1,6 @@
 package de.mpicbg.ulman.Mastodon;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -37,8 +38,8 @@ extends ContextCommand
 {
 	// ----------------- where is the CTC-formated result -----------------
 	//the image data is in this dataset plus in a lineage txt file 'inputPath'
-	@Parameter
-	String inputPath;
+	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
+	File inputPath;
 
 	// ----------------- what is currently displayed in the project -----------------
 	@Parameter
@@ -81,18 +82,18 @@ extends ContextCommand
 
 		//debug report
 		logServiceRef.info("Time points span is  : "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
-		logServiceRef.info("Supp. lineage file is: "+inputPath);
+		logServiceRef.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
 
 		//load metadata with the lineages
 		final TrackRecords tracks = new TrackRecords();
 		try
 		{
-			tracks.loadTrackFile(inputPath, logServiceRef);
+			tracks.loadTrackFile(inputPath.getAbsolutePath(), logServiceRef);
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new IllegalArgumentException("Error reading the lineage file "+inputPath);
+			throw new IllegalArgumentException("Error reading the lineage file "+inputPath.getAbsolutePath());
 		}
 
 		new AbstractModelImporter< Model >( model ){{ startImport(); }};
