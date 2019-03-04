@@ -136,6 +136,10 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 
 		if (ip != null)
 		{
+			if (ip.inputPath == null)
+				//provide fake input to give more meaningful error later...
+				ip.inputPath = new File("NO INPUT FILE GIVEN");
+
 			//starts the importer in a separate thread
 			new Thread(ip,"Mastodon CTC importer").start();
 		}

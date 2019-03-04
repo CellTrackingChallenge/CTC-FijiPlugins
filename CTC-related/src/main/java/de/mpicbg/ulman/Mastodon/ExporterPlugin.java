@@ -75,10 +75,10 @@ extends ContextCommand
 	//shortcut
 	private ModelGraph modelGraph;
 
-	@Parameter(label = "Export from this time point:")
+	@Parameter(label = "Export from this time point:", min="0")
 	int timeFrom;
 
-	@Parameter(label = "Export till this time point:")
+	@Parameter(label = "Export till this time point:", min="0")
 	int timeTill;
 
 	public ExporterPlugin(final T outImgVoxelType)

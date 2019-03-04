@@ -55,13 +55,13 @@ extends ContextCommand
 	//shortcut
 	private ModelGraph modelGraph;
 
-	@Parameter
+	@Parameter(label = "Import from this time point:", min="0")
 	int timeFrom;
 
-	@Parameter
+	@Parameter(label = "Import till this time point:", min="0")
 	int timeTill;
 
-	@Parameter
+	@Parameter(label = "Checks if created spots overlap with their markers significantly:")
 	boolean doMatchCheck = true;
 
 	public ImporterPlugin()
