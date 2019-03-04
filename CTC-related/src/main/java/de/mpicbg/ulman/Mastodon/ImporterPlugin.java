@@ -44,6 +44,9 @@ extends ContextCommand
 	@Parameter
 	Source<?> imgSource;
 
+	//use always the highest resolution possible
+	private final int viewMipLevel = 0;
+
 	// ----------------- where to store the result -----------------
 	@Parameter
 	Model model;
@@ -98,7 +101,7 @@ extends ContextCommand
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
 
 		//some more dimensionality-based attributes
-		inImgDims = imgSource.getSource(timeFrom,0).numDimensions();
+		inImgDims = imgSource.getSource(timeFrom,viewMipLevel).numDimensions();
 		position = new int[inImgDims];
 
 		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1, 500 );
@@ -111,8 +114,8 @@ extends ContextCommand
 		{
 			logServiceRef.info("Processing time point: "+time);
 
-			imgSource.getSourceTransform(time,0, coordTransImg2World);
-			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,0) ),
+			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
+			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,viewMipLevel) ),
 			           time, coordTransImg2World, modelGraph, tracks );
 		}
 
