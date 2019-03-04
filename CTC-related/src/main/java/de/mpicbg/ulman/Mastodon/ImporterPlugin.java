@@ -1,5 +1,6 @@
 package de.mpicbg.ulman.Mastodon;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -37,12 +38,15 @@ extends ContextCommand
 {
 	// ----------------- where is the CTC-formated result -----------------
 	//the image data is in this dataset plus in a lineage txt file 'inputPath'
-	@Parameter
-	String inputPath;
+	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
+	File inputPath;
 
 	// ----------------- what is currently displayed in the project -----------------
 	@Parameter
 	Source<?> imgSource;
+
+	//use always the highest resolution possible
+	private final int viewMipLevel = 0;
 
 	// ----------------- where to store the result -----------------
 	@Parameter
@@ -51,13 +55,13 @@ extends ContextCommand
 	//shortcut
 	private ModelGraph modelGraph;
 
-	@Parameter
+	@Parameter(label = "Import from this time point:", min="0")
 	int timeFrom;
 
-	@Parameter
+	@Parameter(label = "Import till this time point:", min="0")
 	int timeTill;
 
-	@Parameter
+	@Parameter(label = "Checks if created spots overlap with their markers significantly:")
 	boolean doMatchCheck = true;
 
 	public ImporterPlugin()
@@ -77,19 +81,19 @@ extends ContextCommand
 		modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is  : "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
-		logServiceRef.info("Supp. lineage file is: "+inputPath);
+		logServiceRef.info("Time points span is  : "+timeFrom+"-"+timeTill);
+		logServiceRef.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
 
 		//load metadata with the lineages
 		final TrackRecords tracks = new TrackRecords();
 		try
 		{
-			tracks.loadTrackFile(inputPath, logServiceRef);
+			tracks.loadTrackFile(inputPath.getAbsolutePath(), logServiceRef);
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new IllegalArgumentException("Error reading the lineage file "+inputPath);
+			throw new IllegalArgumentException("Error reading the lineage file "+inputPath.getAbsolutePath());
 		}
 
 		new AbstractModelImporter< Model >( model ){{ startImport(); }};
@@ -98,7 +102,7 @@ extends ContextCommand
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
 
 		//some more dimensionality-based attributes
-		inImgDims = imgSource.getSource(timeFrom,0).numDimensions();
+		inImgDims = imgSource.getSource(timeFrom,viewMipLevel).numDimensions();
 		position = new int[inImgDims];
 
 		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1, 500 );
@@ -111,8 +115,8 @@ extends ContextCommand
 		{
 			logServiceRef.info("Processing time point: "+time);
 
-			imgSource.getSourceTransform(time,0, coordTransImg2World);
-			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,0) ),
+			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
+			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,viewMipLevel) ),
 			           time, coordTransImg2World, modelGraph, tracks );
 		}
 
@@ -160,7 +164,7 @@ extends ContextCommand
 			long markerOverlap;
 
 			//accumulated coordinates
-			double accCoords[];
+			double[] accCoords;
 
 			//z-coordinate span
 			int minZ=inImgDims < 3 ? 0 : Integer.MAX_VALUE;
