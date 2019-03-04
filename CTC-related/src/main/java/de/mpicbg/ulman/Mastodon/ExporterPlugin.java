@@ -1,5 +1,12 @@
 package de.mpicbg.ulman.Mastodon;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.JFrame;
+import javax.swing.BoxLayout;
+import org.jhotdraw.samples.svg.gui.ProgressIndicator;
+
 import java.io.File;
 
 import org.scijava.command.Command;
@@ -8,6 +15,7 @@ import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
+import org.scijava.widget.FileWidget;
 
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.FinalRealInterval;
@@ -15,7 +23,6 @@ import net.imglib2.RealInterval;
 import net.imglib2.RealPoint;
 
 import bdv.viewer.Source;
-import io.scif.img.ImgSaver;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.planar.PlanarImgFactory;
 import net.imglib2.img.Img;
@@ -40,8 +47,8 @@ public class ExporterPlugin <T extends NativeType<T> & RealType<T>>
 extends ContextCommand
 {
 	// ----------------- where to store products -----------------
-	@Parameter
-	String outputPath;
+	@Parameter(label = "Choose GT folder with TRA folder inside:", style = FileWidget.DIRECTORY_STYLE)
+	File outputPath = new File("");
 
 	@Parameter
 	String filePrefix = "man_track";
@@ -56,14 +63,16 @@ extends ContextCommand
 	@Parameter
 	Source<?> imgSource;
 
-	private final int viewNo = 0;
+	//use always the highest resolution possible
 	private final int viewMipLevel = 0;
+
+	//constructor-created voxel type
 	private final T outImgVoxelType;
 
-	@Parameter
+	@Parameter(label = "Splash markers into one slice along z-axis:")
 	boolean doOneZslicePerMarker = false;
 
-	@Parameter
+	@Parameter(label = "Export only .txt file and produce no images:")
 	boolean doOutputOnlyTXTfile = false;
 
 	// ----------------- what to store in the products -----------------
@@ -73,10 +82,10 @@ extends ContextCommand
 	//shortcut
 	private ModelGraph modelGraph;
 
-	@Parameter
+	@Parameter(label = "Export from this time point:", min="0")
 	int timeFrom;
 
-	@Parameter
+	@Parameter(label = "Export till this time point:", min="0")
 	int timeTill;
 
 	public ExporterPlugin(final T outImgVoxelType)
@@ -95,16 +104,16 @@ extends ContextCommand
 		modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
-		logServiceRef.info("Output folder is   : "+outputPath);
+		logServiceRef.info("Time points span is: "+timeFrom+"-"+timeTill);
+		logServiceRef.info("Output folder is   : "+outputPath.getAbsolutePath());
 
 		//aux stuff to create and name the output files
 		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
 		final String outImgFilenameFormat = String.format("%s%s%s%%0%dd%s",
-			outputPath,File.separator,filePrefix,fileNoDigits,filePostfix);
+			outputPath.getAbsolutePath(),File.separator,filePrefix,fileNoDigits,filePostfix);
 
 		//some more shortcuts to template image params
-		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(viewNo,viewMipLevel);
+		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(timeFrom,viewMipLevel);
 		if (outImgDims != outImgTemplate.numDimensions())
 		{
 			//reset dimensionality-based attributes to become compatible again
@@ -115,14 +124,34 @@ extends ContextCommand
 			coord = new RealPoint(outImgDims);
 		}
 
+		final ParallelImgSaver saver = new ParallelImgSaver(5);
+
 		//debug report
 		outImgTemplate.dimensions(spotMin);
 		logServiceRef.info("Output image size  : "+Util.printCoordinates(spotMin));
 
+		//PROGRESS BAR stuff
+		final ButtonHandler pbtnHandler = new ButtonHandler();
+
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final Button pbtn = new Button("Stop exporting");
+		pbtn.setMaximumSize(new Dimension(150, 40));
+		pbtn.addActionListener(pbtnHandler);
+
+		//populate the bar and show it
+		final JFrame pbframe = new JFrame("CTC Exporter Progress Bar @ Mastodon");
+		pbframe.setLayout(new BoxLayout(pbframe.getContentPane(), BoxLayout.Y_AXIS));
+		pbframe.add(pbar);
+		pbframe.add(pbtn);
+		pbframe.setMinimumSize(new Dimension(300, 100));
+		pbframe.setLocationByPlatform(true);
+		pbframe.setVisible(true);
+		//PROGRESS BAR stuff
+
 		//some more shortcuts to template voxel params
 		//transformation used
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
-		imgSource.getSourceTransform(viewNo,viewMipLevel, coordTransImg2World);
+		imgSource.getSourceTransform(timeFrom,viewMipLevel, coordTransImg2World);
 		final AffineTransform3D coordTransWorld2Img = coordTransImg2World.inverse();
 
 		//aux conversion data
@@ -138,7 +167,7 @@ extends ContextCommand
 		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
 
 		//over all time points
-		for ( int time = timeFrom; time <= timeTill && isCanceled() == false; ++time )
+		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time);
 			if (doOutputOnlyTXTfile)
@@ -280,14 +309,26 @@ extends ContextCommand
 			//save the image
 			if (!doOutputOnlyTXTfile)
 			{
-				//net.imglib2.img.display.imagej.ImageJFunctions.showUnsignedShort(outImg, outImgFilename);
-				ImgSaver imgSaver = new ImgSaver(this.context());
-				imgSaver.saveImg(outImgFilename, outImg);
+				//add, or wait until the list of images to be saved is small
+				try { saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename); }
+				catch (InterruptedException e) {
+					this.cancel("cancel requested");
+				}
 			}
+
+			pbar.setProgress(time);
 		}
 
+		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		pbtn.removeActionListener(pbtnHandler);
+		pbframe.dispose();
+
 		//finish the export by creating the supplementary .txt file
-		tracks.exportToFile( String.format("%s%s%s.txt", outputPath,File.separator,filePrefix) );
+		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
 
 		//release the aux "binder" objects
 		modelGraph.vertices().releaseRef(fRef);
