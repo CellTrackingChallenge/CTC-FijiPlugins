@@ -13,10 +13,7 @@ import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 import org.mastodon.revised.mamut.MamutAppModel;
-import org.mastodon.revised.ui.util.FileChooser;
-import org.mastodon.revised.ui.util.ExtensionFileFilter;
 import org.scijava.AbstractContextual;
-import org.scijava.Context;
 import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
 import org.scijava.module.ModuleException;
@@ -107,32 +104,41 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	    provided params were harvested successfully */
 	private void importer()
 	{
-		//open a folder choosing dialog
-		File selectedFile = FileChooser.chooseFile(null, null,
-				new ExtensionFileFilter("txt"),
-				"Choose tracks.txt lineage file that corresponds to the current data:",
-				FileChooser.DialogType.LOAD,
-				FileChooser.SelectionMode.FILES_ONLY);
-
-		//cancel button ?
-		if (selectedFile == null) return;
-
-		//check we can open the file; and complain if not
-		if (selectedFile.canRead() == false)
-			throw new IllegalArgumentException("Cannot read the selected lineage file: "+selectedFile.getAbsolutePath());
-
+		//particular instance of the plugin
 		ImporterPlugin ip = new ImporterPlugin();
 		ip.setContext(this.getContext());
 
-		ip.inputPath = selectedFile.getAbsolutePath();
-		ip.imgSource = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
+		//wrap Module around the (existing) command
+		final CommandModule cm = new CommandModule( this.getContext().getService(CommandService.class).getCommand(ip.getClass()), ip );
 
+		//update default values to the current situation
+		ip.imgSource = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
 		ip.model     = pluginAppModel.getAppModel().getModel();
+
 		ip.timeFrom  = pluginAppModel.getAppModel().getMinTimepoint();
 		ip.timeTill  = pluginAppModel.getAppModel().getMaxTimepoint();
 
-		//starts the importer in a separate thread
-		(new Thread(ip,"Mastodon CTC importer")).start();
+		//mark which fields of the plugin shall not be displayed
+		cm.resolveInput("context");
+		cm.resolveInput("imgSource");
+		cm.resolveInput("model");
+
+		try {
+			//GUI harvest (or just confirm) values for (some) parameters
+			final SwingInputHarvester sih = new SwingInputHarvester();
+			sih.setContext(this.getContext());
+			sih.harvest(cm);
+		} catch (ModuleException e) {
+			//NB: includes ModuleCanceledException which signals 'Cancel' button
+			//flag that the plugin should not be started at all
+			ip = null;
+		}
+
+		if (ip != null)
+		{
+			//starts the importer in a separate thread
+			new Thread(ip,"Mastodon CTC importer").start();
+		}
 	}
 
 	/** opens the export dialog, and runs the export
