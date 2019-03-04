@@ -97,7 +97,7 @@ extends ContextCommand
 		modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is: "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
+		logServiceRef.info("Time points span is: "+timeFrom+"-"+timeTill);
 		logServiceRef.info("Output folder is   : "+outputPath.getAbsolutePath());
 
 		//aux stuff to create and name the output files

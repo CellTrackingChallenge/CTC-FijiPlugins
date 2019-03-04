@@ -81,7 +81,7 @@ extends ContextCommand
 		modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is  : "+String.valueOf(timeFrom)+"-"+String.valueOf(timeTill));
+		logServiceRef.info("Time points span is  : "+timeFrom+"-"+timeTill);
 		logServiceRef.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
 
 		//load metadata with the lineages
@@ -164,7 +164,7 @@ extends ContextCommand
 			long markerOverlap;
 
 			//accumulated coordinates
-			double accCoords[];
+			double[] accCoords;
 
 			//z-coordinate span
 			int minZ=inImgDims < 3 ? 0 : Integer.MAX_VALUE;
