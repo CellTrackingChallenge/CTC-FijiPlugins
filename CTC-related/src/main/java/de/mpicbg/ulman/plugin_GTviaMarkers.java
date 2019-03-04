@@ -34,8 +34,7 @@ import java.text.ParseException;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import de.mpicbg.ulman.Mastodon.ButtonHandler;
 
 import java.awt.Button;
 import java.awt.Dimension;
@@ -291,20 +290,6 @@ public class plugin_GTviaMarkers implements Command
 		return res;
 	}
 
-
-	///a single-purpose, button-event-handler, aux class
-	private class ButtonHandler implements ActionListener
-	{
-		//whitnessed the event already?
-		private boolean buttonPressed = false;
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{ buttonPressed = true; }
-
-		public boolean buttonPressed()
-		{ return buttonPressed; }
-	}
 
 	//the GUI path entry function:
 	@Override

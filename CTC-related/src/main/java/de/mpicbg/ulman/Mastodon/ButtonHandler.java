@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 ///a single-purpose, button-event-handler, aux class
-class ButtonHandler implements ActionListener
+public class ButtonHandler implements ActionListener
 {
 	//whitnessed the event already?
 	private boolean buttonPressed = false;
