@@ -3,6 +3,9 @@ package de.mpicbg.ulman.Mastodon;
 import java.awt.*;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
+
+import ij.ImagePlus;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
@@ -46,6 +49,9 @@ extends ContextCommand
 	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
 	File inputPath;
 
+	@Parameter(label = "Use external images (maskXXX.tif) from next to the lineage file:")
+	boolean useExternalImages = false;
+
 	// ----------------- what is currently displayed in the project -----------------
 	@Parameter
 	Source<?> imgSource;
@@ -72,6 +78,18 @@ extends ContextCommand
 	public ImporterPlugin()
 	{
 		//now empty...
+	}
+
+
+	private
+	IterableInterval<?> fetchImage(final int time)
+	{
+		if (useExternalImages)
+			return ImageJFunctions.wrap(new ImagePlus( String.format("%s%s%s%03d.tif",
+				inputPath.getParentFile().getAbsolutePath(),
+				File.separatorChar,"tracks",time) ));
+		else
+			return Views.iterable( imgSource.getSource(time,viewMipLevel) );
 	}
 
 
@@ -139,7 +157,7 @@ extends ContextCommand
 			logServiceRef.info("Processing time point: "+time);
 
 			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
-			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,viewMipLevel) ),
+			readSpots( (IterableInterval)fetchImage(time),
 			           time, coordTransImg2World, modelGraph, tracks );
 
 			pbar.setProgress(time);
