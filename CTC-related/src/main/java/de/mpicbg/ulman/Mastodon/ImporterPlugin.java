@@ -1,8 +1,6 @@
 package de.mpicbg.ulman.Mastodon;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
@@ -39,7 +37,7 @@ import org.mastodon.collection.RefMaps;
 
 import de.mpicbg.ulman.workers.TrackRecords;
 
-@Plugin( type = Command.class )
+@Plugin( type = Command.class, name = "CTC format importer @ Mastodon" )
 public class ImporterPlugin
 extends ContextCommand
 {
