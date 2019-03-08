@@ -1,10 +1,11 @@
 package de.mpicbg.ulman.Mastodon;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
+
+import ij.ImagePlus;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
@@ -39,7 +40,7 @@ import org.mastodon.collection.RefMaps;
 
 import de.mpicbg.ulman.workers.TrackRecords;
 
-@Plugin( type = Command.class )
+@Plugin( type = Command.class, name = "CTC format importer @ Mastodon" )
 public class ImporterPlugin
 extends ContextCommand
 {
@@ -47,6 +48,15 @@ extends ContextCommand
 	//the image data is in this dataset plus in a lineage txt file 'inputPath'
 	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
 	File inputPath;
+
+	@Parameter(label = "Use external images (maskXXX.tif) from next to the lineage file:")
+	boolean useExternalImages = false;
+
+	//@Parameter(label = "If the above is checked, use the ground-truth naming scheme:")
+	private boolean useGTfileNames = false;
+	//
+	//flag outside what kind of data user pointed at
+	public boolean wasReadingGTimages() { return useGTfileNames; }
 
 	// ----------------- what is currently displayed in the project -----------------
 	@Parameter
@@ -74,6 +84,37 @@ extends ContextCommand
 	public ImporterPlugin()
 	{
 		//now empty...
+	}
+
+
+	private
+	IterableInterval<?> fetchImage(final int time)
+	{
+		if (useExternalImages)
+		{
+			useGTfileNames = inputPath.getName().startsWith("man");
+			final String filename = String.format("%s%s%s%03d.tif",
+				inputPath.getParentFile().getAbsolutePath(),
+				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
+
+			logServiceRef.info("Reading image: "+filename);
+			IterableInterval<?> img;
+			try
+			{
+				img = ImageJFunctions.wrap(new ImagePlus( filename ));
+			}
+			catch (RuntimeException e)
+			{
+				throw new IllegalArgumentException("Error reading image file "+filename+"\n"+e.getMessage());
+			}
+
+			//make sure we always return some non-null reference
+			if (img == null)
+				throw new IllegalArgumentException("Error reading image file "+filename);
+			return img;
+		}
+		else
+			return Views.iterable( imgSource.getSource(time,viewMipLevel) );
 	}
 
 
@@ -106,7 +147,7 @@ extends ContextCommand
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
 
-		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", 0, timeTill-timeFrom+1, false);
 		final Button pbtn = new Button("Stop importing");
 		pbtn.setMaximumSize(new Dimension(150, 40));
 		pbtn.addActionListener(pbtnHandler);
@@ -135,24 +176,31 @@ extends ContextCommand
 		nSpot = modelGraph.vertices().createRef();
 		oSpot = modelGraph.vertices().createRef();
 
+		try
+		{
+
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
 			logServiceRef.info("Processing time point: "+time);
 
 			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
-			readSpots( (IterableInterval)Views.iterable( imgSource.getSource(time,viewMipLevel) ),
+			readSpots( (IterableInterval)fetchImage(time),
 			           time, coordTransImg2World, modelGraph, tracks );
 
-			pbar.setProgress(time);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
-		pbtn.removeActionListener(pbtnHandler);
-		pbframe.dispose();
+		}
+		finally
+		{
+			pbtn.removeActionListener(pbtnHandler);
+			pbframe.dispose();
 
-		modelGraph.vertices().releaseRef(oSpot);
-		modelGraph.vertices().releaseRef(nSpot);
-		modelGraph.releaseRef(linkRef);
+			modelGraph.vertices().releaseRef(oSpot);
+			modelGraph.vertices().releaseRef(nSpot);
+			modelGraph.releaseRef(linkRef);
+		}
 
 		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
 		logServiceRef.info("Done.");

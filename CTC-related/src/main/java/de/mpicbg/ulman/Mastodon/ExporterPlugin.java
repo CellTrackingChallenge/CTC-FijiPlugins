@@ -1,8 +1,6 @@
 package de.mpicbg.ulman.Mastodon;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
@@ -42,7 +40,7 @@ import org.mastodon.collection.RefMaps;
 
 import de.mpicbg.ulman.workers.TrackRecords;
 
-@Plugin( type = Command.class )
+@Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
 public class ExporterPlugin <T extends NativeType<T> & RealType<T>>
 extends ContextCommand
 {
@@ -74,6 +72,10 @@ extends ContextCommand
 
 	@Parameter(label = "Export only .txt file and produce no images:")
 	boolean doOutputOnlyTXTfile = false;
+
+	@Parameter(label = "How many images to write in parallel:",
+	           description = "Increase if during the saving the hardware is not saturated.")
+	int writerThreads = 1;
 
 	// ----------------- what to store in the products -----------------
 	@Parameter
@@ -124,7 +126,7 @@ extends ContextCommand
 			coord = new RealPoint(outImgDims);
 		}
 
-		final ParallelImgSaver saver = new ParallelImgSaver(5);
+		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
@@ -133,7 +135,7 @@ extends ContextCommand
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
 
-		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", 0, timeTill-timeFrom+1, false);
 		final Button pbtn = new Button("Stop exporting");
 		pbtn.setMaximumSize(new Dimension(150, 40));
 		pbtn.addActionListener(pbtnHandler);
@@ -165,6 +167,9 @@ extends ContextCommand
 		final Link lRef = modelGraph.edgeRef();              //link reference
 		final Spot sRef = modelGraph.vertices().createRef(); //spot reference
 		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
+
+		try
+		{
 
 		//over all time points
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
@@ -316,24 +321,29 @@ extends ContextCommand
 				}
 			}
 
-			pbar.setProgress(time);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
-		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		pbtn.removeActionListener(pbtnHandler);
-		pbframe.dispose();
+		logServiceRef.info("Finishing, but saving first already prepared images...");
+		saver.closeAllWorkers_FinishFirstAllUnsavedImages();
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
 
-		//release the aux "binder" objects
-		modelGraph.vertices().releaseRef(fRef);
-		modelGraph.vertices().releaseRef(sRef);
-		modelGraph.releaseRef(lRef);
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		finally
+		{
+			pbtn.removeActionListener(pbtnHandler);
+			pbframe.dispose();
+
+			//release the aux "binder" objects
+			modelGraph.vertices().releaseRef(fRef);
+			modelGraph.vertices().releaseRef(sRef);
+			modelGraph.releaseRef(lRef);
+		}
 
 		logServiceRef.info("Done.");
 	}
