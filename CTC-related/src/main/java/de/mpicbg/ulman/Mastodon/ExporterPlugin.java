@@ -332,8 +332,11 @@ extends ContextCommand
 			pbar.setProgress(time+1-timeFrom);
 		}
 
-		logServiceRef.info("Finishing, but saving first already prepared images...");
-		saver.closeAllWorkers_FinishFirstAllUnsavedImages();
+		if (!doOutputOnlyTXTfile)
+		{
+			logServiceRef.info("Finishing, but saving first already prepared images...");
+			saver.closeAllWorkers_FinishFirstAllUnsavedImages();
+		}
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
