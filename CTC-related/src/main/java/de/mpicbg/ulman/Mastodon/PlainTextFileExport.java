@@ -397,18 +397,28 @@ public class PlainTextFileExport extends AbstractContextual implements MastodonP
 			//forest of trees:
 			if (parentID > 0)
 			{
-				final int origSize = forestOfTrackTrees.size();
+				boolean foundTree = false;
+				int sizeBefore=0, sizeAfter=0;
 
 				//find a tree containing my parent, and append myself to it
 				for (Set<Integer> tree : forestOfTrackTrees)
 				if (tree.contains(parentID))
 				{
+					foundTree = true;
+					sizeBefore = tree.size();
 					tree.add(ID);
+					sizeAfter  = tree.size();
 					break;
 				}
 
 				//should not happen that we had not added myself but still having parentID > 0
-				if (forestOfTrackTrees.size() == origSize)
+				if (!foundTree)
+				{
+					logServiceRef.log(LogLevel.ERROR,
+					                  "track "+ID
+					                  +" could not find the track tree of its parent "+parentID);
+				}
+				else if (sizeBefore == sizeAfter)
 				{
 					logServiceRef.log(LogLevel.ERROR,
 					                  "could not add track "+ID
