@@ -98,7 +98,15 @@ extends ContextCommand
 				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
 
 			logServiceRef.info("Reading image: "+filename);
-			IterableInterval<?> img = ImageJFunctions.wrap(new ImagePlus( filename ));
+			IterableInterval<?> img;
+			try
+			{
+				img = ImageJFunctions.wrap(new ImagePlus( filename ));
+			}
+			catch (RuntimeException e)
+			{
+				throw new IllegalArgumentException("Error reading image file "+filename+"\n"+e.getMessage());
+			}
 
 			//make sure we always return some non-null reference
 			if (img == null)
@@ -139,7 +147,7 @@ extends ContextCommand
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
 
-		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", 0, timeTill-timeFrom+1, false);
 		final Button pbtn = new Button("Stop importing");
 		pbtn.setMaximumSize(new Dimension(150, 40));
 		pbtn.addActionListener(pbtnHandler);
@@ -168,6 +176,9 @@ extends ContextCommand
 		nSpot = modelGraph.vertices().createRef();
 		oSpot = modelGraph.vertices().createRef();
 
+		try
+		{
+
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
@@ -177,15 +188,19 @@ extends ContextCommand
 			readSpots( (IterableInterval)fetchImage(time),
 			           time, coordTransImg2World, modelGraph, tracks );
 
-			pbar.setProgress(time);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
-		pbtn.removeActionListener(pbtnHandler);
-		pbframe.dispose();
+		}
+		finally
+		{
+			pbtn.removeActionListener(pbtnHandler);
+			pbframe.dispose();
 
-		modelGraph.vertices().releaseRef(oSpot);
-		modelGraph.vertices().releaseRef(nSpot);
-		modelGraph.releaseRef(linkRef);
+			modelGraph.vertices().releaseRef(oSpot);
+			modelGraph.vertices().releaseRef(nSpot);
+			modelGraph.releaseRef(linkRef);
+		}
 
 		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
 		logServiceRef.info("Done.");

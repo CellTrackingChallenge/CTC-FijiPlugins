@@ -135,7 +135,7 @@ extends ContextCommand
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
 
-		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", 0, timeTill-timeFrom+1, false);
 		final Button pbtn = new Button("Stop exporting");
 		pbtn.setMaximumSize(new Dimension(150, 40));
 		pbtn.addActionListener(pbtnHandler);
@@ -167,6 +167,9 @@ extends ContextCommand
 		final Link lRef = modelGraph.edgeRef();              //link reference
 		final Spot sRef = modelGraph.vertices().createRef(); //spot reference
 		final Spot fRef = modelGraph.vertices().createRef(); //some spot's future buddy
+
+		try
+		{
 
 		//over all time points
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
@@ -318,27 +321,29 @@ extends ContextCommand
 				}
 			}
 
-			pbar.setProgress(time);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
-		try {
-			logServiceRef.info("Finishing, but saving first already prepared images...");
-			saver.closeAllWorkers_FinishFirstAllUnsavedImages();
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		pbtn.removeActionListener(pbtnHandler);
-		pbframe.dispose();
+		logServiceRef.info("Finishing, but saving first already prepared images...");
+		saver.closeAllWorkers_FinishFirstAllUnsavedImages();
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
 
-		//release the aux "binder" objects
-		modelGraph.vertices().releaseRef(fRef);
-		modelGraph.vertices().releaseRef(sRef);
-		modelGraph.releaseRef(lRef);
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		finally
+		{
+			pbtn.removeActionListener(pbtnHandler);
+			pbframe.dispose();
+
+			//release the aux "binder" objects
+			modelGraph.vertices().releaseRef(fRef);
+			modelGraph.vertices().releaseRef(sRef);
+			modelGraph.releaseRef(lRef);
+		}
 
 		logServiceRef.info("Done.");
 	}
