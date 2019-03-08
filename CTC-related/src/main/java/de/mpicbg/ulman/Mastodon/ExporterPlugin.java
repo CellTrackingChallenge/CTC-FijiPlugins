@@ -135,7 +135,7 @@ extends ContextCommand
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
 
-		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", timeFrom, timeTill, false);
+		final ProgressIndicator pbar = new ProgressIndicator("Time points processed: ", "", 0, timeTill-timeFrom+1, false);
 		final Button pbtn = new Button("Stop exporting");
 		pbtn.setMaximumSize(new Dimension(150, 40));
 		pbtn.addActionListener(pbtnHandler);
@@ -318,7 +318,7 @@ extends ContextCommand
 				}
 			}
 
-			pbar.setProgress(time);
+			pbar.setProgress(time-timeFrom);
 		}
 
 		try {
