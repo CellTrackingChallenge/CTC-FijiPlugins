@@ -52,6 +52,12 @@ extends ContextCommand
 	@Parameter(label = "Use external images (maskXXX.tif) from next to the lineage file:")
 	boolean useExternalImages = false;
 
+	//@Parameter(label = "If the above is checked, use the ground-truth naming scheme:")
+	private boolean useGTfileNames = false;
+	//
+	//flag outside what kind of data user pointed at
+	public boolean wasReadingGTimages() { return useGTfileNames; }
+
 	// ----------------- what is currently displayed in the project -----------------
 	@Parameter
 	Source<?> imgSource;
@@ -85,9 +91,20 @@ extends ContextCommand
 	IterableInterval<?> fetchImage(final int time)
 	{
 		if (useExternalImages)
-			return ImageJFunctions.wrap(new ImagePlus( String.format("%s%s%s%03d.tif",
+		{
+			useGTfileNames = inputPath.getName().startsWith("man");
+			final String filename = String.format("%s%s%s%03d.tif",
 				inputPath.getParentFile().getAbsolutePath(),
-				File.separatorChar,"tracks",time) ));
+				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
+
+			logServiceRef.info("Reading image: "+filename);
+			IterableInterval<?> img = ImageJFunctions.wrap(new ImagePlus( filename ));
+
+			//make sure we always return some non-null reference
+			if (img == null)
+				throw new IllegalArgumentException("Error reading image file "+filename);
+			return img;
+		}
 		else
 			return Views.iterable( imgSource.getSource(time,viewMipLevel) );
 	}
