@@ -238,14 +238,22 @@ extends ContextCommand
 							knownTracks.remove( sRef );
 					}
 
-					//a new track from this spot must be existing (as some from the backward
-					//links must have created it), just assure it has no parental information
-					//... by removing it completely
-					//(or we would need to be allowed to modify internal structures of TrackRecords)
-					tracks.removeTrack( knownTracks.get(spot) );
-
-					//pretend there are no backward links (to make it start a new zero-parent track)
+					//a new track from this spot must be existing because some from the backward
+					//links must have created it, and creating it means either it is a single-follower
+					//in which case we must remove this track (just abandon it), or it is a
+					//one-from-many-follower (division) in which case the track has just been started
+					//(which is OK) and has parent info set (which is not desired now); in the latter
+					//case and since we cannot modify existing track, we just delete it
+					//
+					//and by re-setting backward links, new track will start just in the code below
 					countBackwardLinks = 0;
+
+					if (tracks.getStartTimeOfTrack( knownTracks.get(spot) ) == time)
+					{
+						//the track 'ID' would have been just starting here,
+						//re-starting really means to remove it first
+						tracks.removeTrack( knownTracks.get(spot) );
+					}
 				}
 
 				//spot with no backward links?
