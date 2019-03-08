@@ -50,6 +50,16 @@ public class TrackRecords
 		return ( tracks.get(ID) != null ? tracks.get(ID).m_parent : 0 );
 	}
 
+	public int getStartTimeOfTrack(int ID)
+	{
+		return ( tracks.get(ID) != null ? tracks.get(ID).m_begin : 0 );
+	}
+
+	public int getEndTimeOfTrack(int ID)
+	{
+		return ( tracks.get(ID) != null ? tracks.get(ID).m_end : 0 );
+	}
+
 	/** Removes entire record about the track. */
 	public void removeTrack(final int ID)
 	{
