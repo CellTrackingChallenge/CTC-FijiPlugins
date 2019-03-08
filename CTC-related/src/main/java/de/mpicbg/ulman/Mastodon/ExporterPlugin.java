@@ -238,14 +238,27 @@ extends ContextCommand
 							knownTracks.remove( sRef );
 					}
 
-					//a new track from this spot must be existing (as some from the backward
-					//links must have created it), just assure it has no parental information
-					//... by removing it completely
-					//(or we would need to be allowed to modify internal structures of TrackRecords)
-					tracks.removeTrack( knownTracks.get(spot) );
-
-					//pretend there are no backward links (to make it start a new zero-parent track)
+					//a new track from this spot must be existing because some from the backward
+					//links must have created it, and creating it means either it is a single-follower
+					//in which case we must remove this track (just abandon it), or it is a
+					//one-from-many-follower (division) in which case the track has just been started
+					//(which is OK) and has parent info set (which is not desired now); in the latter
+					//case and since we cannot modify existing track, we just delete it
+					//
+					//and by re-setting backward links, new track will start just in the code below
 					countBackwardLinks = 0;
+
+					if (tracks.getStartTimeOfTrack( knownTracks.get(spot) ) == time)
+					{
+						//the track 'ID' would have been just starting here,
+						//re-starting really means to remove it first
+						tracks.removeTrack( knownTracks.get(spot) );
+						logServiceRef.trace(spot.getLabel()+": will supersede track ID "+knownTracks.get(spot));
+					}
+					else
+					{
+						logServiceRef.trace(spot.getLabel()+": will just leave the track ID "+knownTracks.get(spot));
+					}
 				}
 
 				//spot with no backward links?
@@ -253,11 +266,13 @@ extends ContextCommand
 				{
 					//start a new track
 					knownTracks.put( spot, tracks.startNewTrack(time) );
+					logServiceRef.trace(spot.getLabel()+": started track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 				else //countBackwardLinks == 1
 				{
 					//prolong the existing track
 					tracks.updateTrack( knownTracks.get(spot), time );
+					logServiceRef.trace(spot.getLabel()+": updated track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 
 				//multiple "followers"? feels like a division...
@@ -270,14 +285,20 @@ extends ContextCommand
 						spot.incomingEdges().get(n, lRef).getSource( sRef );
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
+						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+						}
 					}
 					for (int n=0; n < spot.outgoingEdges().size(); ++n)
 					{
 						spot.outgoingEdges().get(n, lRef).getTarget( sRef );
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
+						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+						}
 					}
 				}
 				else if (countForwardLinks == 1)
@@ -293,7 +314,10 @@ extends ContextCommand
 					{
 						//no, start a new track for the follower
 						if (knownTracks.get(fRef) == -1)
+						{
 							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
+						}
 					}
 				}
 
@@ -324,8 +348,11 @@ extends ContextCommand
 			pbar.setProgress(time+1-timeFrom);
 		}
 
-		logServiceRef.info("Finishing, but saving first already prepared images...");
-		saver.closeAllWorkers_FinishFirstAllUnsavedImages();
+		if (!doOutputOnlyTXTfile)
+		{
+			logServiceRef.info("Finishing, but saving first already prepared images...");
+			saver.closeAllWorkers_FinishFirstAllUnsavedImages();
+		}
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
