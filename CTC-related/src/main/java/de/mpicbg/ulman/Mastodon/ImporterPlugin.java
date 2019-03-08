@@ -168,6 +168,9 @@ extends ContextCommand
 		nSpot = modelGraph.vertices().createRef();
 		oSpot = modelGraph.vertices().createRef();
 
+		try
+		{
+
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
@@ -180,12 +183,16 @@ extends ContextCommand
 			pbar.setProgress(time+1-timeFrom);
 		}
 
-		pbtn.removeActionListener(pbtnHandler);
-		pbframe.dispose();
+		}
+		finally
+		{
+			pbtn.removeActionListener(pbtnHandler);
+			pbframe.dispose();
 
-		modelGraph.vertices().releaseRef(oSpot);
-		modelGraph.vertices().releaseRef(nSpot);
-		modelGraph.releaseRef(linkRef);
+			modelGraph.vertices().releaseRef(oSpot);
+			modelGraph.vertices().releaseRef(nSpot);
+			modelGraph.releaseRef(linkRef);
+		}
 
 		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
 		logServiceRef.info("Done.");
