@@ -98,7 +98,15 @@ extends ContextCommand
 				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
 
 			logServiceRef.info("Reading image: "+filename);
-			IterableInterval<?> img = ImageJFunctions.wrap(new ImagePlus( filename ));
+			IterableInterval<?> img;
+			try
+			{
+				img = ImageJFunctions.wrap(new ImagePlus( filename ));
+			}
+			catch (RuntimeException e)
+			{
+				throw new IllegalArgumentException("Error reading image file "+filename+"\n"+e.getMessage());
+			}
 
 			//make sure we always return some non-null reference
 			if (img == null)
