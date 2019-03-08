@@ -318,7 +318,7 @@ extends ContextCommand
 				}
 			}
 
-			pbar.setProgress(time-timeFrom);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
 		try {

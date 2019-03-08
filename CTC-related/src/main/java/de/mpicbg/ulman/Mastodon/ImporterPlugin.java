@@ -177,7 +177,7 @@ extends ContextCommand
 			readSpots( (IterableInterval)fetchImage(time),
 			           time, coordTransImg2World, modelGraph, tracks );
 
-			pbar.setProgress(time-timeFrom);
+			pbar.setProgress(time+1-timeFrom);
 		}
 
 		pbtn.removeActionListener(pbtnHandler);
