@@ -316,7 +316,8 @@ public class PlainTextFileExport extends AbstractContextual implements MastodonP
 		final BufferedWriter f
 			= new BufferedWriter( new FileWriter(selectedFile.getAbsolutePath()) );
 
-		f.write("# from project ...."); f.newLine();
+		f.write("# from project "+pluginAppModel.getWindowManager().getProjectManager().toString());
+		f.newLine();
 		f.write("# TIME"+delim+"X"+delim+"Y"+delim+"Z"+delim+"TRACK_ID"+delim+"PARENT_TRACK_ID");
 		f.newLine();
 		f.newLine();
@@ -442,7 +443,9 @@ public class PlainTextFileExport extends AbstractContextual implements MastodonP
 
 			//the added-behaviour stuff:
 			//list of spots that make up this track:
-			spotsLists.get(ID).add(spotRef);
+			if ( !spotsLists.get(ID).contains(spotRef) )
+				spotsLists.get(ID).add(spotRef);
+			//NB: after divisions, the daughters are already listed here due to startNewTrack()
 		}
 
 		@Override
