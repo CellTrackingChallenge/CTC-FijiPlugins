@@ -40,7 +40,7 @@ public class ParallelImgSaver
 	    applies only for (blocking API) methods: addImgSaveRequestOrBlockUntilLessThan()
 	    and closeAllWorkers_FinishFirstAllUnsavedImages() */
 	public
-	long clientPollingMillis = 10000;
+	long clientPollingMillis = 2000;
 
 	/** user-adjustable period between job queue is checked by the image
 	    saving workers/threads (after their finish their image saving) */

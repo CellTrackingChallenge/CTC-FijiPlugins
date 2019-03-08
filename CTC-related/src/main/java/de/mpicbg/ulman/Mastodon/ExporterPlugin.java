@@ -73,6 +73,10 @@ extends ContextCommand
 	@Parameter(label = "Export only .txt file and produce no images:")
 	boolean doOutputOnlyTXTfile = false;
 
+	@Parameter(label = "How many images to write in parallel:",
+	           description = "Increase if during the saving the hardware is not saturated.")
+	int writerThreads = 1;
+
 	// ----------------- what to store in the products -----------------
 	@Parameter
 	Model model;
@@ -122,7 +126,7 @@ extends ContextCommand
 			coord = new RealPoint(outImgDims);
 		}
 
-		final ParallelImgSaver saver = new ParallelImgSaver(5);
+		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
@@ -317,7 +321,10 @@ extends ContextCommand
 			pbar.setProgress(time);
 		}
 
-		try { saver.closeAllWorkers_FinishFirstAllUnsavedImages(); }
+		try {
+			logServiceRef.info("Finishing, but saving first already prepared images...");
+			saver.closeAllWorkers_FinishFirstAllUnsavedImages();
+		}
 		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
