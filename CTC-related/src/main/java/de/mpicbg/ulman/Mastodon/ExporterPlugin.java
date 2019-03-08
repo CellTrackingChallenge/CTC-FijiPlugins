@@ -253,6 +253,11 @@ extends ContextCommand
 						//the track 'ID' would have been just starting here,
 						//re-starting really means to remove it first
 						tracks.removeTrack( knownTracks.get(spot) );
+						logServiceRef.trace(spot.getLabel()+": will supersede track ID "+knownTracks.get(spot));
+					}
+					else
+					{
+						logServiceRef.trace(spot.getLabel()+": will just leave the track ID "+knownTracks.get(spot));
 					}
 				}
 
@@ -261,11 +266,13 @@ extends ContextCommand
 				{
 					//start a new track
 					knownTracks.put( spot, tracks.startNewTrack(time) );
+					logServiceRef.trace(spot.getLabel()+": started track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 				else //countBackwardLinks == 1
 				{
 					//prolong the existing track
 					tracks.updateTrack( knownTracks.get(spot), time );
+					logServiceRef.trace(spot.getLabel()+": updated track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 
 				//multiple "followers"? feels like a division...
@@ -278,14 +285,20 @@ extends ContextCommand
 						spot.incomingEdges().get(n, lRef).getSource( sRef );
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
+						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+						}
 					}
 					for (int n=0; n < spot.outgoingEdges().size(); ++n)
 					{
 						spot.outgoingEdges().get(n, lRef).getTarget( sRef );
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
+						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+						}
 					}
 				}
 				else if (countForwardLinks == 1)
@@ -301,7 +314,10 @@ extends ContextCommand
 					{
 						//no, start a new track for the follower
 						if (knownTracks.get(fRef) == -1)
+						{
 							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), knownTracks.get(spot) ) );
+							logServiceRef.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
+						}
 					}
 				}
 
