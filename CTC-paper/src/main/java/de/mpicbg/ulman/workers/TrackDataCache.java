@@ -129,6 +129,14 @@ public class TrackDataCache
 		{
 			return ( m_id+" "+m_begin+" "+m_end+" "+m_parent );
 		}
+
+		/** Exports tab-delimited four-column string: ID m_begin m_end parentID,
+		    but report begin and end time adjusted (incremented) with the 'timeShift' param. */
+		public
+		String exportToString(final int timeShift)
+		{
+			return ( m_id+" "+(m_begin+timeShift)+" "+(m_end+timeShift)+" "+m_parent );
+		}
 	}
 
 	/** Fork representation. */

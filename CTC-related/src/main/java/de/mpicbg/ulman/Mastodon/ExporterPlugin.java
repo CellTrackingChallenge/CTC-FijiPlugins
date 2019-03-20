@@ -73,6 +73,10 @@ extends ContextCommand
 	@Parameter(label = "Export only .txt file and produce no images:")
 	boolean doOutputOnlyTXTfile = false;
 
+	@Parameter(label = "Renumber output to start with time point zero:",
+	           description = "The first exported time point will be saved as time point 0.")
+	boolean resetTimePointNumbers = true;
+
 	@Parameter(label = "How many images to write in parallel:",
 	           description = "Increase if during the saving the hardware is not saturated.")
 	int writerThreads = 1;
@@ -127,6 +131,7 @@ extends ContextCommand
 		}
 
 		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
+		final int outputTimeCorrection = resetTimePointNumbers? timeFrom : 0;
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
@@ -174,7 +179,7 @@ extends ContextCommand
 		//over all time points
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
-			final String outImgFilename = String.format(outImgFilenameFormat, time);
+			final String outImgFilename = String.format(outImgFilenameFormat, time-outputTimeCorrection);
 			if (doOutputOnlyTXTfile)
 				logServiceRef.info("Processing time point: "+time);
 			else
@@ -355,7 +360,9 @@ extends ContextCommand
 		}
 
 		//finish the export by creating the supplementary .txt file
-		tracks.exportToFile( String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix) );
+		tracks.exportToFile(
+		    String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix),
+		    -outputTimeCorrection );
 
 		}
 		catch (InterruptedException e) {

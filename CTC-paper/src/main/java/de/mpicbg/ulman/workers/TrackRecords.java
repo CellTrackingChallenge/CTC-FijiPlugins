@@ -70,21 +70,33 @@ public class TrackRecords
 
 	public void exportToConsole()
 	{
+	    exportToConsole(0);
+	}
+
+	public void exportToConsole(final int timeShift)
+	{
 		for (final Track t : tracks.values())
-			System.out.println(t.exportToString());
+			System.out.println(t.exportToString(timeShift));
 	}
 
 	/** Writes the current content into 'outFileName', possibly overwriting it.
-	 * The method can throw RuntimeException if things go wrong.
-	 */
+	    The method can throw RuntimeException if things go wrong. */
 	public void exportToFile(final String outFileName)
+	{
+		exportToFile(outFileName,0);
+	}
+
+	/** Writes the current content into 'outFileName', possibly overwriting it.
+	    The reported times are adjusted (incremented) with 'timeShift'.
+	    The method can throw RuntimeException if things go wrong. */
+	public void exportToFile(final String outFileName, final int timeShift)
 	{
 		try
 		{
 			final BufferedWriter f = new BufferedWriter( new FileWriter(outFileName) );
 			for (final Track t : tracks.values())
 			{
-				f.write(t.exportToString());
+				f.write(t.exportToString(timeShift));
 				f.newLine();
 			}
 			f.close();
