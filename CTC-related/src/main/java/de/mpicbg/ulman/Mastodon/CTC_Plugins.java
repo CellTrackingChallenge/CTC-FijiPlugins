@@ -73,7 +73,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	@Override
 	public void installGlobalActions( final Actions actions )
 	{
-		final String[] noShortCut = new String[] {};
+		final String[] noShortCut = new String[] { "not mapped" };
 		actions.namedAction( actionImport, noShortCut );
 		actions.namedAction( actionExport, noShortCut );
 	}
