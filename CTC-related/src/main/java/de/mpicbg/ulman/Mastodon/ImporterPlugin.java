@@ -4,18 +4,21 @@ import java.awt.*;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
 
-import ij.ImagePlus;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 
-import org.scijava.command.Command;
-import org.scijava.command.DynamicCommand;
-import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
+import org.scijava.command.Command;
+import org.scijava.command.CommandModule;
+import org.scijava.command.CommandService;
+import org.scijava.command.DynamicCommand;
+import org.scijava.module.MutableModuleItem;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
 
@@ -23,13 +26,14 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.IterableInterval;
 import net.imglib2.RealInterval;
 
-import bdv.viewer.Source;
+import bdv.viewer.SourceAndConverter;
 import net.imglib2.Cursor;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.LinAlgHelpers;
-import net.imglib2.view.Views;
 
+import org.mastodon.revised.ui.util.FileChooser;
+import org.mastodon.revised.ui.util.ExtensionFileFilter;
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.AbstractModelImporter;
 import org.mastodon.revised.model.mamut.Spot;
@@ -38,7 +42,9 @@ import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.collection.IntRefMap;
 import org.mastodon.collection.RefMaps;
+import org.mastodon.tomancak.util.ImgProviders;
 
+import de.mpicbg.ulman.Mastodon.auxPlugins.FileTemplateProvider;
 import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format importer @ Mastodon" )
@@ -52,102 +58,144 @@ extends DynamicCommand
 	@Parameter(persist = false)
 	private MamutAppModel appModel;
 
-	// ----------------- where is the CTC-formated result -----------------
-	//the image data is in this dataset plus in a lineage txt file 'inputPath'
-	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
-	File inputPath;
-
-	@Parameter(label = "Use external images (maskXXX.tif) from next to the lineage file:")
-	boolean useExternalImages = false;
-
-	//@Parameter(label = "If the above is checked, use the ground-truth naming scheme:")
-	private boolean useGTfileNames = false;
-	//
-	//flag outside what kind of data user pointed at
-	public boolean wasReadingGTimages() { return useGTfileNames; }
-
-	// ----------------- what is currently displayed in the project -----------------
-	@Parameter
-	Source<?> imgSource;
-
-	//use always the highest resolution possible
-	private final int viewMipLevel = 0;
-
-	// ----------------- where to store the result -----------------
-	@Parameter
-	Model model;
-
-	//shortcut
-	private ModelGraph modelGraph;
+	// ----------------- where to read data in -----------------
+	@Parameter(label = "From where to import CTC tracking:",
+	           initializer = "encodeImgSourceChoices", choices = {} )
+	public String imgSourceChoice = "";
 
 	@Parameter(label = "Import from this time point:", min="0")
-	int timeFrom;
+	Integer timeFrom;
 
 	@Parameter(label = "Import till this time point:", min="0")
-	int timeTill;
+	Integer timeTill;
 
+	final ArrayList<String> choices = new ArrayList<>(20);
+	void encodeImgSourceChoices()
+	{
+		final ArrayList<SourceAndConverter<?> > mSources = appModel.getSharedBdvData().getSources();
+		for (int i = 0; i < mSources.size(); ++i)
+			choices.add( "View: "+mSources.get(i).getSpimSource().getName() );
+		choices.add( "CTC: result data" );
+		choices.add( "CTC: GT data" );
+		choices.add( "images in own filename format" );
+		getInfo().getMutableInput("imgSourceChoice", String.class).setChoices( choices );
+
+		//provide some default presets
+		MutableModuleItem<Integer> tItem = getInfo().getMutableInput("timeFrom", Integer.class);
+		tItem.setMinimumValue(appModel.getMinTimepoint());
+		tItem.setMaximumValue(appModel.getMaxTimepoint());
+
+		tItem = getInfo().getMutableInput("timeTill", Integer.class);
+		tItem.setMinimumValue(appModel.getMinTimepoint());
+		tItem.setMaximumValue(appModel.getMaxTimepoint());
+
+		timeFrom = appModel.getMinTimepoint();
+		timeTill = appModel.getMaxTimepoint();
+
+		//make sure this will always appear in the menu
+		this.unresolveInput("timeFrom");
+		this.unresolveInput("timeTill");
+	}
+
+	private String inputTxtFile = null;
+	ImgProviders.ImgProvider decodeImgSourceChoices()
+	{
+		if (imgSourceChoice.startsWith("images in own"))
+		{
+			//ask for folder, filename type and lineage file
+			Future<CommandModule> files = this.getContext().getService(CommandService.class).run(FileTemplateProvider.class,true);
+			try {
+				inputTxtFile = ((File)files.get().getInput("containingFolder")).getAbsolutePath()
+					+File.separator
+					+((String)files.get().getInput("filenameTXT"));
+
+				return new ImgProviders.ImgProviderFromDisk(
+					((File)files.get().getInput("containingFolder")).getAbsolutePath(),
+					(String)files.get().getInput("filenameTemplate"),timeFrom);
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		else if (imgSourceChoice.startsWith("CTC"))
+		{
+			//some CTC format, ask for an images-containing folder
+			File selectedFolder = FileChooser.chooseFile(null, null, null,
+				"Choose folder with the images in the CTC format:",
+				FileChooser.DialogType.LOAD,
+				FileChooser.SelectionMode.DIRECTORIES_ONLY);
+
+			//cancel button ?
+			if (selectedFolder == null) return null;
+
+			if (imgSourceChoice.startsWith("CTC: GT"))
+			{
+				inputTxtFile = selectedFolder.getAbsolutePath()+File.separator+"TRA"+File.separator+"man_track.txt";
+				return new ImgProviders.ImgProviderFromDisk(selectedFolder.getAbsolutePath()+File.separator+"TRA","man_track%03d.tif",timeFrom);
+			}
+			else
+			{
+				inputTxtFile = selectedFolder.getAbsolutePath()+File.separator+"res_track.txt";
+				return new ImgProviders.ImgProviderFromDisk(selectedFolder.getAbsolutePath(),"mask%03d.tif",timeFrom);
+			}
+		}
+		else
+		{
+			File selectedFile = FileChooser.chooseFile(null, null,
+				new ExtensionFileFilter("txt"),
+				"Choose folder with the images in the CTC format:",
+				FileChooser.DialogType.LOAD,
+				FileChooser.SelectionMode.FILES_ONLY);
+
+			//cancel button ?
+			if (selectedFile == null) return null;
+
+			inputTxtFile = selectedFile.getAbsolutePath();
+
+			//some project's view, have to find the right one
+			for (int i = 0; i < choices.size(); ++i)
+			if (imgSourceChoice.startsWith(choices.get(i)))
+				return new ImgProviders.ImgProviderFromMastodon(appModel.getSharedBdvData().getSources().get(i).getSpimSource(),timeFrom);
+
+			//else not found... strange...
+			return null;
+		}
+	}
+
+	// ----------------- how to read data in -----------------
 	@Parameter(label = "Checks if created spots overlap with their markers significantly:")
 	boolean doMatchCheck = true;
 
-	public ImporterPlugin()
-	{
-		//now empty...
-	}
 
-
-	private
-	IterableInterval<?> fetchImage(final int time)
-	{
-		if (useExternalImages)
-		{
-			useGTfileNames = inputPath.getName().startsWith("man");
-			final String filename = String.format("%s%s%s%03d.tif",
-				inputPath.getParentFile().getAbsolutePath(),
-				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
-
-			logService.info("Reading image: "+filename);
-			IterableInterval<?> img;
-			try
-			{
-				img = ImageJFunctions.wrap(new ImagePlus( filename ));
-			}
-			catch (RuntimeException e)
-			{
-				throw new IllegalArgumentException("Error reading image file "+filename+"\n"+e.getMessage());
-			}
-
-			//make sure we always return some non-null reference
-			if (img == null)
-				throw new IllegalArgumentException("Error reading image file "+filename);
-			return img;
-		}
-		else
-			return Views.iterable( imgSource.getSource(time,viewMipLevel) );
-	}
-
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void run()
 	{
+		final ImgProviders.ImgProvider imgSource = decodeImgSourceChoices();
+		if (imgSource == null) return;
+
+		logService.info("Considering resolution: "+imgSource.getVoxelDimensions().dimension(0)
+		               +" x "+imgSource.getVoxelDimensions().dimension(1)
+		               +" x "+imgSource.getVoxelDimensions().dimension(2)
+		               +" px/"+imgSource.getVoxelDimensions().unit());
+
 		//define some shortcut variables
 		final Model model = appModel.getModel();
 		final ModelGraph modelGraph = model.getGraph();
 
 		//debug report
-		logService.info("Time points span is  : "+timeFrom+"-"+timeTill);
-		logService.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
+		logService.info("Time points span is   : "+timeFrom+"-"+timeTill);
+		logService.info("Supp. lineage file is : "+inputTxtFile);
 
 		//load metadata with the lineages
 		final TrackRecords tracks = new TrackRecords();
 		try
 		{
-			tracks.loadTrackFile(inputPath.getAbsolutePath(), logService);
+			tracks.loadTrackFile(inputTxtFile, logService);
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
-			throw new IllegalArgumentException("Error reading the lineage file "+inputPath.getAbsolutePath());
+			throw new IllegalArgumentException("Error reading the lineage file "+inputTxtFile);
 		}
 
 		//PROGRESS BAR stuff
@@ -174,7 +222,7 @@ extends DynamicCommand
 		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
 
 		//some more dimensionality-based attributes
-		inImgDims = imgSource.getSource(timeFrom,viewMipLevel).numDimensions();
+		inImgDims = imgSource.numDimensions();
 		position = new int[inImgDims];
 
 		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1, 500 );
@@ -188,10 +236,10 @@ extends DynamicCommand
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
-			logService.info("Processing time point: "+time);
+			logService.info("Processing time point : "+time);
 
-			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
-			readSpots( (IterableInterval)fetchImage(time),
+			imgSource.getSourceTransform(time, coordTransImg2World);
+			readSpots( (IterableInterval)imgSource.getImage(time),
 			           time, coordTransImg2World, modelGraph, tracks );
 
 			pbar.setProgress(time+1-timeFrom);

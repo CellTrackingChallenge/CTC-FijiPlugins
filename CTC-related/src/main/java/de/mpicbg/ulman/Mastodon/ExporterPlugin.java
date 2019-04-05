@@ -3,14 +3,16 @@ package de.mpicbg.ulman.Mastodon;
 import java.awt.*;
 import javax.swing.JFrame;
 import javax.swing.BoxLayout;
+
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
+import java.util.ArrayList;
 
+import org.scijava.log.LogService;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
-import org.scijava.log.LogLevel;
-import org.scijava.log.LogService;
+import org.scijava.module.MutableModuleItem;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
 import org.scijava.widget.FileWidget;
@@ -21,6 +23,7 @@ import net.imglib2.RealInterval;
 import net.imglib2.RealPoint;
 
 import bdv.viewer.Source;
+import bdv.viewer.SourceAndConverter;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.planar.PlanarImgFactory;
 import net.imglib2.img.Img;
@@ -53,28 +56,73 @@ extends DynamicCommand
 	private MamutAppModel appModel;
 
 	// ----------------- where to store products -----------------
-	@Parameter(label = "Choose GT folder with TRA folder inside:", style = FileWidget.DIRECTORY_STYLE)
+	@Parameter(label = "Choose GT folder with TRA folder inside:", style = FileWidget.DIRECTORY_STYLE,
+	           description = "Note that tracking GT files should end up in a folder named 'TRA'.")
 	File outputFolder = new File("");
 
-	@Parameter(label = "Template for file names:",
+	@Parameter(label = "Template for image file names:",
 	           description = "Use %d or %04d in the template to denote where numbers or 4-digits-zero-padded numbers will appear.")
 	String filenameTemplate = "man_track%03d.tif";
 
+	@Parameter(label = "Lineage txt file name:")
+	String filenameTXT = "man_track.txt";
+
+	@Parameter(persist = false)
+	private T outImgVoxelType;
+
+	// ----------------- where to read data in -----------------
+	@Parameter(label = "Output images should be like this:",
+	           initializer = "encodeImgSourceChoices", choices = {})
+	public String imgSourceChoice = "";
+
+	@Parameter(label = "Export from this time point:", min="0")
+	Integer timeFrom;
+
+	@Parameter(label = "Export till this time point:", min="0")
+	Integer timeTill;
+
+	final ArrayList<String> choices = new ArrayList<>(20);
+	void encodeImgSourceChoices()
+	{
+		final ArrayList<SourceAndConverter<?>> mSources = appModel.getSharedBdvData().getSources();
+		for (int i = 0; i < mSources.size(); ++i)
+			choices.add( "View: "+mSources.get(i).getSpimSource().getName() );
+		getInfo().getMutableInput("imgSourceChoice", String.class).setChoices( choices );
+
+		//provide some default presets
+		MutableModuleItem<Integer> tItem = getInfo().getMutableInput("timeFrom", Integer.class);
+		tItem.setMinimumValue(appModel.getMinTimepoint());
+		tItem.setMaximumValue(appModel.getMaxTimepoint());
+
+		tItem = getInfo().getMutableInput("timeTill", Integer.class);
+		tItem.setMinimumValue(appModel.getMinTimepoint());
+		tItem.setMaximumValue(appModel.getMaxTimepoint());
+
+		timeFrom = appModel.getMinTimepoint();
+		timeTill = appModel.getMaxTimepoint();
+
+		//make sure this will always appear in the menu
+		this.unresolveInput("timeFrom");
+		this.unresolveInput("timeTill");
+	}
+
+	Source<?> decodeImgSourceChoices()
+	{
+		//some project's view, have to find the right one
+		for (int i = 0; i < choices.size(); ++i)
+		if (imgSourceChoice.startsWith(choices.get(i)))
+			return appModel.getSharedBdvData().getSources().get(i).getSpimSource();
+
+		//else not found... strange...
+		return null;
+	}
+
 	// ----------------- how to store products -----------------
-	@Parameter
-	Source<?> imgSource;
-
-	//use always the highest resolution possible
-	private final int viewMipLevel = 0;
-
-	//constructor-created voxel type
-	private final T outImgVoxelType;
+	@Parameter(label = "Export only .txt file and produce no images:")
+	boolean doOutputOnlyTXTfile = false;
 
 	@Parameter(label = "Splash markers into one slice along z-axis:")
 	boolean doOneZslicePerMarker = false;
-
-	@Parameter(label = "Export only .txt file and produce no images:")
-	boolean doOutputOnlyTXTfile = false;
 
 	@Parameter(label = "Set parent to old track in a new track after a gap:",
 	           description = "A gap creates a new track. Enable this to have a parent link between old and new tracks.")
@@ -88,22 +136,14 @@ extends DynamicCommand
 	           description = "Increase if during the saving the hardware is not saturated.")
 	int writerThreads = 1;
 
-	// ----------------- what to store in the products -----------------
-	@Parameter(label = "Export from this time point:", min="0")
-	int timeFrom;
-
-	@Parameter(label = "Export till this time point:", min="0")
-	int timeTill;
-
-	public ExporterPlugin(final T outImgVoxelType)
-	{
-		this.outImgVoxelType = outImgVoxelType.createVariable();
-	}
-
 
 	@Override
 	public void run()
 	{
+		final int viewMipLevel = 0; //NB: use always the highest resolution
+		final Source<?> imgSource = decodeImgSourceChoices();
+		if (imgSource == null) return;
+
 		//define some shortcut variables
 		final Model model = appModel.getModel();
 		final ModelGraph modelGraph = model.getGraph();
@@ -360,7 +400,7 @@ extends DynamicCommand
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile(
-		    String.format("%s%sman_track.txt", outputFolder.getAbsolutePath(),File.separator),
+		    String.format("%s%s%s", outputFolder.getAbsolutePath(),File.separator,filenameTXT),
 		    -outputTimeCorrection );
 
 		}

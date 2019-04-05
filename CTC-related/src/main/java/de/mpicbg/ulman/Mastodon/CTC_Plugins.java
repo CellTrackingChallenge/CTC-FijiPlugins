@@ -13,16 +13,15 @@ import org.mastodon.app.ui.ViewMenuBuilder;
 import org.mastodon.plugin.MastodonPlugin;
 import org.mastodon.plugin.MastodonPluginAppModel;
 import org.mastodon.revised.mamut.MamutAppModel;
+
+import org.scijava.log.LogService;
 import org.scijava.AbstractContextual;
-import org.scijava.command.CommandModule;
 import org.scijava.command.CommandService;
-import org.scijava.module.ModuleException;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.behaviour.util.Actions;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.RunnableAction;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-import org.scijava.ui.swing.widget.SwingInputHarvester;
 
 @Plugin( type = CTC_Plugins.class )
 public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
@@ -104,104 +103,41 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	    provided params were harvested successfully */
 	private void importer()
 	{
-		//particular instance of the plugin
-		ImporterPlugin ip = new ImporterPlugin();
-		ip.setContext(this.getContext());
-
-		//wrap Module around the (existing) command
-		final CommandModule cm = new CommandModule( this.getContext().getService(CommandService.class).getCommand(ip.getClass()), ip );
-
-		//update default values to the current situation
-		ip.imgSource = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
-		ip.model     = pluginAppModel.getAppModel().getModel();
-
-		ip.timeFrom  = pluginAppModel.getAppModel().getMinTimepoint();
-		ip.timeTill  = pluginAppModel.getAppModel().getMaxTimepoint();
-
-		//mark which fields of the plugin shall not be displayed
-		cm.resolveInput("context");
-		cm.resolveInput("imgSource");
-		cm.resolveInput("model");
-
-		try {
-			//GUI harvest (or just confirm) values for (some) parameters
-			final SwingInputHarvester sih = new SwingInputHarvester();
-			sih.setContext(this.getContext());
-			sih.harvest(cm);
-		} catch (ModuleException e) {
-			//NB: includes ModuleCanceledException which signals 'Cancel' button
-			//flag that the plugin should not be started at all
-			ip = null;
-		}
-
-		if (ip != null)
-		{
-			if (ip.inputPath == null)
-				//provide fake input to give more meaningful error later...
-				ip.inputPath = new File("NO INPUT FILE GIVEN");
-
-			//starts the importer in a separate thread
-			new Thread(ip,"Mastodon CTC importer").start();
-		}
+		this.getContext().getService(CommandService.class).run(
+			ImporterPlugin.class, true,
+			"appModel", pluginAppModel.getAppModel(),
+			"logService", this.getContext().getService(LogService.class));
 	}
 
 	/** opens the export dialog, and runs the export
 	    provided params were harvested successfully */
 	private void exporter()
 	{
-		//particular instance of the plugin
-		ExporterPlugin<UnsignedShortType> ep = new ExporterPlugin<>(new UnsignedShortType());
-		ep.setContext(this.getContext());
+		this.getContext().getService(CommandService.class).run(
+			ExporterPlugin.class, true,
+			"outImgVoxelType", new UnsignedShortType(),
+			"appModel", pluginAppModel.getAppModel(),
+			"logService", this.getContext().getService(LogService.class));
+	}
 
-		//wrap Module around the (existing) command
-		final CommandModule cm = new CommandModule( this.getContext().getService(CommandService.class).getCommand(ep.getClass()), ep );
 
-		//update default values to the current situation
-		ep.imgSource  = pluginAppModel.getAppModel().getSharedBdvData().getSources().get(0).getSpimSource();
-		ep.model      = pluginAppModel.getAppModel().getModel();
-
-		ep.doOneZslicePerMarker = true;
-		ep.timeFrom   = pluginAppModel.getAppModel().getMinTimepoint();
-		ep.timeTill   = pluginAppModel.getAppModel().getMaxTimepoint();
-
-		//mark which fields of the plugin shall not be displayed
-		cm.resolveInput("context");
-		cm.resolveInput("filePrefix");
-		cm.resolveInput("filePostfix");
-		cm.resolveInput("fileNoDigits");
-		cm.resolveInput("imgSource");
-		cm.resolveInput("model");
-
-		try {
-			//GUI harvest (or just confirm) values for (some) parameters
-			final SwingInputHarvester sih = new SwingInputHarvester();
-			sih.setContext(this.getContext());
-			sih.harvest(cm);
-		} catch (ModuleException e) {
-			//NB: includes ModuleCanceledException which signals 'Cancel' button
-			//flag that the plugin should not be started at all
-			ep = null;
-		}
-
-		if (ep != null)
+	/** returns a handle on a TRA folder that exists in the given
+	    input 'folder', or throws IllegalArgumentException exception */
+	private File enterTRAFolder(final File folder)
+	{
+		//check there is a TRA sub-folder; and if not, create it
+		final File traFolder = new File(folder.getPath()+File.separator+"TRA");
+		if (traFolder.exists())
 		{
-			//check there is a TRA sub-folder; and if not, create it
-			final File traFolder = new File(ep.outputPath.getPath()+File.separator+"TRA");
-			if (traFolder.exists())
-			{
-				//"move" into the existing TRA folder
-				ep.outputPath = traFolder;
-			}
+			//"move" into the existing TRA folder
+			return traFolder;
+		}
+		else
+		{
+			if (traFolder.mkdirs()) //create and enter it
+				return traFolder;
 			else
-			{
-				if (traFolder.mkdirs())
-					ep.outputPath = traFolder;
-				else
-					throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+ep.outputPath.getAbsolutePath());
-			}
-
-			//starts the exporter in a separate thread
-			new Thread(ep,"Mastodon CTC exporter").start();
+				throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+folder.getAbsolutePath());
 		}
 	}
 }
