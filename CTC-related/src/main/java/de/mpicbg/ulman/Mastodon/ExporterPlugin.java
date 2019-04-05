@@ -73,6 +73,10 @@ extends ContextCommand
 	@Parameter(label = "Export only .txt file and produce no images:")
 	boolean doOutputOnlyTXTfile = false;
 
+	@Parameter(label = "Set parent to old track in a new track after a gap:",
+	           description = "A gap creates a new track. Enable this to have a parent link between old and new tracks.")
+	boolean setParentAfterGap = false;
+
 	@Parameter(label = "Renumber output to start with time point zero:",
 	           description = "The first exported time point will be saved as time point 0.")
 	boolean resetTimePointNumbers = true;
@@ -320,7 +324,7 @@ extends ContextCommand
 						//no, start a new track for the follower
 						if (knownTracks.get(fRef) == -1)
 						{
-							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), knownTracks.get(spot) ) );
+							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), (setParentAfterGap ? knownTracks.get(spot) : 0) ) );
 							logServiceRef.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
 						}
 					}
