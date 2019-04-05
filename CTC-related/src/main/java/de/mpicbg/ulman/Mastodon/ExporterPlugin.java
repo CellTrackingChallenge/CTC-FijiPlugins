@@ -8,7 +8,7 @@ import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 import java.io.File;
 
 import org.scijava.command.Command;
-import org.scijava.command.ContextCommand;
+import org.scijava.command.DynamicCommand;
 import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Plugin;
@@ -30,6 +30,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
+import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
 import org.mastodon.revised.model.mamut.Model;
@@ -42,20 +43,22 @@ import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
 public class ExporterPlugin <T extends NativeType<T> & RealType<T>>
-extends ContextCommand
+extends DynamicCommand
 {
+	// ----------------- necessary internal references -----------------
+	@Parameter
+	private LogService logService;
+
+	@Parameter(persist = false)
+	private MamutAppModel appModel;
+
 	// ----------------- where to store products -----------------
 	@Parameter(label = "Choose GT folder with TRA folder inside:", style = FileWidget.DIRECTORY_STYLE)
-	File outputPath = new File("");
+	File outputFolder = new File("");
 
-	@Parameter
-	String filePrefix = "man_track";
-
-	@Parameter
-	String filePostfix = ".tif";
-
-	@Parameter
-	int fileNoDigits = 3;
+	@Parameter(label = "Template for file names:",
+	           description = "Use %d or %04d in the template to denote where numbers or 4-digits-zero-padded numbers will appear.")
+	String filenameTemplate = "man_track%03d.tif";
 
 	// ----------------- how to store products -----------------
 	@Parameter
@@ -86,12 +89,6 @@ extends ContextCommand
 	int writerThreads = 1;
 
 	// ----------------- what to store in the products -----------------
-	@Parameter
-	Model model;
-
-	//shortcut
-	private ModelGraph modelGraph;
-
 	@Parameter(label = "Export from this time point:", min="0")
 	int timeFrom;
 
@@ -107,20 +104,19 @@ extends ContextCommand
 	@Override
 	public void run()
 	{
-		//info or error report
-		logServiceRef = this.getContext().getService(LogService.class).log();
-
-		//reset the shortcut variable
-		modelGraph = model.getGraph();
+		//define some shortcut variables
+		final Model model = appModel.getModel();
+		final ModelGraph modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is: "+timeFrom+"-"+timeTill);
-		logServiceRef.info("Output folder is   : "+outputPath.getAbsolutePath());
+		logService.info("Time points span is: "+timeFrom+"-"+timeTill);
+		logService.info("Output folder is   : "+outputFolder.getAbsolutePath());
 
 		//aux stuff to create and name the output files
 		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
-		final String outImgFilenameFormat = String.format("%s%s%s%%0%dd%s",
-			outputPath.getAbsolutePath(),File.separator,filePrefix,fileNoDigits,filePostfix);
+		final String outImgFilenameFormat = outputFolder.getAbsolutePath()
+		                                  + File.separator
+		                                  + filenameTemplate;
 
 		//some more shortcuts to template image params
 		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(timeFrom,viewMipLevel);
@@ -139,7 +135,7 @@ extends ContextCommand
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
-		logServiceRef.info("Output image size  : "+Util.printCoordinates(spotMin));
+		logService.info("Output image size  : "+Util.printCoordinates(spotMin));
 
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
@@ -185,9 +181,9 @@ extends ContextCommand
 		{
 			final String outImgFilename = String.format(outImgFilenameFormat, time-outputTimeCorrection);
 			if (doOutputOnlyTXTfile)
-				logServiceRef.info("Processing time point: "+time);
+				logService.info("Processing time point: "+time);
 			else
-				logServiceRef.info("Populating image: "+outImgFilename);
+				logService.info("Populating image: "+outImgFilename);
 
 			final Img<T> outImg
 				= doOutputOnlyTXTfile? null : outImgFactory.create(outImgTemplate);
@@ -225,8 +221,7 @@ extends ContextCommand
 				//feasibility test: too many joining paths? (aka merging event)
 				if (countBackwardLinks > 1)
 				{
-					logServiceRef.log(LogLevel.ERROR,
-					                  "spot "+spot.getLabel()
+					logService.error("spot "+spot.getLabel()
 					                  +" has multiple ("+countBackwardLinks
 					                  +") older-time-point links!");
 
@@ -262,11 +257,11 @@ extends ContextCommand
 						//the track 'ID' would have been just starting here,
 						//re-starting really means to remove it first
 						tracks.removeTrack( knownTracks.get(spot) );
-						logServiceRef.trace(spot.getLabel()+": will supersede track ID "+knownTracks.get(spot));
+						logService.trace(spot.getLabel()+": will supersede track ID "+knownTracks.get(spot));
 					}
 					else
 					{
-						logServiceRef.trace(spot.getLabel()+": will just leave the track ID "+knownTracks.get(spot));
+						logService.trace(spot.getLabel()+": will just leave the track ID "+knownTracks.get(spot));
 					}
 				}
 
@@ -275,13 +270,13 @@ extends ContextCommand
 				{
 					//start a new track
 					knownTracks.put( spot, tracks.startNewTrack(time) );
-					logServiceRef.trace(spot.getLabel()+": started track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
+					logService.trace(spot.getLabel()+": started track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 				else //countBackwardLinks == 1
 				{
 					//prolong the existing track
 					tracks.updateTrack( knownTracks.get(spot), time );
-					logServiceRef.trace(spot.getLabel()+": updated track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
+					logService.trace(spot.getLabel()+": updated track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 
 				//multiple "followers"? feels like a division...
@@ -296,7 +291,7 @@ extends ContextCommand
 						if (knownTracks.get(sRef) == -1)
 						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
-							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+							logService.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
 						}
 					}
 					for (int n=0; n < spot.outgoingEdges().size(); ++n)
@@ -306,7 +301,7 @@ extends ContextCommand
 						if (knownTracks.get(sRef) == -1)
 						{
 							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
-							logServiceRef.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
+							logService.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
 						}
 					}
 				}
@@ -325,7 +320,7 @@ extends ContextCommand
 						if (knownTracks.get(fRef) == -1)
 						{
 							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), (setParentAfterGap ? knownTracks.get(spot) : 0) ) );
-							logServiceRef.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
+							logService.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
 						}
 					}
 				}
@@ -359,13 +354,13 @@ extends ContextCommand
 
 		if (!doOutputOnlyTXTfile)
 		{
-			logServiceRef.info("Finishing, but saving first already prepared images...");
+			logService.info("Finishing, but saving first already prepared images...");
 			saver.closeAllWorkers_FinishFirstAllUnsavedImages();
 		}
 
 		//finish the export by creating the supplementary .txt file
 		tracks.exportToFile(
-		    String.format("%s%s%s.txt", outputPath.getAbsolutePath(),File.separator,filePrefix),
+		    String.format("%s%sman_track.txt", outputFolder.getAbsolutePath(),File.separator),
 		    -outputTimeCorrection );
 
 		}
@@ -383,7 +378,7 @@ extends ContextCommand
 			modelGraph.releaseRef(lRef);
 		}
 
-		logServiceRef.info("Done.");
+		logService.info("Done.");
 	}
 
 
@@ -392,7 +387,6 @@ extends ContextCommand
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
-	private LogService logServiceRef;
 
 	private
 	void renderSpot(final Img<T> img,final AffineTransform3D transform,
@@ -418,7 +412,7 @@ extends ContextCommand
 		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
 		final FinalRealInterval spotImgBBox = transform.estimateBounds(spotBBox);
 
-		logServiceRef.info("rendering spot "+spot.getLabel()
+		logService.info("rendering spot "+spot.getLabel()
 		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 

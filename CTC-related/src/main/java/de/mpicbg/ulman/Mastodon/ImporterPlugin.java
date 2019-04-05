@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.scijava.command.Command;
-import org.scijava.command.ContextCommand;
+import org.scijava.command.DynamicCommand;
 import org.scijava.log.LogLevel;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Plugin;
@@ -30,6 +30,7 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.LinAlgHelpers;
 import net.imglib2.view.Views;
 
+import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.AbstractModelImporter;
 import org.mastodon.revised.model.mamut.Spot;
 import org.mastodon.revised.model.mamut.Link;
@@ -42,8 +43,15 @@ import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format importer @ Mastodon" )
 public class ImporterPlugin
-extends ContextCommand
+extends DynamicCommand
 {
+	// ----------------- necessary internal references -----------------
+	@Parameter
+	private LogService logService;
+
+	@Parameter(persist = false)
+	private MamutAppModel appModel;
+
 	// ----------------- where is the CTC-formated result -----------------
 	//the image data is in this dataset plus in a lineage txt file 'inputPath'
 	@Parameter(label = "Choose (tracks.txt) lineage file that corresponds to the current data:")
@@ -97,7 +105,7 @@ extends ContextCommand
 				inputPath.getParentFile().getAbsolutePath(),
 				File.separatorChar,(useGTfileNames?"man_track":"mask"),time);
 
-			logServiceRef.info("Reading image: "+filename);
+			logService.info("Reading image: "+filename);
 			IterableInterval<?> img;
 			try
 			{
@@ -122,21 +130,19 @@ extends ContextCommand
 	@Override
 	public void run()
 	{
-		//info or error report
-		logServiceRef = this.getContext().getService(LogService.class).log();
-
-		//reset the shortcut variable
-		modelGraph = model.getGraph();
+		//define some shortcut variables
+		final Model model = appModel.getModel();
+		final ModelGraph modelGraph = model.getGraph();
 
 		//debug report
-		logServiceRef.info("Time points span is  : "+timeFrom+"-"+timeTill);
-		logServiceRef.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
+		logService.info("Time points span is  : "+timeFrom+"-"+timeTill);
+		logService.info("Supp. lineage file is: "+inputPath.getAbsolutePath());
 
 		//load metadata with the lineages
 		final TrackRecords tracks = new TrackRecords();
 		try
 		{
-			tracks.loadTrackFile(inputPath.getAbsolutePath(), logServiceRef);
+			tracks.loadTrackFile(inputPath.getAbsolutePath(), logService);
 		}
 		catch (IOException e)
 		{
@@ -182,7 +188,7 @@ extends ContextCommand
 		//iterate through time points and extract spots
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
-			logServiceRef.info("Processing time point: "+time);
+			logService.info("Processing time point: "+time);
 
 			imgSource.getSourceTransform(time,viewMipLevel, coordTransImg2World);
 			readSpots( (IterableInterval)fetchImage(time),
@@ -203,14 +209,13 @@ extends ContextCommand
 		}
 
 		new AbstractModelImporter< Model >( model ){{ finishImport(); }};
-		logServiceRef.info("Done.");
+		logService.info("Done.");
 	}
 
 
 	//some shortcut variables worth remembering
 	private int inImgDims = -1;
 	private int[] position;         //aux px coordinate
-	private LogService logServiceRef;
 	private IntRefMap< Spot > recentlyUsedSpots;
 	private Spot nSpot,oSpot;       //spots references
 	private Link linkRef;           //link reference
@@ -390,8 +395,7 @@ extends ContextCommand
 			{
 				//System.out.println((int)m.label.getRealFloat()+": "+m.markerOverlap+" / "+m.size);
 				if (2*m.markerOverlap < m.size)
-					logServiceRef.log(LogLevel.ERROR,
-					                  "time "+time
+					logService.error("time "+time
 					                  +": spot "+recentlyUsedSpots.get((int)m.label.getRealFloat(),nSpot).getLabel()
 					                  +" does not cover image marker "+(int)m.label.getRealFloat());
 			}
