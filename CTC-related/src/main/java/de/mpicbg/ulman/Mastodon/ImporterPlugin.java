@@ -225,6 +225,17 @@ extends DynamicCommand
 		inImgDims = imgSource.numDimensions();
 		position = new int[inImgDims];
 
+		//volume and squared lengths of one voxel along all axes
+		resSqLen  = new double[inImgDims];
+		imgSource.getVoxelDimensions().dimensions(resSqLen);
+		resArea   = resSqLen[0] * resSqLen[1]; //NB: lengths are yet before squaring
+		resVolume = 1;
+		for (int i=0; i < inImgDims; ++i)
+		{
+			resVolume *= resSqLen[i];
+			resSqLen[i] *= resSqLen[i];
+		}
+
 		recentlyUsedSpots = RefMaps.createIntRefMap( modelGraph.vertices(), -1, 500 );
 		linkRef = modelGraph.edgeRef();
 		nSpot = modelGraph.vertices().createRef();
@@ -264,6 +275,9 @@ extends DynamicCommand
 	//some shortcut variables worth remembering
 	private int inImgDims = -1;
 	private int[] position;         //aux px coordinate
+	private double[] resSqLen;      //aux 1px square lengths
+	private double   resVolume;     //aux 1px volume
+	private double   resArea;       //aux 1px xy-plane area
 	private IntRefMap< Spot > recentlyUsedSpots;
 	private Spot nSpot,oSpot;       //spots references
 	private Link linkRef;           //link reference
@@ -348,18 +362,19 @@ extends DynamicCommand
 			if (m.minZ == m.maxZ)
 			{
 				//...as if marker is 2D
-				final double r = Math.sqrt( (double)m.size / Math.PI );
-				cov[0][0] = r*r;
-				cov[1][1] = r*r;
-				cov[2][2] = 0.5; //NB: 0.7 * 0.7 = 0.5 -> z thickness is 1.4 px around the marker's centre
+				final double r = Math.sqrt( resArea * (double)m.size / Math.PI );
+				cov[0][0] = r*r / resSqLen[0];
+				cov[1][1] = r*r / resSqLen[1];
+				cov[2][2] = 0.5;
+				//NB: 0.7 * 0.7 = 0.5 -> z thickness is 1.4 px around the marker's centre
 			}
 			else
 			{
 				//...as if marker is 3D
-				final double r = Math.cbrt( 0.75 * (double)m.size / Math.PI );
-				cov[0][0] = r*r;
-				cov[1][1] = r*r;
-				cov[2][2] = r*r;
+				final double r = Math.cbrt( 0.75 * resVolume * (double)m.size / Math.PI );
+				cov[0][0] = r*r / resSqLen[0];
+				cov[1][1] = r*r / resSqLen[1];
+				cov[2][2] = r*r / resSqLen[2];
 			}
 			//reset non-diagonal elements
 			cov[0][1] = 0; cov[0][2] = 0;
