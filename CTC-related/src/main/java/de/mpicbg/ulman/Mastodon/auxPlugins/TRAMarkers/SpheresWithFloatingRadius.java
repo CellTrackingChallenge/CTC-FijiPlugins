@@ -15,9 +15,10 @@ public class SpheresWithFloatingRadius implements TRAMarkersProvider.intersectio
 	}
 
 	@Override
-	public boolean isInside(final RealLocalizable pos, final RealLocalizable centre, final double radius)
+	public boolean isInside(final double[] distVec, final double radius)
 	{
-		return Util.distance(pos,centre) <= radius;
+		final double lenSq = (distVec[0] * distVec[0]) + (distVec[1] * distVec[1]) + (distVec[2] * distVec[2]);
+		return lenSq <= (radius*radius);
 	}
 
 	@Override

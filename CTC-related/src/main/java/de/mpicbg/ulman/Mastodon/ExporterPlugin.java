@@ -161,7 +161,7 @@ extends DynamicCommand
 		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, this.getContext().getService(CommandService.class));
 		if (markerShape == null) return;
 		//
-		logService.info("Output marker is   : "+markerShape.printInfo());
+		logService.info("Output marker is      : "+markerShape.printInfo()+", in "+imgSource.getVoxelDimensions().unit());
 
 		//define some shortcut variables
 		final Model model = appModel.getModel();

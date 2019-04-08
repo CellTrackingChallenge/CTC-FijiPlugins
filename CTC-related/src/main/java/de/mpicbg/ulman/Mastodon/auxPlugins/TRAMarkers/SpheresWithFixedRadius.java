@@ -9,11 +9,20 @@ import net.imglib2.RealLocalizable;
 import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
 
 @Plugin( type = SpheresWithFixedRadius.class, visible = false,
-         name = "Specify the sphere radius in pixels:" )
+         name = "Specify the sphere radius in the image units (e.g. in microns):" )
 public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDecidable, Command
 {
 	@Parameter(min = "0", stepSize = "1")
 	double fixedRadius = 0;
+
+	//shortcut
+	double fixedRadiusSq;
+
+	@Override
+	public void init()
+	{
+		fixedRadiusSq = fixedRadius*fixedRadius;
+	}
 
 	@Override
 	public void setHalfBBoxInterval(final double[] halfBBoxSize, final double radius)
@@ -24,15 +33,16 @@ public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDe
 	}
 
 	@Override
-	public boolean isInside(final RealLocalizable pos, final RealLocalizable centre, final double radius)
+	public boolean isInside(final double[] distVec, final double radius)
 	{
-		return Util.distance(pos,centre) <= fixedRadius;
+		final double lenSq = (distVec[0] * distVec[0]) + (distVec[1] * distVec[1]) + (distVec[2] * distVec[2]);
+		return lenSq <= fixedRadiusSq;
 	}
 
 	@Override
 	public String printInfo()
 	{
-		return "Sphere with fixed radius of "+fixedRadius+" px";
+		return "Sphere with fixed radius of "+fixedRadius;
 	}
 
 	@Override
