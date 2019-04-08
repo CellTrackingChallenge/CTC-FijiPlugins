@@ -12,7 +12,7 @@ import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
          name = "Specify the sphere radius in pixels:" )
 public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDecidable, Command
 {
-	@Parameter
+	@Parameter(min = "0", stepSize = "1")
 	double fixedRadius = 0;
 
 	@Override

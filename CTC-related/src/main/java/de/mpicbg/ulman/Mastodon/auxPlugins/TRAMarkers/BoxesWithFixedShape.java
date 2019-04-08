@@ -11,13 +11,13 @@ import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
          name = "Specify the full box size in pixels:" )
 public class BoxesWithFixedShape implements TRAMarkersProvider.intersectionDecidable, Command
 {
-	@Parameter
+	@Parameter(min = "0", stepSize = "1")
 	int xFullWidth = 0;
 
-	@Parameter
+	@Parameter(min = "0", stepSize = "1")
 	int yFullWidth = 0;
 
-	@Parameter
+	@Parameter(min = "0", stepSize = "1")
 	int zFullWidth = 0;
 
 	//shortcut: pixel width of half of the box
