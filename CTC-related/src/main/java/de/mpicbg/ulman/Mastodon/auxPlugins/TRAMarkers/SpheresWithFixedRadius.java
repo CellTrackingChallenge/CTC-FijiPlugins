@@ -16,6 +16,14 @@ public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDe
 	double fixedRadius = 0;
 
 	@Override
+	public void setHalfBBoxInterval(final double[] halfBBoxSize, final double radius)
+	{
+		halfBBoxSize[0] = fixedRadius;
+		halfBBoxSize[1] = fixedRadius;
+		halfBBoxSize[2] = fixedRadius;
+	}
+
+	@Override
 	public boolean isInside(final RealLocalizable pos, final RealLocalizable centre, final double radius)
 	{
 		return Util.distance(pos,centre) <= fixedRadius;

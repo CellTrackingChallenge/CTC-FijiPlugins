@@ -32,6 +32,14 @@ public class BoxesWithFixedShape implements TRAMarkersProvider.intersectionDecid
 	}
 
 	@Override
+	public void setHalfBBoxInterval(final double[] halfBBoxSize, final double radius)
+	{
+		halfBBoxSize[0] = xHalfSize;
+		halfBBoxSize[1] = yHalfSize;
+		halfBBoxSize[2] = zHalfSize;
+	}
+
+	@Override
 	public boolean isInside(final RealLocalizable pos, final RealLocalizable centre, final double radius)
 	{
 		if (Math.abs(pos.getFloatPosition(0)-centre.getFloatPosition(0)) > xHalfSize) return false;

@@ -16,7 +16,7 @@ public class TRAMarkersProvider
 	{
 		default void init() {};
 
-		//void sweepingInterval(final double[] min, final double max[]);
+		void setHalfBBoxInterval(final double[] halfBBoxSize, final double radius);
 		boolean isInside(final RealLocalizable pos, final RealLocalizable centre, final double radius);
 
 		default String printInfo() { return toString(); }
