@@ -11,4 +11,10 @@ public class SpheresWithFloatingRadius implements TRAMarkersProvider.intersectio
 	{
 		return Util.distance(pos,centre) <= radius;
 	}
+
+	@Override
+	public String printInfo()
+	{
+		return "Sphere with radius decided by each spot individually";
+	}
 }

@@ -41,5 +41,11 @@ public class BoxesWithFixedShape implements TRAMarkersProvider.intersectionDecid
 	}
 
 	@Override
+	public String printInfo()
+	{
+		return "Box with fixed shape of "+xFullWidth+" x "+yFullWidth+" x "+zFullWidth+" px";
+	}
+
+	@Override
 	public void run() { /* intentionally empty */ }
 }

@@ -8,10 +8,12 @@ import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
+import org.scijava.command.CommandService;
 import org.scijava.module.MutableModuleItem;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
@@ -42,6 +44,7 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
 
+import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
 import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
@@ -124,6 +127,16 @@ extends DynamicCommand
 	@Parameter(label = "Splash markers into one slice along z-axis:")
 	boolean doOneZslicePerMarker = false;
 
+	@Parameter(label = "Shape of the output markers:",
+	           description = "Splashing of markers affects this option: spheres (boxes) are decimated to circles (rectangles).",
+	           choices = {}, initializer = "initOutMarkerShape")
+	String outMarkerShape = "";
+
+	void initOutMarkerShape()
+	{
+		getInfo().getMutableInput("outMarkerShape", String.class).setChoices( Arrays.asList(TRAMarkersProvider.availableChoices) );
+	}
+
 	@Parameter(label = "Set parent to old track in a new track after a gap:",
 	           description = "A gap creates a new track. Enable this to have a parent link between old and new tracks.")
 	boolean setParentAfterGap = false;
@@ -143,6 +156,12 @@ extends DynamicCommand
 		final int viewMipLevel = 0; //NB: use always the highest resolution
 		final Source<?> imgSource = decodeImgSourceChoices();
 		if (imgSource == null) return;
+
+		//obtain the output marker's shape...
+		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, this.getContext().getService(CommandService.class));
+		if (markerShape == null) return;
+		//
+		logService.info("Output marker is   : "+markerShape.printInfo());
 
 		//define some shortcut variables
 		final Model model = appModel.getModel();
@@ -427,6 +446,7 @@ extends DynamicCommand
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
+	private TRAMarkersProvider.intersectionDecidable markerShape;
 
 	private
 	void renderSpot(final Img<T> img,final AffineTransform3D transform,

@@ -22,5 +22,11 @@ public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDe
 	}
 
 	@Override
+	public String printInfo()
+	{
+		return "Sphere with fixed radius of "+fixedRadius+" px";
+	}
+
+	@Override
 	public void run() { /* intentionally empty */ }
 }
