@@ -45,6 +45,12 @@ public class BoxesWithFixedShape implements TRAMarkersProvider.intersectionDecid
 		if (Math.abs(distVec[0]) > xHalfSize) return false;
 		if (Math.abs(distVec[1]) > yHalfSize) return false;
 		if (Math.abs(distVec[2]) > zHalfSize) return false;
+
+		//to prevent the full-even-sized boxes to have +1 size
+		//(e.g., fullWidth=4 -> halfSize=2 -> would create 2+1+2 wide box)
+		if (distVec[0] == xHalfSize) return false;
+		if (distVec[1] == yHalfSize) return false;
+		if (distVec[2] == zHalfSize) return false;
 		return true;
 	}
 
