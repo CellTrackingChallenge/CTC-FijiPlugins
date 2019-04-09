@@ -8,17 +8,18 @@ import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
+import org.scijava.command.CommandService;
 import org.scijava.module.MutableModuleItem;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
 import org.scijava.widget.FileWidget;
 
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.FinalRealInterval;
 import net.imglib2.RealInterval;
 import net.imglib2.RealPoint;
 
@@ -42,6 +43,7 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
 
+import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
 import de.mpicbg.ulman.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
@@ -124,6 +126,16 @@ extends DynamicCommand
 	@Parameter(label = "Splash markers into one slice along z-axis:")
 	boolean doOneZslicePerMarker = false;
 
+	@Parameter(label = "Shape of the output markers:",
+	           description = "Splashing of markers affects this option: spheres (boxes) are decimated to circles (rectangles).",
+	           choices = {}, initializer = "initOutMarkerShape")
+	String outMarkerShape = "";
+
+	void initOutMarkerShape()
+	{
+		getInfo().getMutableInput("outMarkerShape", String.class).setChoices( Arrays.asList(TRAMarkersProvider.availableChoices) );
+	}
+
 	@Parameter(label = "Set parent to old track in a new track after a gap:",
 	           description = "A gap creates a new track. Enable this to have a parent link between old and new tracks.")
 	boolean setParentAfterGap = false;
@@ -144,13 +156,19 @@ extends DynamicCommand
 		final Source<?> imgSource = decodeImgSourceChoices();
 		if (imgSource == null) return;
 
+		//obtain the output marker's shape...
+		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, this.getContext().getService(CommandService.class));
+		if (markerShape == null) return;
+		//
+		logService.info("Output marker is      : "+markerShape.printInfo()+", in "+imgSource.getVoxelDimensions().unit());
+
 		//define some shortcut variables
 		final Model model = appModel.getModel();
 		final ModelGraph modelGraph = model.getGraph();
 
 		//debug report
-		logService.info("Time points span is: "+timeFrom+"-"+timeTill);
-		logService.info("Output folder is   : "+outputFolder.getAbsolutePath());
+		logService.info("Time points span is   : "+timeFrom+"-"+timeTill);
+		logService.info("Output folder is      : "+outputFolder.getAbsolutePath());
 
 		//aux stuff to create and name the output files
 		final PlanarImgFactory<T> outImgFactory = new PlanarImgFactory<T>(outImgVoxelType);
@@ -164,18 +182,25 @@ extends DynamicCommand
 		{
 			//reset dimensionality-based attributes to become compatible again
 			outImgDims = outImgTemplate.numDimensions();
+			resLen  = new double[outImgDims];
 			spotMin = new long[outImgDims];
 			spotMax = new long[outImgDims];
 			radii = new double[2*outImgDims];
 			coord = new RealPoint(outImgDims);
 		}
 
+		//update voxel sizes
+		imgSource.getVoxelDimensions().dimensions(resLen);
+		logService.info("Considering resolution: "+resLen[0]
+		               +" x "+resLen[1]+" x "+resLen[2]
+		               +" px/"+imgSource.getVoxelDimensions().unit());
+
 		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
 		final int outputTimeCorrection = resetTimePointNumbers? timeFrom : 0;
 
 		//debug report
 		outImgTemplate.dimensions(spotMin);
-		logService.info("Output image size  : "+Util.printCoordinates(spotMin));
+		logService.info("Output image size     : "+Util.printCoordinates(spotMin));
 
 		//PROGRESS BAR stuff
 		final ButtonHandler pbtnHandler = new ButtonHandler();
@@ -424,59 +449,59 @@ extends DynamicCommand
 
 	//some shortcut variables worth remembering
 	private int outImgDims = -1;
+	private double[] resLen;        //aux 1px lengths
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
+	private TRAMarkersProvider.intersectionDecidable markerShape;
 
 	private
-	void renderSpot(final Img<T> img,final AffineTransform3D transform,
+	void renderSpot(final Img<T> img,final AffineTransform3D transform, //world2img transform
 	                final Spot spot, final int label)
 	{
 		//the spot size
 		final double radius = Math.sqrt(spot.getBoundingSphereRadiusSquared());
 
-		//create spot's bounding box in the world coordinates
-		for (int d=0; d < outImgDims; ++d)
-		{
-			radii[d           ] = spot.getDoublePosition(d) - radius;
-			radii[d+outImgDims] = spot.getDoublePosition(d) + radius;
-		}
-		//if, however, only one zSlice is requested, squash the BBox to a plane in 2nd (z) axis
-		if (doOneZslicePerMarker && outImgDims > 2)
-		{
-			radii[2           ] = spot.getDoublePosition(2);
-			radii[2+outImgDims] = spot.getDoublePosition(2);
-		}
-
-		//create spot's bounding box in the image coordinates
-		final FinalRealInterval spotBBox    = FinalRealInterval.createMinMax(radii);
-		final FinalRealInterval spotImgBBox = transform.estimateBounds(spotBBox);
-
 		logService.info("rendering spot "+spot.getLabel()
 		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 
-		//System.out.println("world sweeping box: "+printRealInterval(spotBBox));
-		//System.out.println("image sweeping box: "+printRealInterval(spotImgBBox));
+		//project the spot's centre into the output image, and setup a sweeping bbox around it
+		transform.apply(spot, coord);                   //coord in pixel units
+		markerShape.setHalfBBoxInterval(radii, radius); //fills in image's some real units
+		for (int d=0; d < outImgDims; ++d)
+		{
+			//round centre position to the nearest pixel coord
+			coord.setPosition( Math.round(coord.getDoublePosition(d)), d );
 
-		//now, spotImgBBox has to be in pixel (integer) units and intersect with img,
+			//define the sweeping interval around this rounded centre
+			final double R = radii[d]*resLen[d];         //radius to pixel units
+			radii[d           ] = coord.getDoublePosition(d) - R;
+			radii[d+outImgDims] = coord.getDoublePosition(d) + R;
+		}
+		//if, however, only one zSlice is requested, squash the BBox to a plane in 2nd (z) axis
+		if (doOneZslicePerMarker && outImgDims > 2)
+		{
+			radii[2           ] = coord.getDoublePosition(2);
+			radii[2+outImgDims] = coord.getDoublePosition(2);
+		}
+		//System.out.println("real-px sweeping box: "+Util.printCoordinates(radii));
+
+		//now, radii[] (an imgBBox) has to be in pixel (integer) units and intersect with img,
 		//also check if there is some intersection with the image at all
 		for (int d=0; d < outImgDims; ++d)
 		{
-			spotMin[d] = Math.max( (long)Math.floor(spotImgBBox.realMin(d)), img.min(d) );
-			spotMax[d] = Math.min( (long)Math.ceil( spotImgBBox.realMax(d)), img.max(d) );
+			spotMin[d] = Math.max( (long)Math.round(radii[d           ]), img.min(d) );
+			spotMax[d] = Math.min( (long)Math.round(radii[d+outImgDims]), img.max(d) );
 
 			if (spotMin[d] > spotMax[d])
 			{
 				//no intersection along this axis
-				//System.out.println("px sweeping box: no intersection");
+				//System.out.println(" int-px sweeping box: no intersection");
 				return ;
 			}
 		}
-		//if, however, only one zSlice is requested, make sure the spotImgBBox is indeed single plane thick
-		if (doOneZslicePerMarker && outImgDims > 2) spotMax[2] = spotMin[2];
-
-		//System.out.println("px sweeping box: "+Util.printCoordinates(spotMin)+" <-> "+Util.printCoordinates(spotMax));
+		//System.out.println(" int-px sweeping box: "+Util.printCoordinates(spotMin)+" -> "+Util.printCoordinates(spotMax));
 
 		//NB: the tests above assure that spotMin and spotMax make sense and live inside the img
 		final Cursor<T> p = Views.interval(img, spotMin, spotMax).localizingCursor();
@@ -486,14 +511,12 @@ extends DynamicCommand
 			//get next voxel
 			voxelAtP = p.next();
 
-			//get it's (real) image coordinate
+			//get it's (pixel) image coordinate, and convert to image-units distance vector
 			for (int d=0; d < outImgDims; ++d)
-				coord.setPosition( p.getDoublePosition(d), d );
-			//get it's real world coordinate
-			transform.applyInverse(coord, coord);
+				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))/resLen[d];
 
 			//if close to the spot's center, draw into this voxel
-			if (Util.distance(coord,spot) <= radius) voxelAtP.setReal(label);
+			if (markerShape.isInside(radii, radius)) voxelAtP.setReal(label);
 		}
 	}
 
