@@ -18,7 +18,6 @@ import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
 import org.scijava.ui.UIService;
 import net.imagej.ops.OpService;
-import net.imagej.ImageJ;
 
 import java.io.File;
 import java.io.IOException;
@@ -460,31 +459,5 @@ public class plugin_GTviaMarkers implements Command
 				frame.dispose();
 			}
 		}
-	}
-
-
-	//the CLI path entry function:
-	public static void main(final String... args)
-	{
-		//head less variant:
-		//start up our own ImageJ without GUI
-		final ImageJ ij = new net.imagej.ImageJ();
-		//ij.ui().showUI();
-		//ij.command().run(plugin_GTviaMarkers.class, true);
-
-		try {
-			//start up the worker class
-			final machineGTViaMarkers_Worker Worker
-				= new machineGTViaMarkers_Worker(ij.op(),ij.log());
-
-			//do the job
-			Worker.work(args);
-		}
-		catch (UnsupportedOperationException | ImgIOException e) {
-			ij.log().error("plugin_GTviaMarkers error: "+e);
-		}
-
-		//and quit
-		//ij.appEvent().quit();
 	}
 }

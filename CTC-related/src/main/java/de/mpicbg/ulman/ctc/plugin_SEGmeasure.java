@@ -15,7 +15,6 @@ import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
-import net.imagej.ImageJ;
 
 import org.scijava.widget.FileWidget;
 import java.io.File;
@@ -132,37 +131,5 @@ public class plugin_SEGmeasure implements Command
 
 		//do not report anything explicitly (unless special format for parsing is
 		//desired) as ItemIO.OUTPUT will make it output automatically
-	}
-
-
-	//------------- command line stuff -------------
-	//
-	//the CLI path entry function:
-	public static void main(final String... args)
-	{
-		//check the input parameters
-		if (args.length != 2)
-		{
-			System.out.println("Incorrect number of parameters, expecting exactly two parameters.");
-			System.out.println("Parameters: GTpath RESpath\n");
-			System.out.println("GTpath should contain folder SEG and files: SEG/man_seg.*tif");
-			System.out.println("RESpath should contain result files directly: mask???.tif");
-			System.out.println("Certain data format is assumed, please see\n"
-				+"http://www.celltrackingchallenge.net/submission-of-results.html");
-			return;
-		}
-
-		//parse and store the arguments, if necessary
-		//....
-
-		//start up our own ImageJ without GUI
-		final ImageJ ij = new net.imagej.ImageJ();
-		ij.ui().showUI();
-
-		//run this class as if from GUI
-		ij.command().run(plugin_SEGmeasure.class, true, "gtPath",args[0], "resPath",args[1]);
-
-		//and close the IJ instance...
-		//ij.appEvent().quit();
 	}
 }
