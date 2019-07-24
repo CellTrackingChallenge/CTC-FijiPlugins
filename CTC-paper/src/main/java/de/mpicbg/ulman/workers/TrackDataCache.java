@@ -11,9 +11,6 @@ package de.mpicbg.ulman.workers;
 
 import org.scijava.log.LogService;
 
-import ij.ImagePlus;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-
 import net.imglib2.img.Img;
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
@@ -21,6 +18,8 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
+
+import sc.fiji.simplifiedio.SimplifiedIO;
 
 import java.io.File;
 import java.io.IOException;
@@ -374,7 +373,7 @@ public class TrackDataCache
 	public Img<?> ReadImage(final String fname)
 	throws IOException
 	{
-		Img<?> img = ImageJFunctions.wrap(new ImagePlus(fname));
+		Img<?> img = SimplifiedIO.openImage(fname);
 		if (img == null)
 		{
 			log.error("Error reading file: "+fname);
