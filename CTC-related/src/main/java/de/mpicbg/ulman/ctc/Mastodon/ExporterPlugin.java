@@ -43,6 +43,8 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
 
+import de.mpicbg.ulman.ctc.Mastodon.util.ButtonHandler;
+import de.mpicbg.ulman.ctc.Mastodon.util.ParallelImgSaver;
 import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkersProvider;
 import de.mpicbg.ulman.ctc.workers.TrackRecords;
 

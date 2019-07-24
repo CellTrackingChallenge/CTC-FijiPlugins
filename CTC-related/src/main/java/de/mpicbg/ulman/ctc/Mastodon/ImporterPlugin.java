@@ -42,8 +42,9 @@ import org.mastodon.revised.model.mamut.Model;
 import org.mastodon.revised.model.mamut.ModelGraph;
 import org.mastodon.collection.IntRefMap;
 import org.mastodon.collection.RefMaps;
-import org.mastodon.tomancak.util.ImgProviders;
 
+import de.mpicbg.ulman.ctc.Mastodon.util.ButtonHandler;
+import de.mpicbg.ulman.ctc.Mastodon.util.ImgProviders;
 import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.FileTemplateProvider;
 import de.mpicbg.ulman.ctc.workers.TrackRecords;
 

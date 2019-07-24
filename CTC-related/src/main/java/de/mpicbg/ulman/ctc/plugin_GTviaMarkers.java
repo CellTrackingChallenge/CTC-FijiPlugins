@@ -34,7 +34,7 @@ import java.text.ParseException;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
-import de.mpicbg.ulman.ctc.Mastodon.ButtonHandler;
+import de.mpicbg.ulman.ctc.Mastodon.util.ButtonHandler;
 
 import java.awt.Button;
 import java.awt.Dimension;
