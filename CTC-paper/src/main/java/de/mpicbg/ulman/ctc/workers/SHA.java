@@ -14,6 +14,12 @@ import org.scijava.log.LogService;
 import java.util.Vector;
 import java.util.HashMap;
 
+/*
+ * ====================================================================================
+ *       THIS CLASS IS NOT PROPERLY IMPLEMENTED! DO NOT USE! (and sorry for that)
+ * ====================================================================================
+ */
+
 public class SHA extends AbstractDSmeasure
 {
 	///a constructor requiring connection to Fiji report/log services

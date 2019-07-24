@@ -25,14 +25,14 @@ import de.mpicbg.ulman.ctc.workers.CR;
 import de.mpicbg.ulman.ctc.workers.HETI;
 import de.mpicbg.ulman.ctc.workers.HETB;
 import de.mpicbg.ulman.ctc.workers.RES;
-import de.mpicbg.ulman.ctc.workers.SHA;
 import de.mpicbg.ulman.ctc.workers.DEN;
 import de.mpicbg.ulman.ctc.workers.CHA;
 import de.mpicbg.ulman.ctc.workers.OVE;
 import de.mpicbg.ulman.ctc.workers.MIT;
 /*
-import de.mpicbg.ulman.workers.SYN;
-import de.mpicbg.ulman.workers.ENTLEAV;
+import de.mpicbg.ulman.ctc.workers.SHA;
+import de.mpicbg.ulman.ctc.workers.SYN;
+import de.mpicbg.ulman.ctc.workers.ENTLEAV;
 */
 
 @Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Dataset measures",
@@ -106,9 +106,11 @@ public class plugin_CTCmeasuresDS implements Command
 		description = "Evaluates the average resolution, measured as the average size of the cells in number of pixels (2D) or voxels (3D).")
 	private boolean calcRes = true;
 
+	/*
 	@Parameter(label = "Sha",
 		description = "Evaluates the average regularity of the cell shape, normalized between 0 (completely irregular) and 1 (perfectly regular).")
-	private boolean calcSha = true;
+	*/
+	private boolean calcSha = false;
 
 	@Parameter(label = "Den",
 		description = "Evaluates the cell density measured as average minimum pixel (2D) or voxel (3D) distance between cells.")
@@ -296,6 +298,7 @@ public class plugin_CTCmeasuresDS implements Command
 			}
 		}
 
+		/*
 		if (calcSha)
 		{
 			try {
@@ -310,6 +313,7 @@ public class plugin_CTCmeasuresDS implements Command
 				log.error("CTC Sha measure error: "+e.getMessage());
 			}
 		}
+		*/
 
 		if (calcDen)
 		{
