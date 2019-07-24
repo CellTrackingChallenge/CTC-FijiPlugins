@@ -110,14 +110,16 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 //PUTBACK// 	@Override
 	public
-	void compute(final Collection<RandomAccessibleInterval<T>> inImgs,
-	             final Img<UnsignedShortType> markerImg,
-	             final Img<UnsignedShortType> outImg)
+	Img<UnsignedShortType> compute(final Collection<RandomAccessibleInterval<T>> inImgs,
+	             final Img<UnsignedShortType> markerImg)
 	{
 		System.out.println("Default CombineGTsViaMarkers plug-in version");
 
 		if (inImgs.size() != inWeights.size())
 			throw new RuntimeException("Arrays with input images and weights are of different lengths.");
+
+		//create the output image
+		final Img<UnsignedShortType> outImg = markerImg.factory().create(markerImg);
 
 		//da plan:
 		//iterate over all voxels of the input marker image and look for not
@@ -487,6 +489,8 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					outCursor.get().set(traLabel);
 			}
 		}
+
+		return outImg;
 	}
 	
 	
