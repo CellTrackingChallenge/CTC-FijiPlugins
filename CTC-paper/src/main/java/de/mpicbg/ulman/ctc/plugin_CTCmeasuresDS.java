@@ -15,7 +15,6 @@ import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.log.LogService;
-import net.imagej.ImageJ;
 
 import org.scijava.widget.FileWidget;
 import java.io.File;
@@ -373,27 +372,5 @@ public class plugin_CTCmeasuresDS implements Command
 
 		//do not report anything explicitly (unless special format for parsing is
 		//desired) as ItemIO.OUTPUT will make it output automatically
-	}
-
-
-	//------------- command line stuff -------------
-	//
-	//the CLI path entry function:
-	public static void main(final String... args)
-	{
-		//check the input parameters
-
-		//parse and store the arguments, if necessary
-		//....
-
-		//start up our own ImageJ without GUI
-		final ImageJ ij = new net.imagej.ImageJ();
-		ij.ui().showUI();
-
-		//run this class as if from GUI
-		//...
-
-		//and close the IJ instance...
-		//ij.appEvent().quit();
 	}
 }

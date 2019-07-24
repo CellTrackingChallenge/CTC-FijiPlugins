@@ -106,10 +106,11 @@
       </exclusions>
     </dependency>
 
-    <!-- to start and test the plugin (from the ImageJ GUI) -->
+    <!-- to start and test plugins (from the ImageJ GUI) -->
     <dependency>
       <groupId>net.imagej</groupId>
       <artifactId>imagej</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
