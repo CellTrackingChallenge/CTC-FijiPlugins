@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.scijava</groupId>
     <artifactId>pom-scijava</artifactId>
-    <version>25.0.0</version>
+    <version>27.0.1</version>
     <relativePath />
   </parent>
 
 
   <groupId>de.mpicbg.ulman</groupId>
   <artifactId>CTC-related-FijiPlugins</artifactId>
-  <version>1.4.0</version>
+  <version>1.4.1</version>
 
 	<organization>
 		<name>MPI-CBG</name>
@@ -91,20 +91,41 @@
   </repositories>
 
   <dependencies>
+    <!-- for reading/saving images -->
+    <dependency>
+      <groupId>sc.fiji</groupId>
+      <artifactId>simplified-io</artifactId>
+      <version>1.0.1</version>
+
+      <exclusions>
+        <exclusion>
+          <groupId>xalan</groupId>
+          <artifactId>xalan</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- to start and test the plugin (from the ImageJ GUI) -->
     <dependency>
       <groupId>net.imagej</groupId>
       <artifactId>imagej</artifactId>
     </dependency>
+
+    <!-- the "main paper"-part of this project -->
     <dependency>
       <groupId>de.mpicbg.ulman</groupId>
       <artifactId>CTC-paper-FijiPlugins</artifactId>
-      <version>1.4.0</version>
+      <version>1.4.1</version>
     </dependency>
+
+    <!-- 3rd party dependency (not sure where it comes from) -->
     <dependency>
       <groupId>org.jhotdraw</groupId>
       <artifactId>jhotdraw</artifactId>
       <version>7.6.0</version>
     </dependency>
+
+    <!-- for Mastodon plugins -->
     <dependency>
       <groupId>net.trackmate</groupId>
       <artifactId>trackmate</artifactId>

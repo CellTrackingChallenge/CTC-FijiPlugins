@@ -5,14 +5,13 @@
   <parent>
     <groupId>org.scijava</groupId>
     <artifactId>pom-scijava</artifactId>
-    <version>25.0.0</version>
-    <relativePath />
+    <version>27.0.1</version>
   </parent>
 
 
   <groupId>de.mpicbg.ulman</groupId>
   <artifactId>CTC-FijiPlugins</artifactId>
-  <version>1.4.0</version>
+  <version>1.4.1</version>
 
 	<organization>
 		<name>MPI-CBG</name>
