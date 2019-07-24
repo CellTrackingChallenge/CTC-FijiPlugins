@@ -599,14 +599,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		ImgLabeling<Integer, O> lImg = new ImgLabeling<>(inImg.factory().create(inImg));
 
 		//this "translates" discovered labels into the lImg -- the labeling map
-		Cursor<LabelingType<Integer>> out = lImg.cursor();
-		RandomAccess<O> in = inImg.randomAccess();
-		while( out.hasNext() )
-		{
-			LabelingType<Integer> labels = out.next();
-			in.setPosition(out);
-			labels.add( in.get().getInteger() );
-		}
+		LoopBuilder.setImages(inImg, lImg).forEachPixel( (i,l) -> l.add(i.getInteger()) );
 
 		final int noComponents = lImg.getMapping().numSets()-2;		// get the number of detected components
 		int total_removed = 0;    // stores the number of removed components from the input image
@@ -662,6 +655,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			ra.setPosition(singlecc);		// access position that holds the desired pixel value
 			singlerr.get().setInteger(ra.get().getInteger());	// get the pixel value from the input image and copy it to the subimage 
 		}
+
+		/*
+		final Img<O> singlelabelImg = input.factory().create(region);
+		LoopBuilder.setImages(region, Views.interval(input,region), singlelabelImg).forEachPixel( (r,i,o) -> o.setInteger(i.getInteger()) );
+		*/
 		return singlelabelImg;
 	}
 
