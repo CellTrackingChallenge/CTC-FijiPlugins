@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -23,8 +23,8 @@ import org.scijava.widget.FileWidget;
 import java.io.File;
 import java.nio.file.Files;
 
-import de.mpicbg.ulman.workers.TRA;
-import de.mpicbg.ulman.workers.TrackDataCache;
+import de.mpicbg.ulman.ctc.workers.TRA;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>AOGM: Tracking data consistency",
         name = "CTC_AOGM_consistency", headless = true,

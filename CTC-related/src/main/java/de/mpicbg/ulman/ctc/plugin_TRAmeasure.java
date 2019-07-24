@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2018 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -20,7 +20,7 @@ import net.imagej.ImageJ;
 import org.scijava.widget.FileWidget;
 import java.io.File;
 
-import de.mpicbg.ulman.workers.TRA;
+import de.mpicbg.ulman.ctc.workers.TRA;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>Cell Tracking Challenge TRA measure",
         name = "CTC_TRA", headless = true,

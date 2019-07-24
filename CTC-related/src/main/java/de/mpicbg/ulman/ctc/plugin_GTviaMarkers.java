@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemVisibility;
 import org.scijava.widget.FileWidget;
@@ -34,13 +34,13 @@ import java.text.ParseException;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
-import de.mpicbg.ulman.Mastodon.ButtonHandler;
+import de.mpicbg.ulman.ctc.Mastodon.ButtonHandler;
 
 import java.awt.Button;
 import java.awt.Dimension;
 
-import de.mpicbg.ulman.workers.machineGTViaMarkers_Worker;
-import de.mpicbg.ulman.util.NumberSequenceHandler;
+import de.mpicbg.ulman.ctc.workers.machineGTViaMarkers_Worker;
+import de.mpicbg.ulman.ctc.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
 public class plugin_GTviaMarkers implements Command

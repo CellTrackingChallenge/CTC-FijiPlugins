@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -20,8 +20,8 @@ import net.imagej.ImageJ;
 import org.scijava.widget.FileWidget;
 import java.io.File;
 
-import de.mpicbg.ulman.workers.TRA;
-import de.mpicbg.ulman.workers.TRA.PenaltyConfig;
+import de.mpicbg.ulman.ctc.workers.TRA;
+import de.mpicbg.ulman.ctc.workers.TRA.PenaltyConfig;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Tracking>AOGM: Tracking measure",
         name = "CTC_AOGM", headless = true,

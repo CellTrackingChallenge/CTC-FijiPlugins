@@ -1,13 +1,11 @@
-package de.mpicbg.ulman.Mastodon.auxPlugins;
+package de.mpicbg.ulman.ctc.Mastodon.auxPlugins;
 
 import java.util.concurrent.ExecutionException;
 import org.scijava.command.CommandService;
 
 import net.imglib2.RealLocalizable;
 
-import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkers.BoxesWithFixedShape;
-import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkers.SpheresWithFixedRadius;
-import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkers.SpheresWithFloatingRadius;
+import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkers.*;
 
 public class TRAMarkersProvider
 {

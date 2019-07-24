@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.Mastodon.auxPlugins;
+package de.mpicbg.ulman.ctc.Mastodon.auxPlugins;
 
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;

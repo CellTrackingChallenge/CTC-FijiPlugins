@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 import net.imagej.ops.OpService;
@@ -20,10 +20,7 @@ import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import sc.fiji.simplifiedio.SimplifiedIO;
 
-import java.io.IOException;
 import java.util.Vector;
-
-import de.mpicbg.ulman.waitingRoom.DefaultCombineGTsViaMarkers;
 
 public class machineGTViaMarkers_Worker
 {
@@ -50,7 +47,7 @@ public class machineGTViaMarkers_Worker
 	{ log = null; myOps = null; } //this is to get rid of some warnings
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void work(final String... args) throws IOException
+	public void work(final String... args)
 	{
 		//check the minimum number of input parameters, should be odd number
 		if (args.length < 5 || (args.length&1)==0)
@@ -58,7 +55,7 @@ public class machineGTViaMarkers_Worker
 			//print help
 			log.info("Usage: img1 weight1 ... TRAimg threshold outImg");
 			log.info("All img1 (path to an image file) are TRA marker-wise combined into output outImg.");
-			throw new IOException("At least one input image, exactly one marker image and one treshold plus one output image are expected.");
+			throw new RuntimeException("At least one input image, exactly one marker image and one treshold plus one output image are expected.");
 		}
 
 		//the number of input pairs, the test above enforces it is nicely divisible by 2
@@ -83,50 +80,43 @@ public class machineGTViaMarkers_Worker
 		//load all of them
 		for (int i=0; i < inputImagesCount+1; ++i)
 		{
-			try {
-				//load the image
-				log.info("Reading pair: "+args[2*i]+" "+args[2*i +1]);
-				img = SimplifiedIO.openImage(args[2*i]);
+			//load the image
+			log.info("Reading pair: "+args[2*i]+" "+args[2*i +1]);
+			img = SimplifiedIO.openImage(args[2*i]);
 
-				//check the type of the image (the combineGTs plug-in requires RealType<>)
-				if (!(img.firstElement() instanceof RealType<?>))
-					throw new IOException("Input image voxels must be scalars.");
+			//check the type of the image (the combineGTs plug-in requires RealType<>)
+			if (!(img.firstElement() instanceof RealType<?>))
+				throw new RuntimeException("Input image voxels must be scalars.");
 
-				//check that all input images are of the same type
-				//NB: the check excludes the tracking markers image
-				if (firstImgVoxelType == null)
-				{
-					firstImgVoxelType = img.firstElement();
-					firstImgVoxelTypeString = firstImgVoxelType.getClass().getSimpleName();
-				}
-				else if (i < inputImagesCount && !(img.firstElement().getClass().getSimpleName().startsWith(firstImgVoxelTypeString)))
-				{
-					log.info("first  image  voxel type: "+firstImgVoxelType.getClass().getName());
-					log.info("current image voxel type: "+img.firstElement().getClass().getName());
-					throw new IOException("Voxel types of all input images must be the same.");
-				}
-
-				//check the dimensions, against the first loaded image
-				//(if processing second or later image already)
-				for (int d=0; i > 0 && d < img.numDimensions(); ++d)
-					if (img.dimension(d) != inImgs.get(0).dimension(d))
-						throw new IOException((i+1)+"th image has different size in the "
-								+d+"th dimension than the first image.");
-
-				//all is fine, add this one into the input list
-				if (i < inputImagesCount) inImgs.add(img);
-				//or, if loading the last image, remember it as the marker image 
-				else markerImg = (Img<UnsignedShortType>)img;
-
-				//also parse and store the weight
-				if (i < inputImagesCount)
-					inWeights.add( Float.parseFloat(args[2*i +1]) );
+			//check that all input images are of the same type
+			//NB: the check excludes the tracking markers image
+			if (firstImgVoxelType == null)
+			{
+				firstImgVoxelType = img.firstElement();
+				firstImgVoxelTypeString = firstImgVoxelType.getClass().getSimpleName();
 			}
-			catch (UnsupportedOperationException | IOException e) {
-				log.error("Error reading file: "+args[2*i]);
-				log.error("Error msg: "+e);
-				throw new IOException("Unable to read input file.");
+			else if (i < inputImagesCount && !(img.firstElement().getClass().getSimpleName().startsWith(firstImgVoxelTypeString)))
+			{
+				log.info("first  image  voxel type: "+firstImgVoxelType.getClass().getName());
+				log.info("current image voxel type: "+img.firstElement().getClass().getName());
+				throw new RuntimeException("Voxel types of all input images must be the same.");
 			}
+
+			//check the dimensions, against the first loaded image
+			//(if processing second or later image already)
+			for (int d=0; i > 0 && d < img.numDimensions(); ++d)
+				if (img.dimension(d) != inImgs.get(0).dimension(d))
+					throw new RuntimeException((i+1)+"th image has different size in the "
+							+d+"th dimension than the first image.");
+
+			//all is fine, add this one into the input list
+			if (i < inputImagesCount) inImgs.add(img);
+			//or, if loading the last image, remember it as the marker image
+			else markerImg = (Img<UnsignedShortType>)img;
+
+			//also parse and store the weight
+			if (i < inputImagesCount)
+				inWeights.add( Float.parseFloat(args[2*i +1]) );
 		}
 
 		//parse threshold value

@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.Mastodon;
+package de.mpicbg.ulman.ctc.Mastodon;
 
 import java.awt.*;
 import javax.swing.JFrame;
@@ -43,8 +43,8 @@ import org.mastodon.spatial.SpatioTemporalIndex;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefMaps;
 
-import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
-import de.mpicbg.ulman.workers.TrackRecords;
+import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkersProvider;
+import de.mpicbg.ulman.ctc.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
 public class ExporterPlugin <T extends NativeType<T> & RealType<T>>

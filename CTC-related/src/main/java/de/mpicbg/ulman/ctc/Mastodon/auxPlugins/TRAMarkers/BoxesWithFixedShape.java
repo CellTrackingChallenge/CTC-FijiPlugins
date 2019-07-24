@@ -1,11 +1,10 @@
-package de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkers;
+package de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkers;
 
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
-import net.imglib2.RealLocalizable;
-import de.mpicbg.ulman.Mastodon.auxPlugins.TRAMarkersProvider;
+import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkersProvider;
 
 @Plugin( type = BoxesWithFixedShape.class, visible = false,
          name = "Specify the full box size in the image units (e.g. in microns):" )

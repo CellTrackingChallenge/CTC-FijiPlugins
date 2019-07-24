@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.Mastodon;
+package de.mpicbg.ulman.ctc.Mastodon;
 
 import ij.IJ;
 import ij.ImagePlus;

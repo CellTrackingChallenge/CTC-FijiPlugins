@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.Mastodon;
+package de.mpicbg.ulman.ctc.Mastodon;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;

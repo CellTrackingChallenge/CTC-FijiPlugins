@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.Mastodon;
+package de.mpicbg.ulman.ctc.Mastodon;
 
 import java.awt.*;
 import javax.swing.JFrame;
@@ -44,8 +44,8 @@ import org.mastodon.collection.IntRefMap;
 import org.mastodon.collection.RefMaps;
 import org.mastodon.tomancak.util.ImgProviders;
 
-import de.mpicbg.ulman.Mastodon.auxPlugins.FileTemplateProvider;
-import de.mpicbg.ulman.workers.TrackRecords;
+import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.FileTemplateProvider;
+import de.mpicbg.ulman.ctc.workers.TrackRecords;
 
 @Plugin( type = Command.class, name = "CTC format importer @ Mastodon" )
 public class ImporterPlugin

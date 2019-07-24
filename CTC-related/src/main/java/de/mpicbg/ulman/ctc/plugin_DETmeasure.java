@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2018 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -21,8 +21,8 @@ import org.scijava.widget.FileWidget;
 import java.io.File;
 import java.util.Set;
 
-import de.mpicbg.ulman.workers.DET;
-import de.mpicbg.ulman.util.NumberSequenceHandler;
+import de.mpicbg.ulman.ctc.workers.DET;
+import de.mpicbg.ulman.ctc.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Segmentation>Cell Tracking Challenge DET measure",
         name = "CTC_DET", headless = true,
