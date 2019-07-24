@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -20,17 +20,17 @@ import net.imagej.ImageJ;
 import org.scijava.widget.FileWidget;
 import java.io.File;
 
-import de.mpicbg.ulman.workers.ImgQualityDataCache;
-import de.mpicbg.ulman.workers.SNR;
-import de.mpicbg.ulman.workers.CR;
-import de.mpicbg.ulman.workers.HETI;
-import de.mpicbg.ulman.workers.HETB;
-import de.mpicbg.ulman.workers.RES;
-import de.mpicbg.ulman.workers.SHA;
-import de.mpicbg.ulman.workers.DEN;
-import de.mpicbg.ulman.workers.CHA;
-import de.mpicbg.ulman.workers.OVE;
-import de.mpicbg.ulman.workers.MIT;
+import de.mpicbg.ulman.ctc.workers.ImgQualityDataCache;
+import de.mpicbg.ulman.ctc.workers.SNR;
+import de.mpicbg.ulman.ctc.workers.CR;
+import de.mpicbg.ulman.ctc.workers.HETI;
+import de.mpicbg.ulman.ctc.workers.HETB;
+import de.mpicbg.ulman.ctc.workers.RES;
+import de.mpicbg.ulman.ctc.workers.SHA;
+import de.mpicbg.ulman.ctc.workers.DEN;
+import de.mpicbg.ulman.ctc.workers.CHA;
+import de.mpicbg.ulman.ctc.workers.OVE;
+import de.mpicbg.ulman.ctc.workers.MIT;
 /*
 import de.mpicbg.ulman.workers.SYN;
 import de.mpicbg.ulman.workers.ENTLEAV;

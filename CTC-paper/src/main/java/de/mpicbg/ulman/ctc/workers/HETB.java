@@ -7,14 +7,12 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
 import java.util.Vector;
 import java.util.HashMap;
-
-import de.mpicbg.ulman.workers.ImgQualityDataCache.videoDataContainer;
 
 public class HETB extends AbstractDSmeasure
 {
@@ -35,7 +33,7 @@ public class HETB extends AbstractDSmeasure
 
 		//go over all encountered videos and calc
 		//their respective avg. HETBs and average them
-		for (videoDataContainer data : cache.cachedVideoData)
+		for (ImgQualityDataCache.videoDataContainer data : cache.cachedVideoData)
 		{
 			double intSum = 0.; //for mean and variance
 			double int2Sum = 0.;

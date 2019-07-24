@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -20,8 +20,8 @@ import net.imagej.ImageJ;
 import org.scijava.widget.FileWidget;
 import java.io.File;
 
-import de.mpicbg.ulman.workers.TRA;
-import de.mpicbg.ulman.workers.SEG;
+import de.mpicbg.ulman.ctc.workers.TRA;
+import de.mpicbg.ulman.ctc.workers.SEG;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Technical measures",
         name = "CTC_ICT", headless = true,

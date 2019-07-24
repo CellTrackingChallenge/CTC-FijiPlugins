@@ -1,4 +1,4 @@
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import java.io.FileWriter;
 import java.io.BufferedWriter;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 import org.scijava.log.LogService;
 
-import de.mpicbg.ulman.workers.TrackDataCache.Track;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.Track;
 
 /**
  * Collection of individual tracks available for a time lapse data.

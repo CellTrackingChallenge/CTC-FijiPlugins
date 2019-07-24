@@ -7,14 +7,14 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
 import io.scif.img.ImgIOException;
 import java.io.IOException;
 
-import de.mpicbg.ulman.workers.ImgQualityDataCache;
+import de.mpicbg.ulman.ctc.workers.ImgQualityDataCache;
 
 public class AbstractDSmeasure
 {

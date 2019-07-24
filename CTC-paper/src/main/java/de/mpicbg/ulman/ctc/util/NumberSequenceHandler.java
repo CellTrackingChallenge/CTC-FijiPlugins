@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2018 Vladimír Ulman
  */
-package de.mpicbg.ulman.util;
+package de.mpicbg.ulman.ctc.util;
 
 import java.util.Set;
 import java.util.TreeSet;

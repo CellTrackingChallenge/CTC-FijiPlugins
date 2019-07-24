@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2018 Martin Maška, Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 import net.imglib2.img.Img;
@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.Iterator;
 
-import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.TemporalLevel;
 
 public class DET extends TRA
 {

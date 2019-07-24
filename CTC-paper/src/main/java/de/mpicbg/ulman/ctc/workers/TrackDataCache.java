@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
@@ -18,8 +18,8 @@ import java.util.Vector;
 import java.util.Map;
 import java.util.HashMap;
 
-import de.mpicbg.ulman.workers.TrackDataCache.Track;
-import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.Track;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.TemporalLevel;
 
 public class TF
 {

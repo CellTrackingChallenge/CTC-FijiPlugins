@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
@@ -15,7 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import de.mpicbg.ulman.workers.TrackDataCache.Track;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.Track;
 
 public class MIT extends AbstractDSmeasure
 {

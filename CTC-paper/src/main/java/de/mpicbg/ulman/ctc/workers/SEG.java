@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Martin Maška, Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.List;
 
-import de.mpicbg.ulman.workers.TrackDataCache.TemporalLevel;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.TemporalLevel;
 
 public class SEG
 {

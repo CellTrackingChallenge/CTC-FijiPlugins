@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman;
+package de.mpicbg.ulman.ctc;
 
 import org.scijava.ItemIO;
 import org.scijava.ItemVisibility;
@@ -20,11 +20,11 @@ import net.imagej.ImageJ;
 import org.scijava.widget.FileWidget;
 import java.io.File;
 
-import de.mpicbg.ulman.workers.TrackDataCache;
-import de.mpicbg.ulman.workers.CT;
-import de.mpicbg.ulman.workers.TF;
-import de.mpicbg.ulman.workers.BCi;
-import de.mpicbg.ulman.workers.CCA;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache;
+import de.mpicbg.ulman.ctc.workers.CT;
+import de.mpicbg.ulman.ctc.workers.TF;
+import de.mpicbg.ulman.ctc.workers.BCi;
+import de.mpicbg.ulman.ctc.workers.CCA;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Cell Tracking Challenge>Biological measures",
         name = "CTC_BIO", headless = true,

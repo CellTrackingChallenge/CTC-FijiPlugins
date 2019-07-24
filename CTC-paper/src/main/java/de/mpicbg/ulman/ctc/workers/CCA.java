@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.util.Vector;
 import java.util.HashMap;
 
-import de.mpicbg.ulman.workers.TrackDataCache.Track;
-import de.mpicbg.ulman.workers.TrackDataCache.Fork;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.Track;
+import de.mpicbg.ulman.ctc.workers.TrackDataCache.Fork;
 
 public class CCA
 {

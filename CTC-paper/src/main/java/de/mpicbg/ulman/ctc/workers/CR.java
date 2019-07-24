@@ -7,14 +7,12 @@
  *
  * Copyright (C) 2017 Vladimír Ulman
  */
-package de.mpicbg.ulman.workers;
+package de.mpicbg.ulman.ctc.workers;
 
 import org.scijava.log.LogService;
 
 import java.util.Vector;
 import java.util.HashMap;
-
-import de.mpicbg.ulman.workers.ImgQualityDataCache.videoDataContainer;
 
 public class CR extends AbstractDSmeasure
 {
@@ -35,7 +33,7 @@ public class CR extends AbstractDSmeasure
 
 		//go over all encountered videos and calc
 		//their respective avg. CRs and average them
-		for (videoDataContainer data : cache.cachedVideoData)
+		for (ImgQualityDataCache.videoDataContainer data : cache.cachedVideoData)
 		{
 			//shadows of the/short-cuts to the cache data
 			final Vector<HashMap<Integer,Double>> avgFG = data.avgFG;
