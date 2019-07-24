@@ -77,6 +77,7 @@
 	</ciManagement>
 
 	<properties>
+		<package-name>de.mpicbg.ulman.ctc</package-name>
 		<license.licenseName>cc0</license.licenseName>
 		<license.copyrightOwners>N/A</license.copyrightOwners>
 		<license.projectName>CTC-FijiPlugins</license.projectName>
