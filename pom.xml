@@ -65,7 +65,7 @@
 
 	<scm>
 		<connection>scm:git:git://github.com/xulman/CTC-FijiPlugins</connection>
-		<developerConnection>scm:git:localhost:9999</developerConnection>
+		<developerConnection>scm:git:git://github.com/xulman/CTC-FijiPlugins</developerConnection>
 		<tag>HEAD</tag>
 		<url>https://github.com/xulman/CTC-FijiPlugins</url>
 	</scm>
