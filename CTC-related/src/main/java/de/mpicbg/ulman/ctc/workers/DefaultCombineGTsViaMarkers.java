@@ -416,6 +416,8 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 				//System.out.println("cleaning: marker at boundary");
 			}
 		}
+		final int allMarkers = mDiscovered.size();
+
 
 		removeIsolatedIslands(outImg);
 
@@ -441,7 +443,6 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		                  +collHistogram[10]+" times");
 
 		//also some per image report:
-		final int allMarkers = mDiscovered.size();
 		final int okMarkers = allMarkers - mNoMatches.size() - mBordering.size() - mColliding.size();
 		System.out.println("not found markers    = "+mNoMatches.size()
 			+" = "+ 100.0f*(float)mNoMatches.size()/(float)allMarkers +" %");
