@@ -108,8 +108,6 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	Img<UnsignedShortType> compute(final Vector<RandomAccessibleInterval<T>> inImgs,
 	                               final Img<UnsignedShortType> markerImg)
 	{
-		System.out.println("Default CombineGTsViaMarkers plug-in version");
-
 		if (inImgs.size() != inWeights.size())
 			throw new RuntimeException("Arrays with input images and weights are of different lengths.");
 

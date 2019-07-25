@@ -140,7 +140,7 @@ public class machineGTViaMarkers_Worker
 
 		//NB: we have checked that images are of RealType<?> in the loading loop,
 		//    so we know we can cast to raw type to be able to call the combineGTs()
-		System.out.println("calling general convenience CombineGTsViaMarkers with threshold="+threshold);
+		System.out.println("calling CombineGTsViaMarkers with threshold="+threshold);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg, newName);
 		myOps.setParams(inWeights, threshold, newName);
