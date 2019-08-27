@@ -563,12 +563,12 @@ public class TRA
 					//no correspondence -> the gt label represents FN (false negative) case
 					aogm += penalty.m_fn;
 					logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
-				}
-
-				if (level.m_gt_match[i] > -1)
-					logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
-				else
 					logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
+				}
+				else
+				{
+					logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
+				}
 			}
 
 			//for every res label, check we have found exactly one corresponding gt label
@@ -578,27 +578,25 @@ public class TRA
 				//number of overlapping gt labels
 				num = level.m_res_match[j].size();
 
-				if (level.m_res_match[j].size() == 1)
-					logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
-				else
-				if (level.m_res_match[j].size() > 1)
-					logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
-				else
-					logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
-
 				if (num == 0)
 				{
 					//no label -- too few
 					aogm += penalty.m_fp;
 					logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
 				}
 				else if (num > 1)
 				{
-					//to many labels...
+					//too many labels...
 					aogm += (num - 1) * penalty.m_ns;
 					for (int qq=1; qq < num; ++qq)
 						logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
 					max_split = num > max_split ? num : max_split;
+					logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
+				}
+				else //num == 1
+				{
+					logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
 				}
 			}
 		}
