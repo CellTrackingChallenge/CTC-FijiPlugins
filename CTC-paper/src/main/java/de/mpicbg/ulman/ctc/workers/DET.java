@@ -135,10 +135,14 @@ public class DET extends TRA
 		aogm = 0.0;
 		long gtLabelsFound = 0; //for calculating aogm_empty
 
-		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
-		logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
-		logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
-		logMatch.add(String.format("----------Vertices Matching Status (No Penalty)----------", penalty.m_ns));
+		if (doLogReports)
+		{
+			logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
+			logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
+			logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
+		}
+		if (doMatchingReports)
+			logMatch.add(String.format("----------Vertices Matching Status (No Penalty)----------", penalty.m_ns));
 
 		//this is: local ClassifyLabels() -- the part that already does some AOGM checks
 		//this is: the AOGM-specific last portion of the original FindMatch() C++ function:
@@ -158,12 +162,15 @@ public class DET extends TRA
 				{
 					//no correspondence -> the gt label represents FN (false negative) case
 					aogm += penalty.m_fn;
-					logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
-					logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
+					if (doLogReports)
+						logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
 				}
 				else
 				{
-					logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
 				}
 			}
 			gtLabelsFound += level.m_gt_lab.length;
@@ -179,21 +186,28 @@ public class DET extends TRA
 				{
 					//no label -- too few
 					aogm += penalty.m_fp;
-					logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
-					logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
+					if (doLogReports)
+						logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
 				}
 				else if (num > 1)
 				{
 					//too many labels...
 					aogm += (num - 1) * penalty.m_ns;
-					for (int qq=1; qq < num; ++qq)
-						logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					if (doLogReports)
+					{
+						for (int qq=1; qq < num; ++qq)
+							logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					}
 					max_split = num > max_split ? num : max_split;
-					logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
 				}
 				else //num == 1
 				{
-					logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
 				}
 			}
 		}

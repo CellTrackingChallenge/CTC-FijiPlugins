@@ -394,16 +394,18 @@ public class TRA
 						{
 							//it does not connect different tracks, that's an error
 							aogm += penalty.m_ec;
-							logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
-								start_level, res_track.m_parent, end_level, res_track_id));
+							if (doLogReports)
+								logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+									start_level, res_track.m_parent, end_level, res_track_id));
 						}
 					}
 					else
 					{
 						//there is no corresponding edge in GT, that's an error
 						aogm += penalty.m_ed;
-						logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
-							start_level, res_track.m_parent, end_level, res_track_id));
+						if (doLogReports)
+							logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+								start_level, res_track.m_parent, end_level, res_track_id));
 					}
 				}
 			}
@@ -429,16 +431,18 @@ public class TRA
 						{
 							//it is parental, that's an error
 							aogm += penalty.m_ec;
-							logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
-								start_level, res_track_id, end_level, res_track_id));
+							if (doLogReports)
+								logEC.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+									start_level, res_track_id, end_level, res_track_id));
 						}
 					}
 					else
 					{
 						//there is no corresponding edge in GT, that's an error
 						aogm += penalty.m_ed;
-						logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
-							start_level, res_track_id, end_level, res_track_id));
+						if (doLogReports)
+							logED.add(String.format("[T=%d Label=%d] -> [T=%d Label=%d]",
+								start_level, res_track_id, end_level, res_track_id));
 					}
 				}
 			}
@@ -478,8 +482,9 @@ public class TRA
 				{
 					//... but there is no edge between them, that's an error
 					aogm += penalty.m_ea;
-					logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
-						start_level, gt_track.m_parent, end_level, gt_track_id));
+					if (doLogReports)
+						logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
+							start_level, gt_track.m_parent, end_level, gt_track_id));
 				}
 			}
 
@@ -497,8 +502,9 @@ public class TRA
 				{
 					//... but there is no edge between them, that's an error
 					aogm += penalty.m_ea;
-					logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
-						start_level, gt_track_id, end_level, gt_track_id));
+					if (doLogReports)
+						logEA.add(String.format("[T=%d GT_label=%d] -> [T=%d GT_label=%d]",
+							start_level, gt_track_id, end_level, gt_track_id));
 				}
 			}
 		}
@@ -529,13 +535,17 @@ public class TRA
 		//DEBUG//log.info("Computing the TRA bottom part...");
 		aogm = 0.0;
 
-		logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
-		logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
-		logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
-		logED.add(String.format("----------Redundant Edges To Be Deleted (Penalty=%g)----------", penalty.m_ed));
-		logEA.add(String.format("----------Edges To Be Added (Penalty=%g)----------", penalty.m_ea));
-		logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
-		logMatch.add(String.format("----------Vertices Matching Status (No Penalty)----------", penalty.m_ns));
+		if (doLogReports)
+		{
+			logNS.add(String.format("----------Splitting Operations (Penalty=%g)----------", penalty.m_ns));
+			logFN.add(String.format("----------False Negative Vertices (Penalty=%g)----------", penalty.m_fn));
+			logFP.add(String.format("----------False Positive Vertices (Penalty=%g)----------", penalty.m_fp));
+			logED.add(String.format("----------Redundant Edges To Be Deleted (Penalty=%g)----------", penalty.m_ed));
+			logEA.add(String.format("----------Edges To Be Added (Penalty=%g)----------", penalty.m_ea));
+			logEC.add(String.format("----------Edges with Wrong Semantics (Penalty=%g)----------", penalty.m_ec));
+		}
+		if (doMatchingReports)
+			logMatch.add(String.format("----------Vertices Matching Status (No Penalty)----------", penalty.m_ns));
 
 		//shadows of the/short-cuts to the cache data
 		final HashMap<Integer,Track> gt_tracks  = cache.gt_tracks;
@@ -562,12 +572,15 @@ public class TRA
 				{
 					//no correspondence -> the gt label represents FN (false negative) case
 					aogm += penalty.m_fn;
-					logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
-					logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
+					if (doLogReports)
+						logFN.add(String.format("T=%d GT_label=%d",level.m_level,level.m_gt_lab[i]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d GT_label=%d matches none",level.m_level,level.m_gt_lab[i]));
 				}
 				else
 				{
-					logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d GT_label=%d matches %d",level.m_level,level.m_gt_lab[i], level.m_res_lab[level.m_gt_match[i]] ));
 				}
 			}
 
@@ -582,21 +595,28 @@ public class TRA
 				{
 					//no label -- too few
 					aogm += penalty.m_fp;
-					logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
-					logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
+					if (doLogReports)
+						logFP.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches nothing",level.m_level,level.m_res_lab[j]));
 				}
 				else if (num > 1)
 				{
 					//too many labels...
 					aogm += (num - 1) * penalty.m_ns;
-					for (int qq=1; qq < num; ++qq)
-						logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					if (doLogReports)
+					{
+						for (int qq=1; qq < num; ++qq)
+							logNS.add(String.format("T=%d Label=%d",level.m_level,level.m_res_lab[j]));
+					}
 					max_split = num > max_split ? num : max_split;
-					logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches multiple",level.m_level,level.m_res_lab[j]));
 				}
 				else //num == 1
 				{
-					logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
+					if (doMatchingReports)
+						logMatch.add(String.format("T=%d Label=%d matches exactly %d",level.m_level,level.m_res_lab[j], level.m_gt_lab[(int)level.m_res_match[j].toArray()[0]] ));
 				}
 			}
 		}
