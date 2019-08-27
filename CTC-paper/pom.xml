@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.scijava</groupId>
     <artifactId>pom-scijava</artifactId>
-    <version>25.0.0</version>
+    <version>27.0.1</version>
     <relativePath />
   </parent>
 
 
   <groupId>de.mpicbg.ulman</groupId>
   <artifactId>CTC-paper-FijiPlugins</artifactId>
-  <version>1.4.0</version>
+  <version>1.4.1</version>
 
 	<organization>
 		<name>MPI-CBG</name>
@@ -65,7 +65,7 @@
 
 	<scm>
 		<connection>scm:git:git://github.com/xulman/CTC-FijiPlugins</connection>
-		<developerConnection>scm:git:localhost:9999</developerConnection>
+		<developerConnection>scm:git:git://github.com/xulman/CTC-FijiPlugins</developerConnection>
 		<tag>HEAD</tag>
 		<url>https://github.com/xulman/CTC-FijiPlugins</url>
 	</scm>
@@ -78,6 +78,7 @@
 	</ciManagement>
 
 	<properties>
+		<package-name>de.mpicbg.ulman.ctc</package-name>
 		<license.licenseName>cc0</license.licenseName>
 		<license.copyrightOwners>N/A</license.copyrightOwners>
 		<license.projectName>CTC-FijiPlugins</license.projectName>
@@ -85,19 +86,31 @@
 
   <repositories>
     <repository>
-      <id>imagej.public</id>
-      <url>http://maven.imagej.net/content/groups/public</url>
+      <id>scijava.public</id>
+      <url>https://maven.scijava.org/content/groups/public</url>
     </repository>
   </repositories>
 
   <dependencies>
+    <!-- for reading/saving images -->
+    <dependency>
+      <groupId>sc.fiji</groupId>
+      <artifactId>simplified-io</artifactId>
+      <version>1.0.1</version>
+
+      <exclusions>
+        <exclusion>
+          <groupId>xalan</groupId>
+          <artifactId>xalan</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- to start and test plugins (from the ImageJ GUI) -->
     <dependency>
       <groupId>net.imagej</groupId>
       <artifactId>imagej</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.imagej</groupId>
-      <artifactId>imagej-legacy</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
