@@ -64,7 +64,7 @@ public class plugin_TRAmeasure implements Command
 	private boolean doLogReports = true;
 
 	@Parameter(label = "Verbose report on matching of segments:",
-		description = "Logs which res/GT segment maps onto which GT/res in the data.")
+		description = "Logs which RES/GT segment maps onto which GT/RES in the data.")
 	private boolean doMatchingReports = false;
 
 

@@ -86,7 +86,7 @@ public class plugin_AOGMmeasure implements Command
 	private boolean doLogReports = true;
 
 	@Parameter(label = "Verbose report on matching of segments:",
-		description = "Logs which res/GT segment maps onto which GT/res in the data.")
+		description = "Logs which RES/GT segment maps onto which GT/RES in the data.")
 	private boolean doMatchingReports = false;
 
 	@Parameter(label = "Do 1.0-min(AOGM,AOGM_empty)/AOGM_empty (TRA):",
