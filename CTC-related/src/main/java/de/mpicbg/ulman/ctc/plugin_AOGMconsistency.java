@@ -72,7 +72,7 @@ public class plugin_AOGMconsistency implements Command
 	public void run()
 	{
 		try {
-			log.info("RES path: "+resPath);
+			log.info("Input path: "+resPath);
 
 			final TrackDataCache cache = new TrackDataCache(log);
 			final TRA tra = new TRA(log);
@@ -88,22 +88,22 @@ public class plugin_AOGMconsistency implements Command
 				new File(String.format(inputNames[inputNamesChooser+1],resPath,time)).toPath()))
 			{
 				//read the image
-				Img<UnsignedShortType> res_img
+				Img<UnsignedShortType> img
 					= cache.ReadImageG16(String.format(inputNames[inputNamesChooser+1],resPath,time));
 
-				cache.ClassifyLabels(res_img, res_img, checkEmptyImages);
+				cache.ClassifyLabels(img, img, checkEmptyImages);
 				++time;
 
 				//to be on safe side (with memory)
-				res_img = null;
+				img = null;
 			}
 
 			if (cache.levels.size() == 0)
-				throw new IllegalArgumentException("No reference (GT) image was found!");
+				throw new IllegalArgumentException("No input image was found!");
 
 			consistent = true;
 			try {
-				tra.CheckConsistency(cache.levels, cache.res_tracks, false);
+				tra.CheckConsistency(cache.levels, cache.res_tracks, (inputNamesChooser == 2));
 			}
 			catch (IllegalArgumentException e)
 			{
