@@ -150,7 +150,7 @@ public class TRA
 	{
 		//a helper string for messaging
 		final String DS = isGTcheck? " GT " : " RES ";
-		log.info("Checking the"+DS+"data for consistency.");
+		log.info("Testing the"+DS+"data for consistency...");
 
 		//check that all tracks metadata (tracks) are sane and have a counterpart in the images (levels)
 		//therefore, over all tracks
@@ -161,6 +161,10 @@ public class TRA
 			   || track.m_end < 0 || track.m_end   >= levels.size())
 				throw new IllegalArgumentException("The"+DS+"track with label "
 					+track.m_id+" begins or ends outside the image sequence!");
+
+			if (track.m_end < track.m_begin)
+				throw new IllegalArgumentException("The"+DS+"track with label "
+					+track.m_id+" is declared to end before it begins!");
 
 			//check that we have located the track's label in the images in the whole track temporal span
 			for (int t = track.m_begin; t <= track.m_end; ++t)
