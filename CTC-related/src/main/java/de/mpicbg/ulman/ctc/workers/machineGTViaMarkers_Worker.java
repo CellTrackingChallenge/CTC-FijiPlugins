@@ -130,9 +130,6 @@ public class machineGTViaMarkers_Worker
 		if (markerImg instanceof ImgPlus)
 			markerImg = ((ImgPlus<UnsignedShortType>) markerImg).getImg();
 
-		//create an empty output image (of the same size and type as the markerImg)
-		Img<UnsignedShortType> outImg = markerImg.factory().create(markerImg);
-
 		//setup the debug image filename
 		/*
 		String newName = args[args.length-1];
@@ -143,11 +140,13 @@ public class machineGTViaMarkers_Worker
 
 		//NB: we have checked that images are of RealType<?> in the loading loop,
 		//    so we know we can cast to raw type to be able to call the combineGTs()
-		System.out.println("calling general convenience CombineGTsViaMarkers with threshold="+threshold);
+		System.out.println("calling CombineGTsViaMarkers with threshold="+threshold);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg);
 		//ops.images().combineGTsViaMarkers((Vector)inImgs, markerImg, threshold, outImg, newName);
 		myOps.setParams(inWeights, threshold, newName);
-		myOps.compute((Vector)inImgs, markerImg, outImg);
+
+		//obtain an output image (that happens to be of the same size and type as the markerImg)
+		Img<UnsignedShortType> outImg = myOps.compute((Vector)inImgs, markerImg);
 
 		log.info("Saving file: "+args[args.length-1]);
 		SimplifiedIO.saveImage(outImg, args[args.length-1]);

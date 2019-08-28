@@ -419,6 +419,8 @@ public class plugin_GTviaMarkers implements Command
 				if (uiService.isVisible()) frame.setVisible(true);
 			}
 
+			long ttime = System.currentTimeMillis();
+
 			//iterate over all jobs
 			int progresCnt = 0;
 			for (Integer idx : fileIdxList)
@@ -441,8 +443,15 @@ public class plugin_GTviaMarkers implements Command
 				for (; i < args.length; ++i)
 					log.info(i+": "+args[i]);
 
+
+				long time = System.currentTimeMillis();
 				Worker.work(args);
+				time -= System.currentTimeMillis();
+				System.out.println("ELAPSED TIME: "+(-time/1000)+" seconds");
 			}
+
+			ttime -= System.currentTimeMillis();
+			System.out.println("TOTAL ELAPSED TIME: "+(-ttime/1000)+" seconds");
 		}
 		catch (UnsupportedOperationException | ImgIOException e) {
 			log.error("plugin_GTviaMarkers error: "+e);

@@ -12,14 +12,11 @@ package de.mpicbg.ulman.ctc.workers;
 //import net.imagej.ops.Ops;
 //import net.imagej.ops.special.computer.AbstractBinaryComputerOp;
 
-import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.*;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
-import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.view.Views;
-import net.imglib2.FinalInterval;
-import net.imglib2.Cursor;
-import net.imglib2.RandomAccess;
+import net.imglib2.view.IntervalView;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -30,7 +27,6 @@ import org.scijava.plugin.Parameter;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgSaver;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.HashSet;
@@ -110,12 +106,9 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 //PUTBACK// 	@Override
 	public
-	void compute(final Collection<RandomAccessibleInterval<T>> inImgs,
-	             final Img<UnsignedShortType> markerImg,
-	             final Img<UnsignedShortType> outImg)
+	Img<UnsignedShortType> compute(final Vector<RandomAccessibleInterval<T>> inImgs,
+	                               final Img<UnsignedShortType> markerImg)
 	{
-		System.out.println("Default CombineGTsViaMarkers plug-in version");
-
 		if (inImgs.size() != inWeights.size())
 			throw new RuntimeException("Arrays with input images and weights are of different lengths.");
 
@@ -138,9 +131,8 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		//after merging, only voxels above this value are used to form the final mask
 		final float THRESHOLD = threshold;
 
-		//label for the voxels in the "collision area" of more labels
-		final int INTERSECTION = (int)outImg.firstElement().getMaxValue();
-
+		//special label for the voxels in the "collision area" of more labels
+		final int INTERSECTION = (int)markerImg.firstElement().getMaxValue();
 
 		//(bounded) accessing cursors to read/write values from images:
 		//first, determine maximal sweeping/accessing interval
@@ -150,28 +142,22 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		markerImg.max(maxBound);
 		final FinalInterval mInterval = new FinalInterval(minBound, maxBound);
 
-		//second, setup the (optimal) sweep iterators for the input images
-		final Vector<RandomAccess<T>> inCursors = new Vector<>(inImgs.size());
-		for (Iterator<RandomAccessibleInterval<T>> i = inImgs.iterator(); i.hasNext();  )
-			inCursors.add(i.next().randomAccess(mInterval));
-
-		//third, create a temporary image...
-		markerImg.dimensions(maxBound);
+		//create a temporary image (of the same iteration order as the markerImg)...
 		final Img<FloatType> tmpImg
-			= markerImg.factory().imgFactory(new FloatType()).create(maxBound);
+			= markerImg.factory().imgFactory(new FloatType()).create(markerImg);
 
 		//...and prepare its cursor
-		final RandomAccess<FloatType> tmpCursor = tmpImg.randomAccess(mInterval);
+		final Cursor<FloatType> tmpFICursor = Views.flatIterable( tmpImg ).cursor();
 
-		//finally, init the output image
-		final Cursor<UnsignedShortType> outCursor = outImg.localizingCursor();
-		while (outCursor.hasNext())
-			outCursor.next().setZero();
+		//finally, create the output image (of the same iteration order as the markerImg)...
+		final Img<UnsignedShortType> outImg
+			= markerImg.factory().create(markerImg);
 
+		//... and init it
+		final Cursor<UnsignedShortType> outFICursor = Views.flatIterable( outImg ).localizingCursor();
+		while (outFICursor.hasNext())
+			outFICursor.next().setZero();
 
-		//cursor to sweep over the marker image, and its "position vector"
-		final Cursor<UnsignedShortType> mCursor = markerImg.localizingCursor();
-		pos = new int[markerImg.numDimensions()];
 
 		//set to remember already discovered TRA markers
 		//(with initial capacity set for 100 markers)
@@ -190,11 +176,14 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		HashMap<Integer,Long> mCollidingVolume = new HashMap<>(100);
 		HashMap<Integer,Long> mNoCollidingVolume = new HashMap<>(100);
 
+		//also prepare the positions holding aux array
+		pos = new int[markerImg.numDimensions()];
+
 		//sweep over the marker image
+		final Cursor<UnsignedShortType> mCursor = markerImg.cursor();
 		while (mCursor.hasNext())
 		{
-			mCursor.next();
-			final int curMarker = mCursor.get().getInteger();
+			final int curMarker = mCursor.next().getInteger();
 
 			//scan for not yet observed markers (and ignore background values...)
 			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
@@ -214,18 +203,18 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 */
 				//the sweeping interval just around this marker
 				final Cursor<UnsignedShortType> mSubCursor
-					= Views.interval(markerImg, minBound,maxBound).localizingCursor();
+					= Views.interval(markerImg, minBound,maxBound).cursor();
 
 				//sweep over all input images
 				int noOfMatchingImages = 0;
-				for (int i = 0; i < inCursors.size(); ++i)
+				for (int i = 0; i < inImgs.size(); ++i)
 				{
-					//short-cut
-					final RandomAccess<T> inCursor = inCursors.get(i);
+					//sweeper of the same marker's geometry-restricted interval
+					final Cursor<T> inSubCursor = Views.interval(inImgs.get(i), minBound,maxBound).cursor();
 
 					//find the corresponding label in the input image
-					final float matchingLabel = findMatchingLabel(inCursor,
-						mSubCursor, curMarker, markerSizeRef);
+					final float matchingLabel = findMatchingLabel(inSubCursor,
+						mSubCursor.copyCursor(), curMarker, markerSizeRef);
 
 					//System.out.println(i+". image: found label "+matchingLabel);
 
@@ -237,23 +226,22 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 						//change the "adding constant" to the weight of this image
 						ONE.set(inWeights.get(i));
 
+						final Cursor<T> inCursor = Views.flatIterable( inImgs.get(i) ).cursor();
+						tmpFICursor.reset(); //NB: tmpFICursor is Views.flatIterable(tmpImg).cursor()
+						//NB: input and tmp images are guaranteed to have the same size
+                        //
 						//sweep the _entire_ input image and "copy" the bestLabel to the tmp image
-						//NB: output img drives sweeping (as it is the target to be filled)
-						outCursor.reset();
-						while (outCursor.hasNext())
+						while (inCursor.hasNext())
 						{
-							outCursor.next();
-							outCursor.localize(pos);
+							//advance and initiate the tmp image if we are processing the first input image
+							tmpFICursor.next();
+							if (noOfMatchingImages == 0) tmpFICursor.get().setZero();
 
-							//initiate the tmp image if we are processing the first input image 
-							tmpCursor.setPosition(pos);
-							if (noOfMatchingImages == 0) tmpCursor.get().setZero();
-
-							inCursor.setPosition(pos);
-							if (inCursor.get().getRealFloat() == matchingLabel)
+							//advance and search the input image...
+							if (inCursor.next().getRealFloat() == matchingLabel)
 							{
 								//found the label, "copy" it
-								tmpCursor.get().add(ONE);
+								tmpFICursor.get().add(ONE);
 							}
 						}
 
@@ -285,29 +273,27 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 				//now, threshold the tmp image (provided we have written there something
 				//at all) and store it with the appropriate label in the output image
-				outCursor.reset();
-				while (outCursor.hasNext() && noOfMatchingImages > 0)
+				outFICursor.reset();
+				tmpFICursor.reset();
+				while (outFICursor.hasNext() && noOfMatchingImages > 0)
 				{
-					outCursor.next();
-					outCursor.localize(pos);
-
-					tmpCursor.setPosition(pos);
-					if (tmpCursor.get().get() >= THRESHOLD)
+					outFICursor.next();
+					if (tmpFICursor.next().get() >= THRESHOLD)
 					{
 						//voxel to be inserted into the output final label mask
 						foundAtAll = true;
 
-						final int otherMarker = outCursor.get().getInteger();
+						final int otherMarker = outFICursor.get().getInteger();
 						if (otherMarker == 0)
 						{
 							//inserting into an unoccupied voxel
-							outCursor.get().set(curMarker);
+							outFICursor.get().set(curMarker);
 							mNoCollidingVolume.put(curMarker,mNoCollidingVolume.get(curMarker)+1);
 						}
 						else
 						{
 							//collision detected
-							outCursor.get().set(INTERSECTION);
+							outFICursor.get().set(INTERSECTION);
 							mCollidingVolume.put(curMarker,mCollidingVolume.get(curMarker)+1);
 							inCollision = true;
 
@@ -323,6 +309,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 						}
 
 						//check if we are at the image boundary
+						outFICursor.localize(pos);
 						for (int i = 0; i < pos.length && !atBorder; ++i)
 							if (pos[i] == mInterval.min(i) || pos[i] == mInterval.max(i))
 								atBorder = true;
@@ -410,28 +397,108 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		//jobs: remove border-touching cells
 		//jobs: remove colliding cells
 		//sweep the output image and do the jobs
-		outCursor.reset();
-		while (outCursor.hasNext())
+		outFICursor.reset();
+		while (outFICursor.hasNext())
 		{
-			final int label = outCursor.next().getInteger();
+			final int label = outFICursor.next().getInteger();
 			if (label == INTERSECTION)
 			{
-				outCursor.get().setZero();
+				outFICursor.get().setZero();
 				//System.out.println("cleaning: collision intersection");
 			}
 			else if (mColliding.contains(label))
 			{
-				outCursor.get().setZero();
+				outFICursor.get().setZero();
 				//System.out.println("cleaning: rest of a colliding marker");
 			}
 			else if (mBordering.contains(label))
 			{
-				outCursor.get().setZero();
+				outFICursor.get().setZero();
 				//System.out.println("cleaning: marker at boundary");
 			}
 		}
+		final int allMarkers = mDiscovered.size();
 
-		removeIsolatedIslands(outImg);
+		// --------- CCA analyses ---------
+		final Img<UnsignedShortType> ccaInImg  = outImg.factory().create(outImg); //copy of just one label
+		final Img<UnsignedShortType> ccaOutImg = outImg.factory().create(outImg); //result of CCA on this one label
+
+		mDiscovered.clear();
+		outFICursor.reset();
+		while (outFICursor.hasNext())
+		{
+			final int curMarker = outFICursor.next().getInteger();
+
+			//scan for not yet observed markers (and ignore background values...)
+			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
+			{
+				//found a new marker, determine its size and the AABB it spans
+				findAABB(outFICursor, minBound,maxBound);
+				final Interval ccaInterval = new FinalInterval(minBound, maxBound); //TODO: can't I be reusing the same Interval?
+
+				//copy out only this marker
+				final IntervalView<UnsignedShortType> ccaInView = Views.interval(ccaInImg,ccaInterval);
+				      Cursor<UnsignedShortType> ccaCursor = ccaInView.cursor();
+				final Cursor<UnsignedShortType> outCursor = Views.interval(outImg,ccaInterval).cursor();
+				while (ccaCursor.hasNext())
+				{
+					ccaCursor.next().set( outCursor.next().getInteger() == curMarker ? 1 : 0 );
+				}
+
+				//CCA on this View
+				final IntervalView<UnsignedShortType> ccaOutView = Views.interval(ccaOutImg,ccaInterval);
+				final int noOfLabels
+					= ConnectedComponents.labelAllConnectedComponents(ccaInView,ccaOutView, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);
+
+				//is there anything to change?
+				if (noOfLabels > 1)
+				{
+					System.out.println("CCA for marker "+curMarker+": choosing one from "+noOfLabels+" components");
+
+					//calculate sizes of the detected labels
+					final HashMap<Integer,Integer> hist = new HashMap<>(10);
+					ccaCursor = ccaOutView.cursor();
+					while (ccaCursor.hasNext())
+					{
+						final int curLabel = ccaCursor.next().getInteger();
+						if (curLabel == 0) continue; //skip over the background component
+						final Integer count = hist.get(curLabel);
+						hist.put(curLabel, count == null ? 1 : count+1 );
+					}
+
+					//find the  frequent pixel value (the largest label)
+					int largestCC = -1;
+					int largestSize = 0;
+					int totalSize = 0;
+					for (Integer lab : hist.keySet())
+					{
+						final int size = hist.get(lab);
+						if (size > largestSize)
+						{
+							largestSize = size;
+							largestCC   = lab;
+						}
+						totalSize += size;
+					}
+					System.out.println("CCA for marker "+curMarker+": chosen component no. "+largestCC+" which constitutes "
+					                   +(float)largestSize/(float)totalSize+" % of the original size");
+
+					//remove anything from the current marker that does not overlap with the largest CCA component
+					ccaCursor.reset();
+					outCursor.reset();
+					while (ccaCursor.hasNext())
+					{
+						ccaCursor.next();
+						if ( outCursor.next().getInteger() == curMarker && ccaCursor.get().getInteger() != largestCC )
+							outCursor.get().setZero();
+					}
+				}
+
+				//finally, mark we have processed this marker
+				mDiscovered.add(curMarker);
+			}
+		}
+		// --------- CCA analyses ---------
 
 		//report details of colliding markers:
 		System.out.println("reporting colliding markers:");
@@ -455,7 +522,6 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		                  +collHistogram[10]+" times");
 
 		//also some per image report:
-		final int allMarkers = mDiscovered.size();
 		final int okMarkers = allMarkers - mNoMatches.size() - mBordering.size() - mColliding.size();
 		System.out.println("not found markers    = "+mNoMatches.size()
 			+" = "+ 100.0f*(float)mNoMatches.size()/(float)allMarkers +" %");
@@ -474,19 +540,18 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 			//TODO: accumulate numbers of how many times submitting of TRA label
 			//would overwrite existing label in the output image, and report it
-			outCursor.reset();
-			while (outCursor.hasNext())
+			outFICursor.reset();
+			mCursor.reset();
+			while (outFICursor.hasNext())
 			{
-				final int outLabel = outCursor.next().getInteger();
-
-				outCursor.localize(pos);
-				tCursor.setPosition(pos);
-
-				final int traLabel = tCursor.get().getInteger();
+				final int outLabel = outFICursor.next().getInteger();
+				final int traLabel = mCursor.next().getInteger();
 				if (outLabel == 0 && (mColliding.contains(traLabel) || mNoMatches.contains(traLabel)))
-					outCursor.get().set(traLabel);
+					outFICursor.get().set(traLabel);
 			}
 		}
+
+		return outImg;
 	}
 	
 	
@@ -548,35 +613,35 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	 * (provided also it occurs more than half of the marker size \e inMarkerSize).
 	 * The functions returns -1 if no such label is found.
 	 *
-	 * @param inCursor		Accessor to the input image (whose label is to be returned)
+	 * @param inCursor		Sweeper of the input image (whose label is to be returned)
 	 * @param mSubCursor	Sweeper of the input marker image
 	 * @param inMarker		Marker (from the input marker image) in question...
 	 * @param inMarkerSize	...and number of voxels it spans over
 	 */
 	private
-	float findMatchingLabel(final RandomAccess<T> inCursor,
+	float findMatchingLabel(final Cursor<T> inCursor,
 	                        final Cursor<UnsignedShortType> mSubCursor,
 	                        final int inMarker,
 	                        final long inMarkerSize)
 	{
 		//keep frequencies of labels discovered across the marker volume
-		HashMap<Float,Integer> labelCounter = new HashMap<Float,Integer>();
+		HashMap<Float,Integer> labelCounter = new HashMap<>();
 		Integer count = null;
 
 		//find relevant label(s), if any
-		Cursor<UnsignedShortType> c = mSubCursor.copyCursor();
-		while (c.hasNext())
+		while (mSubCursor.hasNext())
 		{
-			//are we over the original marker in the marker image?
-			if (c.next().getInteger() == inMarker)
+			//advance both cursors in synchrony
+			inCursor.next();
+			if (mSubCursor.next().getInteger() == inMarker)
 			{
-				//yes, we are... check what value is in the input image
-				c.localize(pos);
-				inCursor.setPosition(pos);
+				//we are over the original marker in the marker image,
+				//check what value is in the input image
+				final float inVal = inCursor.get().getRealFloat();
 
-				//update the counter of found values
-				count = labelCounter.get(inCursor.get().getRealFloat()); 
-				labelCounter.put(inCursor.get().getRealFloat(), count == null ? 1 : count+1);
+				//and update the counter of found values
+				count = labelCounter.get(inVal);
+				labelCounter.put(inVal, count == null ? 1 : count+1);
 			}
 		}
 
@@ -596,7 +661,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//check if the most frequent one also spans at least half
 		//of the input marker volume
-		return ( (2*count > inMarkerSize)? bestLabel : -1);
+		return ( (2*count > inMarkerSize)? bestLabel : -1 );
 	}
 	
 	//temporary buffer for position handling, shared between functions overhere
@@ -612,14 +677,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		ImgLabeling<Integer, O> lImg = new ImgLabeling<>(inImg.factory().create(inImg));
 
 		//this "translates" discovered labels into the lImg -- the labeling map
-		Cursor<LabelingType<Integer>> out = lImg.cursor();
-		RandomAccess<O> in = inImg.randomAccess();
-		while( out.hasNext() )
-		{
-			LabelingType<Integer> labels = out.next();
-			in.setPosition(out);
-			labels.add( in.get().getInteger() );
-		}
+		LoopBuilder.setImages(inImg, lImg).forEachPixel( (i,l) -> l.add(i.getInteger()) );
 
 		final int noComponents = lImg.getMapping().numSets()-2;		// get the number of detected components
 		int total_removed = 0;    // stores the number of removed components from the input image
@@ -675,6 +733,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			ra.setPosition(singlecc);		// access position that holds the desired pixel value
 			singlerr.get().setInteger(ra.get().getInteger());	// get the pixel value from the input image and copy it to the subimage 
 		}
+
+		/*
+		final Img<O> singlelabelImg = input.factory().create(region);
+		LoopBuilder.setImages(region, Views.interval(input,region), singlelabelImg).forEachPixel( (r,i,o) -> o.setInteger(i.getInteger()) );
+		*/
 		return singlelabelImg;
 	}
 
