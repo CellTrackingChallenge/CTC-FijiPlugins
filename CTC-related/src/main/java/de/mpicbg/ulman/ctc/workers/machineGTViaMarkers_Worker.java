@@ -112,7 +112,12 @@ public class machineGTViaMarkers_Worker
 			//all is fine, add this one into the input list
 			if (i < inputImagesCount) inImgs.add(img);
 			//or, if loading the last image, remember it as the marker image
-			else markerImg = (Img<UnsignedShortType>)img;
+			else
+			{
+				if (!(img.firstElement() instanceof UnsignedShortType))
+					throw new RuntimeException("Markers must be stored in 16bits gray image.");
+				markerImg = (Img<UnsignedShortType>)img;
+			}
 
 			//also parse and store the weight
 			if (i < inputImagesCount)
