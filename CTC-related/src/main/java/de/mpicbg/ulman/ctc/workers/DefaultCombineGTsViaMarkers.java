@@ -509,13 +509,16 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		final long[] pos = new long[minBound.length];
 
 		//init the output variables
-		long size = 1; //there is already a pixel at mCursor
+		long size = 0; //nothing seen yet since we reset() below
 		mCursor.localize(minBound); //BB spans this one pixel yet
 		mCursor.localize(maxBound);
 
 		//working copy of the input cursor
 		final Cursor<UnsignedShortType> cursor = mCursor.copyCursor();
-		
+		cursor.reset();
+		//NB: for some reason we cannot continue from the mCursor's place, in which case
+		//the cursor does not see the original image content (until we cursor.reset() it)
+
 		//scan the rest of the image
 		while (cursor.hasNext())
 		{
