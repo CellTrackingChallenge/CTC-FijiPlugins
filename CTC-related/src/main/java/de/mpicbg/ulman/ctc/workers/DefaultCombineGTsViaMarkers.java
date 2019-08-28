@@ -469,6 +469,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					//find the  frequent pixel value (the largest label)
 					int largestCC = -1;
 					int largestSize = 0;
+					int totalSize = 0;
 					for (Integer lab : hist.keySet())
 					{
 						final int size = hist.get(lab);
@@ -477,7 +478,10 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 							largestSize = size;
 							largestCC   = lab;
 						}
+						totalSize += size;
 					}
+					System.out.println("CCA for marker "+curMarker+": chosen component no. "+largestCC+" which constitutes "
+					                   +(float)largestSize/(float)totalSize+" % of the original size");
 
 					//remove anything from the current marker that does not overlap with the largest CCA component
 					ccaCursor.reset();
