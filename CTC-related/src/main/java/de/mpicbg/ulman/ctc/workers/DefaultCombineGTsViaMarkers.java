@@ -16,6 +16,7 @@ import net.imglib2.*;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.view.Views;
+import net.imglib2.view.IntervalView;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -418,8 +419,82 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		}
 		final int allMarkers = mDiscovered.size();
 
+		// --------- CCA analyses ---------
+		final Img<UnsignedShortType> ccaInImg  = outImg.factory().create(outImg); //copy of just one label
+		final Img<UnsignedShortType> ccaOutImg = outImg.factory().create(outImg); //result of CCA on this one label
 
-		removeIsolatedIslands(outImg);
+		mDiscovered.clear();
+		outFICursor.reset();
+		while (outFICursor.hasNext())
+		{
+			final int curMarker = outFICursor.next().getInteger();
+
+			//scan for not yet observed markers (and ignore background values...)
+			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
+			{
+				//found a new marker, determine its size and the AABB it spans
+				findAABB(outFICursor, minBound,maxBound);
+				final Interval ccaInterval = new FinalInterval(minBound, maxBound); //TODO: can't I be reusing the same Interval?
+
+				//copy out only this marker
+				final IntervalView<UnsignedShortType> ccaInView = Views.interval(ccaInImg,ccaInterval);
+				      Cursor<UnsignedShortType> ccaCursor = ccaInView.cursor();
+				final Cursor<UnsignedShortType> outCursor = Views.interval(outImg,ccaInterval).cursor();
+				while (ccaCursor.hasNext())
+				{
+					ccaCursor.next().set( outCursor.next().getInteger() == curMarker ? 1 : 0 );
+				}
+
+				//CCA on this View
+				final IntervalView<UnsignedShortType> ccaOutView = Views.interval(ccaOutImg,ccaInterval);
+				final int noOfLabels
+					= ConnectedComponents.labelAllConnectedComponents(ccaInView,ccaOutView, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);
+
+				//is there anything to change?
+				if (noOfLabels > 1)
+				{
+					System.out.println("CCA for marker "+curMarker+": choosing one from "+noOfLabels+" components");
+
+					//calculate sizes of the detected labels
+					final HashMap<Integer,Integer> hist = new HashMap<>(10);
+					ccaCursor = ccaOutView.cursor();
+					while (ccaCursor.hasNext())
+					{
+						final int curLabel = ccaCursor.next().getInteger();
+						if (curLabel == 0) continue; //skip over the background component
+						final Integer count = hist.get(curLabel);
+						hist.put(curLabel, count == null ? 1 : count+1 );
+					}
+
+					//find the  frequent pixel value (the largest label)
+					int largestCC = -1;
+					int largestSize = 0;
+					for (Integer lab : hist.keySet())
+					{
+						final int size = hist.get(lab);
+						if (size > largestSize)
+						{
+							largestSize = size;
+							largestCC   = lab;
+						}
+					}
+
+					//remove anything from the current marker that does not overlap with the largest CCA component
+					ccaCursor.reset();
+					outCursor.reset();
+					while (ccaCursor.hasNext())
+					{
+						ccaCursor.next();
+						if ( outCursor.next().getInteger() == curMarker && ccaCursor.get().getInteger() != largestCC )
+							outCursor.get().setZero();
+					}
+				}
+
+				//finally, mark we have processed this marker
+				mDiscovered.add(curMarker);
+			}
+		}
+		// --------- CCA analyses ---------
 
 		//report details of colliding markers:
 		System.out.println("reporting colliding markers:");
