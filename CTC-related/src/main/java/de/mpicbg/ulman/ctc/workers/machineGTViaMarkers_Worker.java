@@ -62,18 +62,16 @@ public class machineGTViaMarkers_Worker
 		final int inputImagesCount = (args.length-3) / 2;
 
 		//container to store the input images
-		final Vector<RandomAccessibleInterval<?>> inImgs
-			= new Vector<RandomAccessibleInterval<?>>(inputImagesCount);
+		final Vector<RandomAccessibleInterval<?>> inImgs = new Vector<>(inputImagesCount);
 
 		//container to store the input weights
-		final Vector<Float> inWeights
-			= new Vector<Float>(inputImagesCount);
+		final Vector<Float> inWeights = new Vector<>(inputImagesCount);
 
 		//marker image
 		Img<UnsignedShortType> markerImg = null;
 
 		//now, try to load the input images
-		ImgPlus<?> img = null;
+		Img<?> img = null;
 		Object firstImgVoxelType = null;
 		String firstImgVoxelTypeString = null;
 
@@ -112,7 +110,12 @@ public class machineGTViaMarkers_Worker
 			//all is fine, add this one into the input list
 			if (i < inputImagesCount) inImgs.add(img);
 			//or, if loading the last image, remember it as the marker image
-			else markerImg = (Img<UnsignedShortType>)img;
+			else
+			{
+				if (!(img.firstElement() instanceof UnsignedShortType))
+					throw new RuntimeException("Markers must be stored in 16bits gray image.");
+				markerImg = (Img<UnsignedShortType>)img;
+			}
 
 			//also parse and store the weight
 			if (i < inputImagesCount)
@@ -122,9 +125,13 @@ public class machineGTViaMarkers_Worker
 		//parse threshold value
 		final float threshold = Float.parseFloat(args[args.length-2]);
 
+		//since the simplifiedIO() returns actually always ImgPlus,
+		//we better strip away the "plus" extras to make it pure Img<>
+		if (markerImg instanceof ImgPlus)
+			markerImg = ((ImgPlus<UnsignedShortType>) markerImg).getImg();
+
 		//create an empty output image (of the same size and type as the markerImg)
-		ImgPlus<UnsignedShortType> outImg
-			= new ImgPlus<>( markerImg.factory().create(markerImg) );
+		Img<UnsignedShortType> outImg = markerImg.factory().create(markerImg);
 
 		//setup the debug image filename
 		/*

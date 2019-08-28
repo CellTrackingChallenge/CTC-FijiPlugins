@@ -151,18 +151,17 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		final FinalInterval mInterval = new FinalInterval(minBound, maxBound);
 
 		//second, setup the (optimal) sweep iterators for the input images
-		final Vector<RandomAccess<T>> inCursors = new Vector<RandomAccess<T>>(inImgs.size());
+		final Vector<RandomAccess<T>> inCursors = new Vector<>(inImgs.size());
 		for (Iterator<RandomAccessibleInterval<T>> i = inImgs.iterator(); i.hasNext();  )
 			inCursors.add(i.next().randomAccess(mInterval));
 
 		//third, create a temporary image...
 		markerImg.dimensions(maxBound);
 		final Img<FloatType> tmpImg
-			= (new ArrayImgFactory<>(new FloatType())).create(maxBound);
+			= markerImg.factory().imgFactory(new FloatType()).create(maxBound);
 
 		//...and prepare its cursor
-		final RandomAccess<FloatType> tmpCursor
-			= tmpImg.randomAccess(mInterval);
+		final RandomAccess<FloatType> tmpCursor = tmpImg.randomAccess(mInterval);
 
 		//finally, init the output image
 		final Cursor<UnsignedShortType> outCursor = outImg.localizingCursor();
@@ -176,20 +175,20 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//set to remember already discovered TRA markers
 		//(with initial capacity set for 100 markers)
-		HashSet<Integer> mDiscovered = new HashSet<Integer>(100);
+		HashSet<Integer> mDiscovered = new HashSet<>(100);
 		//of these, the following markers were processed but will be removed...
-		HashSet<Integer> mColliding = new HashSet<Integer>(100);
-		HashSet<Integer> mBordering = new HashSet<Integer>(100);
+		HashSet<Integer> mColliding = new HashSet<>(100);
+		HashSet<Integer> mBordering = new HashSet<>(100);
 		//of these, no counterparts were found for these markers
-		HashSet<Integer> mNoMatches = new HashSet<Integer>(100);
+		HashSet<Integer> mNoMatches = new HashSet<>(100);
 
 		//markers with which the current one is in collision
-		HashSet<Integer> localColliders = new HashSet<Integer>(100);
+		HashSet<Integer> localColliders = new HashSet<>(100);
 
 		//number of colliding and non-colliding voxels per marker
 		//NB: used to determine portion of the colliding volume
-		HashMap<Integer,Long> mCollidingVolume = new HashMap<Integer,Long>(100);
-		HashMap<Integer,Long> mNoCollidingVolume = new HashMap<Integer,Long>(100);
+		HashMap<Integer,Long> mCollidingVolume = new HashMap<>(100);
+		HashMap<Integer,Long> mNoCollidingVolume = new HashMap<>(100);
 
 		//sweep over the marker image
 		while (mCursor.hasNext())
@@ -201,8 +200,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
 			{
 				//found a new marker, determine its size and the AABB it spans
-				long[] markerSizeRef = new long[1]; //to "obtain call by name"
-				findAABB(mCursor, minBound,maxBound, markerSizeRef);
+				final long markerSizeRef = findAABB(mCursor, minBound,maxBound);
 /*
 				//report detected markers just for debug
 				System.out.print("marker "+mCursor.get().getInteger()+": lower corner: (");
@@ -212,7 +210,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 				System.out.print("marker "+mCursor.get().getInteger()+": upper corner: (");
 				for (int d=0; d < maxBound.length-1; ++d)
 					System.out.print(maxBound[d]+",");
-				System.out.println(maxBound[maxBound.length-1]+"), size="+markerSizeRef[0]);
+				System.out.println(maxBound[maxBound.length-1]+"), size="+markerSizeRef);
 */
 				//the sweeping interval just around this marker
 				final Cursor<UnsignedShortType> mSubCursor
@@ -227,7 +225,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 					//find the corresponding label in the input image
 					final float matchingLabel = findMatchingLabel(inCursor,
-						mSubCursor, curMarker, markerSizeRef[0]);
+						mSubCursor, curMarker, markerSizeRef);
 
 					//System.out.println(i+". image: found label "+matchingLabel);
 
@@ -500,25 +498,27 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	 * @param mCursor	Position of the first occurence of the marker (will not be changed)
 	 * @param minBound	output "lower-left" corner of the box (must be preallocated)
 	 * @param maxBound	output "upper-right" corner of the box (must be preallocated)
-	 * @param maxBound	output number of voxels occupied by this marker
+	 * @return number of voxels occupied by this marker
 	 */
 	private
-	void findAABB(final Cursor<UnsignedShortType> mCursor,
-	              final long[] minBound, final long[] maxBound,
-	              final long[] mSize)
+	long findAABB(final Cursor<UnsignedShortType> mCursor,
+	              final long[] minBound, final long[] maxBound)
 	{
 		//time-saver: the marker we search for, and the current position array
 		final int marker = mCursor.get().getInteger();
 		final long[] pos = new long[minBound.length];
 
 		//init the output variables
-		long size = 1; //there is already a pixel at mCursor
+		long size = 0; //nothing seen yet since we reset() below
 		mCursor.localize(minBound); //BB spans this one pixel yet
 		mCursor.localize(maxBound);
 
 		//working copy of the input cursor
 		final Cursor<UnsignedShortType> cursor = mCursor.copyCursor();
-		
+		cursor.reset();
+		//NB: for some reason we cannot continue from the mCursor's place, in which case
+		//the cursor does not see the original image content (until we cursor.reset() it)
+
 		//scan the rest of the image
 		while (cursor.hasNext())
 		{
@@ -536,7 +536,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			}
 		}
 		
-		mSize[0] = size;
+		return size;
 	}
 
 
