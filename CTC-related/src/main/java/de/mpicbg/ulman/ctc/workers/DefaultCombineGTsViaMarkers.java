@@ -445,8 +445,13 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 					ccaCursor.next().set( outCursor.next().getInteger() == curMarker ? 1 : 0 );
 				}
 
-				//CCA on this View
+				//CCA to this View
 				final IntervalView<UnsignedShortType> ccaOutView = Views.interval(ccaOutImg,ccaInterval);
+				//since the View comes from one shared large image, there might results of CCA for other markers,
+				//we better clear it before (so that the CCA function cannot be fooled by some previous result)
+				ccaCursor = ccaOutView.cursor();
+				while (ccaCursor.hasNext()) ccaCursor.next().setZero();
+
 				final int noOfLabels
 					= ConnectedComponents.labelAllConnectedComponents(ccaInView,ccaOutView, ConnectedComponents.StructuringElement.EIGHT_CONNECTED);
 
@@ -457,7 +462,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 					//calculate sizes of the detected labels
 					final HashMap<Integer,Integer> hist = new HashMap<>(10);
-					ccaCursor = ccaOutView.cursor();
+					ccaCursor.reset();
 					while (ccaCursor.hasNext())
 					{
 						final int curLabel = ccaCursor.next().getInteger();
