@@ -161,8 +161,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			= markerImg.factory().imgFactory(new FloatType()).create(maxBound);
 
 		//...and prepare its cursor
-		final RandomAccess<FloatType> tmpCursor
-			= tmpImg.randomAccess(mInterval);
+		final RandomAccess<FloatType> tmpCursor = tmpImg.randomAccess(mInterval);
 
 		//finally, init the output image
 		final Cursor<UnsignedShortType> outCursor = outImg.localizingCursor();
@@ -201,8 +200,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			if ( curMarker > 0 && (!mDiscovered.contains(curMarker)) )
 			{
 				//found a new marker, determine its size and the AABB it spans
-				long[] markerSizeRef = new long[1]; //to "obtain call by name"
-				findAABB(mCursor, minBound,maxBound, markerSizeRef);
+				final long markerSizeRef = findAABB(mCursor, minBound,maxBound);
 /*
 				//report detected markers just for debug
 				System.out.print("marker "+mCursor.get().getInteger()+": lower corner: (");
@@ -212,7 +210,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 				System.out.print("marker "+mCursor.get().getInteger()+": upper corner: (");
 				for (int d=0; d < maxBound.length-1; ++d)
 					System.out.print(maxBound[d]+",");
-				System.out.println(maxBound[maxBound.length-1]+"), size="+markerSizeRef[0]);
+				System.out.println(maxBound[maxBound.length-1]+"), size="+markerSizeRef);
 */
 				//the sweeping interval just around this marker
 				final Cursor<UnsignedShortType> mSubCursor
@@ -227,7 +225,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 					//find the corresponding label in the input image
 					final float matchingLabel = findMatchingLabel(inCursor,
-						mSubCursor, curMarker, markerSizeRef[0]);
+						mSubCursor, curMarker, markerSizeRef);
 
 					//System.out.println(i+". image: found label "+matchingLabel);
 
@@ -500,12 +498,11 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 	 * @param mCursor	Position of the first occurence of the marker (will not be changed)
 	 * @param minBound	output "lower-left" corner of the box (must be preallocated)
 	 * @param maxBound	output "upper-right" corner of the box (must be preallocated)
-	 * @param maxBound	output number of voxels occupied by this marker
+	 * @return number of voxels occupied by this marker
 	 */
 	private
-	void findAABB(final Cursor<UnsignedShortType> mCursor,
-	              final long[] minBound, final long[] maxBound,
-	              final long[] mSize)
+	long findAABB(final Cursor<UnsignedShortType> mCursor,
+	              final long[] minBound, final long[] maxBound)
 	{
 		//time-saver: the marker we search for, and the current position array
 		final int marker = mCursor.get().getInteger();
@@ -536,7 +533,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 			}
 		}
 		
-		mSize[0] = size;
+		return size;
 	}
 
 
