@@ -1,29 +1,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.scijava</groupId>
-    <artifactId>pom-scijava</artifactId>
-    <version>27.0.1</version>
-  </parent>
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>27.0.1</version>
+	</parent>
 
 
-  <groupId>de.mpicbg.ulman</groupId>
-  <artifactId>CTC-FijiPlugins</artifactId>
-  <version>1.4.1</version>
+	<groupId>de.mpicbg.ulman</groupId>
+	<artifactId>CTC-FijiPlugins</artifactId>
+	<version>1.4.2</version>
 
 	<organization>
 		<name>MPI-CBG</name>
 		<url>http://www.mpi-cbg.de</url>
 	</organization>
 
-  <name>CTC FijiPlugins</name>
-  <description>Implementation of measures and front-end plugins related to the CTC paper.</description>
-  <url>https://github.com/xulman/CTC-FijiPlugins</url>
-  <inceptionYear>2017</inceptionYear>
+	<name>CTC FijiPlugins</name>
+	<description>Implementation of measures and front-end plugins related to the CTC paper.</description>
+	<url>https://github.com/xulman/CTC-FijiPlugins</url>
+	<inceptionYear>2017</inceptionYear>
 
-  <packaging>pom</packaging>
+	<packaging>pom</packaging>
 	<licenses>
 		<license>
 			<name>CC0 1.0 Universal License</name>

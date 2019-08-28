@@ -1,30 +1,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.scijava</groupId>
-    <artifactId>pom-scijava</artifactId>
-    <version>27.0.1</version>
-    <relativePath />
-  </parent>
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>27.0.1</version>
+		<relativePath />
+	</parent>
 
 
-  <groupId>de.mpicbg.ulman</groupId>
-  <artifactId>CTC-paper-FijiPlugins</artifactId>
-  <version>1.4.1</version>
+	<groupId>de.mpicbg.ulman</groupId>
+	<artifactId>CTC-paper-FijiPlugins</artifactId>
+	<version>1.4.2</version>
 
 	<organization>
 		<name>MPI-CBG</name>
 		<url>http://www.mpi-cbg.de</url>
 	</organization>
 
-  <name>CTC-paper FijiPlugins</name>
-  <description>Implementation of measures and front-end plugins directly used in the CTC paper.</description>
-  <url>https://github.com/xulman/CTC-FijiPlugins</url>
-  <inceptionYear>2017</inceptionYear>
+	<name>CTC-paper FijiPlugins</name>
+	<description>Implementation of measures and front-end plugins directly used in the CTC paper.</description>
+	<url>https://github.com/xulman/CTC-FijiPlugins</url>
+	<inceptionYear>2017</inceptionYear>
 
-  <packaging>jar</packaging>
+	<packaging>jar</packaging>
 	<licenses>
 		<license>
 			<name>CC0 1.0 Universal License</name>
@@ -84,33 +84,33 @@
 		<license.projectName>CTC-FijiPlugins</license.projectName>
 	</properties>
 
-  <repositories>
-    <repository>
-      <id>scijava.public</id>
-      <url>https://maven.scijava.org/content/groups/public</url>
-    </repository>
-  </repositories>
+	<repositories>
+		<repository>
+			<id>scijava.public</id>
+			<url>https://maven.scijava.org/content/groups/public</url>
+		</repository>
+	</repositories>
 
-  <dependencies>
-    <!-- for reading/saving images -->
-    <dependency>
-      <groupId>sc.fiji</groupId>
-      <artifactId>simplified-io</artifactId>
-      <version>1.0.1</version>
+	<dependencies>
+		<!-- for reading/saving images -->
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>simplified-io</artifactId>
+			<version>1.0.1</version>
 
-      <exclusions>
-        <exclusion>
-          <groupId>xalan</groupId>
-          <artifactId>xalan</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+			<exclusions>
+				<exclusion>
+					<groupId>xalan</groupId>
+					<artifactId>xalan</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 
-    <!-- to start and test plugins (from the ImageJ GUI) -->
-    <dependency>
-      <groupId>net.imagej</groupId>
-      <artifactId>imagej</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+		<!-- to start and test plugins (from the ImageJ GUI) -->
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 </project>
