@@ -151,7 +151,7 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 		final FinalInterval mInterval = new FinalInterval(minBound, maxBound);
 
 		//second, setup the (optimal) sweep iterators for the input images
-		final Vector<RandomAccess<T>> inCursors = new Vector<RandomAccess<T>>(inImgs.size());
+		final Vector<RandomAccess<T>> inCursors = new Vector<>(inImgs.size());
 		for (Iterator<RandomAccessibleInterval<T>> i = inImgs.iterator(); i.hasNext();  )
 			inCursors.add(i.next().randomAccess(mInterval));
 
@@ -176,20 +176,20 @@ public class DefaultCombineGTsViaMarkers<T extends RealType<T>>
 
 		//set to remember already discovered TRA markers
 		//(with initial capacity set for 100 markers)
-		HashSet<Integer> mDiscovered = new HashSet<Integer>(100);
+		HashSet<Integer> mDiscovered = new HashSet<>(100);
 		//of these, the following markers were processed but will be removed...
-		HashSet<Integer> mColliding = new HashSet<Integer>(100);
-		HashSet<Integer> mBordering = new HashSet<Integer>(100);
+		HashSet<Integer> mColliding = new HashSet<>(100);
+		HashSet<Integer> mBordering = new HashSet<>(100);
 		//of these, no counterparts were found for these markers
-		HashSet<Integer> mNoMatches = new HashSet<Integer>(100);
+		HashSet<Integer> mNoMatches = new HashSet<>(100);
 
 		//markers with which the current one is in collision
-		HashSet<Integer> localColliders = new HashSet<Integer>(100);
+		HashSet<Integer> localColliders = new HashSet<>(100);
 
 		//number of colliding and non-colliding voxels per marker
 		//NB: used to determine portion of the colliding volume
-		HashMap<Integer,Long> mCollidingVolume = new HashMap<Integer,Long>(100);
-		HashMap<Integer,Long> mNoCollidingVolume = new HashMap<Integer,Long>(100);
+		HashMap<Integer,Long> mCollidingVolume = new HashMap<>(100);
+		HashMap<Integer,Long> mNoCollidingVolume = new HashMap<>(100);
 
 		//sweep over the marker image
 		while (mCursor.hasNext())

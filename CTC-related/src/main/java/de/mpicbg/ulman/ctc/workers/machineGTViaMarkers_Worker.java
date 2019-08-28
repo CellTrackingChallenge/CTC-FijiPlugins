@@ -62,12 +62,10 @@ public class machineGTViaMarkers_Worker
 		final int inputImagesCount = (args.length-3) / 2;
 
 		//container to store the input images
-		final Vector<RandomAccessibleInterval<?>> inImgs
-			= new Vector<RandomAccessibleInterval<?>>(inputImagesCount);
+		final Vector<RandomAccessibleInterval<?>> inImgs = new Vector<>(inputImagesCount);
 
 		//container to store the input weights
-		final Vector<Float> inWeights
-			= new Vector<Float>(inputImagesCount);
+		final Vector<Float> inWeights = new Vector<>(inputImagesCount);
 
 		//marker image
 		Img<UnsignedShortType> markerImg = null;
