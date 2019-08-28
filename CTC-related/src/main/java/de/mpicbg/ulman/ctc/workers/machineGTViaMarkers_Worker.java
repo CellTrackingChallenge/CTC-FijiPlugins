@@ -73,7 +73,7 @@ public class machineGTViaMarkers_Worker
 		Img<UnsignedShortType> markerImg = null;
 
 		//now, try to load the input images
-		ImgPlus<?> img = null;
+		Img<?> img = null;
 		Object firstImgVoxelType = null;
 		String firstImgVoxelTypeString = null;
 
@@ -122,9 +122,13 @@ public class machineGTViaMarkers_Worker
 		//parse threshold value
 		final float threshold = Float.parseFloat(args[args.length-2]);
 
+		//since the simplifiedIO() returns actually always ImgPlus,
+		//we better strip away the "plus" extras to make it pure Img<>
+		if (markerImg instanceof ImgPlus)
+			markerImg = ((ImgPlus<UnsignedShortType>) markerImg).getImg();
+
 		//create an empty output image (of the same size and type as the markerImg)
-		ImgPlus<UnsignedShortType> outImg
-			= new ImgPlus<>( markerImg.factory().create(markerImg) );
+		Img<UnsignedShortType> outImg = markerImg.factory().create(markerImg);
 
 		//setup the debug image filename
 		/*
