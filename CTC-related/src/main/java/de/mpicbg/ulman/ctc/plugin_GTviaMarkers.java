@@ -85,11 +85,11 @@ public class plugin_GTviaMarkers implements Command
 
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String fileInfoE =
-		 "The filename pattern is a full path to a file that includes XXX where "
+		 "The filename pattern is a full path to a file that includes XXX or XXXX where "
 		+"numbers should be substituted.";
 
 	@Parameter(label = "Job file:", style = FileWidget.OPEN_STYLE,
-		description = "Please, make sure that file contains filenames with XXX included.",
+		description = "Please, make sure that file contains filenames with XXX or XXXX included.",
 		callback = "inFileOKAY")
 	private File filePath;
 
@@ -103,7 +103,7 @@ public class plugin_GTviaMarkers implements Command
 	private String fileIdxStr = "0-9";
 
 	@Parameter(label = "Output filename pattern:", style = FileWidget.SAVE_STYLE,
-		description = "Please, don't forget to include XXX into the filename.",
+		description = "Please, don't forget to include XXX or XXXX into the filename.",
 		callback = "outFileOKAY")
 	private File outputPath = new File("CHANGE THIS PATH/mergedXXX.tif");
 
@@ -183,10 +183,17 @@ public class plugin_GTviaMarkers implements Command
 	{
 		//check the pattern
 		final String name = outputPath.getName();
-		if (name != null && (name.lastIndexOf("X") - name.indexOf("X")) != 2)
+		if (name == null)
 		{
-			log.warn("Filename \""+name+"\" does not contain XXX pattern.");
-			statusService.showStatus("Filename \""+name+"\" does not contain XXX pattern.");
+			log.warn("No output filename is given.");
+			statusService.showStatus("No output filename is given.");
+			return false;
+		}
+		//does it contain "XXX" and the number of X's is 3 or 4?
+		if (name.indexOf("XXX") == -1 || ( (name.lastIndexOf("XXX") - name.indexOf("XXX")) > 1 ))
+		{
+			log.warn("Filename \""+name+"\" does not contain XXX or XXXX pattern.");
+			statusService.showStatus("Filename \""+name+"\" does not contain XXX or XXXX pattern.");
 			return false;
 		}
 
@@ -199,8 +206,8 @@ public class plugin_GTviaMarkers implements Command
 			return false;
 		}
 
-		log.info("Filename contains XXX pattern, parent folder exists, all good.");
-		statusService.showStatus("Filename contains XXX pattern, parent folder exists, all good.");
+		log.info("Filename contains XXX or XXXX pattern, parent folder exists, all good.");
+		statusService.showStatus("Filename contains XXX or XXXX pattern, parent folder exists, all good.");
 		return true;
 	}
 
@@ -275,14 +282,14 @@ public class plugin_GTviaMarkers implements Command
 				}
 			}
 
-			//test for presence of the expanding pattern
-			if ( (partOne.lastIndexOf("X") - partOne.indexOf("X")) != 2 )
+			//test for presence of the expanding pattern XXX or XXXX
+			if (partOne.indexOf("XXX") == -1 || ( (partOne.lastIndexOf("XXX") - partOne.indexOf("XXX")) > 1 ))
 			{
-				log.warn("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+				log.warn("Filename \""+partOne+"\" does not contain XXX or XXXX pattern on line "+lineNo+".");
 				if (!uiService.isHeadless())
 				{
-					statusService.showStatus("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
-					uiService.showDialog(    "Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+					statusService.showStatus("Filename \""+partOne+"\" does not contain XXX or XXXX pattern on line "+lineNo+".");
+					uiService.showDialog(    "Filename \""+partOne+"\" does not contain XXX or XXXX pattern on line "+lineNo+".");
 				}
 				return false;
 			}
@@ -293,14 +300,15 @@ public class plugin_GTviaMarkers implements Command
 		return true;
 	}
 
-	///populates Xs in the \e pattern with \e idx, and returns result in a new string
+	/** populates Xs in the \e pattern with \e idx, and returns result in a new string,
+	    it supports XXX or XXXX */
 	String expandFilenamePattern(final String pattern, final int idx)
 	{
 		//detect position
-		int a = pattern.indexOf("X");
-		int b = pattern.lastIndexOf("X");
+		int a = pattern.indexOf("XXX");
+		int b = pattern.lastIndexOf("XXX");
 		//and span
-		b = b-a+1;
+		b = b > a ? 4 : 3;
 
 		String res = pattern.substring(0,a);
 		res += String.format(String.format("%c0%dd",'%',b),idx);
