@@ -171,7 +171,9 @@ public class plugin_GTviaMarkers implements Command
 		}
 		catch (ParseException e)
 		{
-			uiService.showDialog("Timepoints:\n"+e.getMessage());
+			log.warn("Timepoints:\n"+e.getMessage());
+			if (!uiService.isHeadless())
+				uiService.showDialog("Timepoints:\n"+e.getMessage());
 			throw new RuntimeException("Timepoints field is invalid.\n"+e.getMessage());
 		}
 	}
@@ -183,6 +185,7 @@ public class plugin_GTviaMarkers implements Command
 		final String name = outputPath.getName();
 		if (name != null && (name.lastIndexOf("X") - name.indexOf("X")) != 2)
 		{
+			log.warn("Filename \""+name+"\" does not contain XXX pattern.");
 			statusService.showStatus("Filename \""+name+"\" does not contain XXX pattern.");
 			return false;
 		}
@@ -191,10 +194,12 @@ public class plugin_GTviaMarkers implements Command
 		final File path = outputPath.getParentFile();
 		if (path != null && !path.exists())
 		{
+			log.warn("Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
 			statusService.showStatus("Parent folder \""+path.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
 
+		log.info("Filename contains XXX pattern, parent folder exists, all good.");
 		statusService.showStatus("Filename contains XXX pattern, parent folder exists, all good.");
 		return true;
 	}
@@ -205,6 +210,7 @@ public class plugin_GTviaMarkers implements Command
 		//check the job file exists
 		if (filePath == null || !filePath.exists())
 		{
+			log.warn("Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
 			statusService.showStatus("Job file \""+filePath.getAbsolutePath()+"\" does not exist.");
 			return false;
 		}
@@ -239,8 +245,12 @@ public class plugin_GTviaMarkers implements Command
 				//is there the second column at all?
 				if (lineTokens.length == 1)
 				{
-					statusService.showStatus("Missing column with weights on line "+lineNo+".");
-					uiService.showDialog(    "Missing column with weights on line "+lineNo+".");
+					log.warn("Missing column with weights on line "+lineNo+".");
+					if (!uiService.isHeadless())
+					{
+						statusService.showStatus("Missing column with weights on line "+lineNo+".");
+						uiService.showDialog(    "Missing column with weights on line "+lineNo+".");
+					}
 					return false;
 				}
 
@@ -255,8 +265,12 @@ public class plugin_GTviaMarkers implements Command
 					Float.parseFloat(partTwo);
 				}
 				catch (Exception e) {
-					statusService.showStatus("The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
-					uiService.showDialog(    "The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
+					log.warn("The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
+					if (!uiService.isHeadless())
+					{
+						statusService.showStatus("The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
+						uiService.showDialog(    "The weight column \""+partTwo+"\" cannot be parsed as a real number on line "+lineNo+".");
+					}
 					return false;
 				}
 			}
@@ -264,12 +278,17 @@ public class plugin_GTviaMarkers implements Command
 			//test for presence of the expanding pattern
 			if ( (partOne.lastIndexOf("X") - partOne.indexOf("X")) != 2 )
 			{
-				statusService.showStatus("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
-				uiService.showDialog(    "Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+				log.warn("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+				if (!uiService.isHeadless())
+				{
+					statusService.showStatus("Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+					uiService.showDialog(    "Filename \""+partOne+"\" does not contain XXX pattern on line "+lineNo+".");
+				}
 				return false;
 			}
 		}
 
+		log.info("Job file feels sane.");
 		statusService.showStatus("Job file feels sane.");
 		return true;
 	}
@@ -302,14 +321,18 @@ public class plugin_GTviaMarkers implements Command
 		if (!inFileOKAY() || !outFileOKAY())
 		{
 			log.error("plugin_GTviaMarkers error: Input parameters are wrong.");
-			uiService.showDialog("There is something wrong with either the job file or output file.");
+			if (!uiService.isHeadless())
+				uiService.showDialog("There is something wrong with either the job file or output file.");
+
 			return;
 		}
 		if (!mergeModel.startsWith("Threshold")
 		 && !mergeModel.startsWith("Majority"))
 		{
 			log.error("plugin_GTviaMarkers error: Unsupported merging model.");
-			uiService.showDialog("plugin_GTviaMarkers error: Unsupported merging model.");
+			if (!uiService.isHeadless())
+				uiService.showDialog("plugin_GTviaMarkers error: Unsupported merging model.");
+
 			return;
 		}
 
@@ -458,7 +481,8 @@ public class plugin_GTviaMarkers implements Command
 		}
 		catch (ParseException e)
 		{
-			uiService.showDialog("Timepoints:\n"+e.getMessage());
+			if (!uiService.isHeadless())
+				uiService.showDialog("Timepoints:\n"+e.getMessage());
 		}
 		finally {
 			//hide away the progress bar once the job is done
