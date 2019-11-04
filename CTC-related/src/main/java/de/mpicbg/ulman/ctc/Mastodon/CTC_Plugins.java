@@ -29,6 +29,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	//"IDs" of all plug-ins wrapped in this class
 	private static final String CTC_IMPORT = "CTC-import-all";
 	private static final String CTC_EXPORT = "CTC-export-all";
+	private static final String CTC_TRA_CHECKER = "CTC-reviewTRA";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -39,7 +40,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		return Arrays.asList(
 				menu( "Plugins",
 						menu( "Cell Tracking Challenge",
-								item( CTC_IMPORT ), item ( CTC_EXPORT) ) ) );
+								item( CTC_IMPORT ), item ( CTC_EXPORT), item ( CTC_TRA_CHECKER) ) ) );
 	}
 
 	/** titles of this plug-in's menu items */
@@ -48,6 +49,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	{
 		menuTexts.put( CTC_IMPORT, "Import from CTC format" );
 		menuTexts.put( CTC_EXPORT, "Export to CTC format" );
+		menuTexts.put( CTC_TRA_CHECKER, "Review TRA annotation" );
 	}
 
 	@Override
@@ -59,12 +61,14 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 
 	private final AbstractNamedAction actionImport;
 	private final AbstractNamedAction actionExport;
+	private final AbstractNamedAction actionTRAreview;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public CTC_Plugins()
 	{
 		actionImport = new RunnableAction( CTC_IMPORT, this::importer );
 		actionExport = new RunnableAction( CTC_EXPORT, this::exporter );
+		actionTRAreview = new RunnableAction( CTC_TRA_CHECKER, this::TRAreviewer );
 		updateEnabledActions();
 	}
 
@@ -75,6 +79,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		final String[] noShortCut = new String[] { "not mapped" };
 		actions.namedAction( actionImport, noShortCut );
 		actions.namedAction( actionExport, noShortCut );
+		actions.namedAction( actionTRAreview, noShortCut );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -95,6 +100,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		final MamutAppModel appModel = ( pluginAppModel == null ) ? null : pluginAppModel.getAppModel();
 		actionImport.setEnabled( appModel != null );
 		actionExport.setEnabled( appModel != null );
+		actionTRAreview.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
 
@@ -139,5 +145,15 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 			else
 				throw new IllegalArgumentException("Cannot create missing subfolder TRA in the folder: "+folder.getAbsolutePath());
 		}
+	}
+
+
+	/** opens ...  */
+	private void TRAreviewer()
+	{
+		this.getContext().getService(CommandService.class).run(
+			TRAreviewPlugin.class, true,
+			"appModel", pluginAppModel.getAppModel(),
+			"logService", this.getContext().getService(LogService.class));
 	}
 }
