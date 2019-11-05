@@ -7,6 +7,9 @@ import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.mastodon.collection.RefCollections;
@@ -47,8 +50,24 @@ extends DynamicCommand
 	Integer timeTill;
 
 	// ----------------- what the issues look like -----------------
-	@Parameter(label = "Sudden trajectory change is above this angle (deg):", min="0", max="180")
-	float maxToleratedAngle = 180;
+	@Parameter(label = "Review all roots:")
+	boolean reviewRoots = false;
+
+	@Parameter(label = "Review all daughters (after division):")
+	boolean reviewDaughters = true;
+
+	@Parameter(label = "Review trajectory relative bending above this angle (deg):",
+	           description = "Relative = direction predicted - direction observed. Set to 180 to (effectively) disable.",
+	           min="0", max="180")
+	float maxToleratedRelativeAngle = 180;
+
+	@Parameter(label = "Review trajectory absolute bending above this angle (deg):",
+	           description = "Absolute = direction observed now - direction observed previously. Set to 180 to (effectively) disable.",
+	           min="0", max="180")
+	float maxToleratedAbsoluteAngle = 180;
+
+	@Parameter(label = "Save trajectory stats:", description="Leave empty to disable this.")
+	String statsFile = "";
 
 	// ----------------- where the issues are and how to navigate to them -----------------
 	/** the list of "suspicious" spots */
@@ -215,11 +234,19 @@ extends DynamicCommand
 			if (countBackwardLinks != 1)
 			{
 				rootsList.add( spot);
-				enlistProblemSpot( spot, "root or daughter with "+countBackwardLinks+" predecessors" );
+				if (countBackwardLinks == 0 && reviewRoots)
+					enlistProblemSpot( spot, "root");
+
+				if (countBackwardLinks > 1 && reviewDaughters)
+					enlistProblemSpot( spot, "daughter with "+countBackwardLinks+" predecessors" );
 			}
 
 			pbar.setProgress(timePoint+1);
 		}
+
+		try {
+		final BufferedWriter f
+			= statsFile.length() > 0 ? new BufferedWriter( new FileWriter(statsFile) ) : null;
 
 		final double toDeg = 180.0 / 3.14159;
 		final double axis[] = new double[3];
@@ -231,6 +258,8 @@ extends DynamicCommand
 			final Spot spot = rootsList.get(n);
 			if (getLastFollower(spot, nSpot) != 1) break;
 			if (getLastFollower(nSpot, oSpot) != 1) break;
+
+			if (f != null) f.write("# from spot: "+spot.getLabel()+"\n");
 
 			//so, we have a chain here: spot -> nSpot -> oSpot
 			 spot.localize(vec1);
@@ -247,7 +276,7 @@ extends DynamicCommand
 			//logService.info("2->3: "+printVector(vec3));
 
 			double angle = getRotationAngleAndAxis(vec2, vec3, axis);
-			if (angle*toDeg > maxToleratedAngle)
+			if (angle*toDeg > maxToleratedAbsoluteAngle)
 				enlistProblemSpot(oSpot, "3rd spot: angle "+(angle*toDeg)+" too much");
 
 			//logService.info("rot params: "+(angle*toDeg)+" deg around "+printVector(axis));
@@ -255,7 +284,10 @@ extends DynamicCommand
 			//DEBUG CHECK:
 			vec1[0] = vec2[0]; vec1[1] = vec2[1]; vec1[2] = vec2[2];
 			rotateVector(vec1, axis,angle);
-			logService.info("check around spot "+spot.getLabel()+": test ang = "+getRotationAngle(vec1,vec3));
+			if (f != null) f.write("# debug check: test ang = "+getRotationAngle(vec1,vec3)+" (should be close to 0.0)\n");
+
+			if (f != null) f.write("# abs. angle test at spot "+oSpot.getLabel()+": "+(angle*toDeg)+" (seen) vs. "+maxToleratedAbsoluteAngle+" (tolerated)\n");
+			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot, spot label at this time\n");
 
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
@@ -278,13 +310,31 @@ extends DynamicCommand
 				//predict relative direction of the next nSpot, and compare to the actual one
 				rotateVector(vec1, axis,angle);
 				angle = getRotationAngle(vec1, vec3);
-				if (angle*toDeg > maxToleratedAngle)
-					enlistProblemSpot(nSpot, "angle "+(angle*toDeg)+" too much");
+				if (angle*toDeg > maxToleratedRelativeAngle)
+					enlistProblemSpot(nSpot, "relative angle "+(angle*toDeg)+" too much");
+
+				if ((getRotationAngle(vec2,vec3)*toDeg) > maxToleratedAbsoluteAngle)
+					enlistProblemSpot(nSpot, "absolute angle "+(angle*toDeg)+" too much");
+
+				if (f != null) f.write(nSpot.getTimepoint()+"\t"
+					+(angle*toDeg)+"\t"
+					+(getRotationAngle(vec2,vec3)*toDeg)+"\t"
+					+Math.sqrt(vec3[0]*vec3[0] + vec3[1]*vec3[1] + vec3[2]*vec3[2])+"\t"
+					+printVector(vec1)+"\t"
+					+printVector(vec3)+"\t"
+					+nSpot.getLabel()+"\n");
 
 				//update the rot params, and move to the next spot
 				angle = getRotationAngleAndAxis(vec2, vec3, axis);
 				oSpot.refTo( nSpot );
 			}
+
+			if (f != null) f.write("\n\n");
+		}
+
+		if (f != null) f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		if (problemList.size() > 0)
