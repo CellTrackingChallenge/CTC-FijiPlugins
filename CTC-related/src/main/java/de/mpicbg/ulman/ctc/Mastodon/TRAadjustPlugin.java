@@ -56,6 +56,7 @@ extends DynamicCommand
 		final int[]    posPx = new int[inImgDims];
 		final double[] posUm = new double[inImgDims];
 
+		final long[] imgBounds = new long[inImgDims];
 		final int[] radiusPx = new int[inImgDims];
 		getPxHalfBoxSize(radiusPx,boxSizeUM,imgSource.getVoxelDimensions());
 
@@ -74,13 +75,14 @@ extends DynamicCommand
 
 		//stats:
 		final int[] cntsPerDist = new int[20];
-		final int[] cntsPerIter = new int[safetyMaxIters];
+		final int[] cntsPerIter = new int[safetyMaxIters+1];
 
 		//scan over all selected spots
 		for (Spot spot : appModel.getSelectionModel().getSelectedVertices())
 		{
 			//get current image data
 			final RandomAccess<? extends RealType<?>> ra = (RandomAccess)imgSource.getImage(spot.getTimepoint()).randomAccess();
+			imgSource.getImage(spot.getTimepoint()).dimensions( imgBounds );
 
 			//get current image->world coords transformation
 			imgSource.getSourceTransform(spot.getTimepoint(), coordTransImg2World);
@@ -123,7 +125,12 @@ extends DynamicCommand
 				ra.move(-radiusPx[0],0);
 				for (int dxPx = -radiusPx[0]; dxPx <= +radiusPx[0]; ++dxPx)
 				{
-					tmpInt = ra.get().getRealDouble();
+					boolean isOutsideImg = false;
+					if (posUm[0]+dxPx < 0 || posUm[0]+dxPx >= imgBounds[0]) isOutsideImg = true;
+					if (posUm[1]+dyPx < 0 || posUm[1]+dyPx >= imgBounds[1]) isOutsideImg = true;
+					if (posUm[2]+dzPx < 0 || posUm[2]+dzPx >= imgBounds[2]) isOutsideImg = true;
+
+					tmpInt = !isOutsideImg ? ra.get().getRealDouble() : -1;
 					if (tmpInt > lastBestInt)
 					{
 						lastBestInt = tmpInt;
@@ -152,7 +159,7 @@ extends DynamicCommand
 				posPx[d] = (int)posUm[d] - posPx[d];
 				dist += posPx[d]*posPx[d];
 			}
-			dist = Math.sqrt(dist);
+			dist = Math.min( Math.sqrt(dist), cntsPerDist.length-1 );
 
 			++cntsPerDist[(int)dist];
 			++cntsPerIter[iters];
