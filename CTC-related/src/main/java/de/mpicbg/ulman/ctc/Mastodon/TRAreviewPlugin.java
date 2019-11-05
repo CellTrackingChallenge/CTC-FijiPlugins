@@ -46,6 +46,10 @@ extends DynamicCommand
 	@Parameter(label = "Review till this time point:", min="0")
 	Integer timeTill;
 
+	// ----------------- what the issues look like -----------------
+	@Parameter(label = "Sudden trajectory change is above this angle (deg):", min="0", max="180")
+	float maxToleratedAngle = 180;
+
 	// ----------------- where the issues are and how to navigate to them -----------------
 	/** the list of "suspicious" spots */
 	private RefList< Spot > problemList;
@@ -155,6 +159,8 @@ extends DynamicCommand
 		pbframe.add(pbar);
 
 		pMsg = new JLabel("");
+		pMsg.setMinimumSize(new Dimension(290,50));
+		pMsg.setHorizontalTextPosition(JLabel.LEFT);
 		pbframe.add(pMsg);
 
 		final JPanel pbtnPanel = new JPanel();
@@ -185,24 +191,100 @@ extends DynamicCommand
 		problemList = RefCollections.createRefList( appModel.getModel().getGraph().vertices(),1000);
 		problemDesc = new ArrayList<>(1000);
 
-		int fakeChooser = 0;
-
 		pbar.setMinimum(timeFrom);
 		pbar.setMaximum(timeTill);
 
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
+		final RefList< Spot > rootsList = RefCollections.createRefList( appModel.getModel().getGraph().vertices(),1000);
 
 		for (int timePoint = timeFrom; timePoint <= timeTill; ++timePoint)
 		for ( final Spot spot : spots.getSpatialIndex( timePoint ) )
 		{
-			++fakeChooser;
-			if (fakeChooser %3 == 0)
+			//find how many back-references (time-wise) this spot has
+			int countBackwardLinks = 0;
+			for (int n=0; n < spot.incomingEdges().size(); ++n)
 			{
-				problemList.add( spot );
-				problemDesc.add( "fake no. "+fakeChooser);
+				spot.incomingEdges().get(n, linkRef).getSource( oSpot );
+				if (oSpot.getTimepoint() < timePoint && oSpot.getTimepoint() >= timeFrom) ++countBackwardLinks;
+			}
+			for (int n=0; n < spot.outgoingEdges().size(); ++n)
+			{
+				spot.outgoingEdges().get(n, linkRef).getTarget( oSpot );
+				if (oSpot.getTimepoint() < timePoint && oSpot.getTimepoint() >= timeFrom) ++countBackwardLinks;
+			}
+			if (countBackwardLinks != 1)
+			{
+				rootsList.add( spot);
+				enlistProblemSpot( spot, "root or daughter with "+countBackwardLinks+" predecessors" );
 			}
 
 			pbar.setProgress(timePoint+1);
+		}
+
+		final double toDeg = 180.0 / 3.14159;
+		final double axis[] = new double[3];
+
+		final double vec1[] = new double[3];
+		final double vec2[] = new double[3];
+		final double vec3[] = new double[3];
+		for (int n=0; n < rootsList.size(); ++n) {
+			final Spot spot = rootsList.get(n);
+			if (getLastFollower(spot, nSpot) != 1) break;
+			if (getLastFollower(nSpot, oSpot) != 1) break;
+
+			//so, we have a chain here: spot -> nSpot -> oSpot
+			 spot.localize(vec1);
+			nSpot.localize(vec2);
+			oSpot.localize(vec3);
+
+			//deltaPos: nSpot -> oSpot
+			vec3[0] -= vec2[0]; vec3[1] -= vec2[1]; vec3[2] -= vec2[2];
+
+			//deltaPos: spot -> nSpot
+			vec2[0] -= vec1[0]; vec2[1] -= vec1[1]; vec2[2] -= vec1[2];
+
+			//logService.info("1->2: "+printVector(vec2));
+			//logService.info("2->3: "+printVector(vec3));
+
+			double angle = getRotationAngleAndAxis(vec2, vec3, axis);
+			if (angle*toDeg > maxToleratedAngle)
+				enlistProblemSpot(oSpot, "3rd spot: angle "+(angle*toDeg)+" too much");
+
+			//logService.info("rot params: "+(angle*toDeg)+" deg around "+printVector(axis));
+
+			//DEBUG CHECK:
+			vec1[0] = vec2[0]; vec1[1] = vec2[1]; vec1[2] = vec2[2];
+			rotateVector(vec1, axis,angle);
+			logService.info("check around spot "+spot.getLabel()+": test ang = "+getRotationAngle(vec1,vec3));
+
+			while (getLastFollower(oSpot, nSpot) == 1)
+			{
+				//BTW: oSpot -> nSpot
+				//last dir is: vec3
+				//last rot params: axis, angle
+
+				//last dir is also vec2
+				vec2[0] = vec3[0]; vec2[1] = vec3[1]; vec2[2] = vec3[2];
+
+				//new dir is vec3
+				oSpot.localize(vec1);
+				nSpot.localize(vec3);
+				//deltaPos: oSpot -> nSpot
+				vec3[0] -= vec1[0]; vec3[1] -= vec1[1]; vec3[2] -= vec1[2];
+
+				//last dir is also vec1
+				vec1[0] = vec2[0]; vec1[1] = vec2[1]; vec1[2] = vec2[2];
+
+				//predict relative direction of the next nSpot, and compare to the actual one
+				rotateVector(vec1, axis,angle);
+				angle = getRotationAngle(vec1, vec3);
+				if (angle*toDeg > maxToleratedAngle)
+					enlistProblemSpot(nSpot, "angle "+(angle*toDeg)+" too much");
+
+				//update the rot params, and move to the next spot
+				angle = getRotationAngleAndAxis(vec2, vec3, axis);
+				oSpot.refTo( nSpot );
+			}
 		}
 
 		if (problemList.size() > 0)
@@ -220,5 +302,103 @@ extends DynamicCommand
 			releaseRoutine.windowClosing( pbframe );
 			logService.info("No problems detected, done.");
 		}
+	}
+
+	private void enlistProblemSpot(final Spot spot, final String reason)
+	{
+		problemList.add( spot );
+		problemDesc.add( reason );
+	}
+
+	/** returns the number of detected followers and returns
+	    the last visited one (if there was at least one) */
+	int getLastFollower(final Spot from, final Spot retFollower)
+	{
+		int followers = 0;
+		for (int n=0; n < from.incomingEdges().size(); ++n)
+		{
+			from.incomingEdges().get(n, linkRef).getSource( retFollower );
+			if (retFollower.getTimepoint() > from.getTimepoint() && retFollower.getTimepoint() <= timeTill) ++followers;
+		}
+		for (int n=0; n < from.outgoingEdges().size(); ++n)
+		{
+			from.outgoingEdges().get(n, linkRef).getTarget( retFollower );
+			if (retFollower.getTimepoint() > from.getTimepoint() && retFollower.getTimepoint() <= timeTill) ++followers;
+		}
+		return followers;
+	}
+
+
+	/** returns angle (in radians) and rotAxis that would transform the fromVec to toVec */
+	double getRotationAngleAndAxis(final double[] fromVec, final double[] toVec, final double[] rotAxis)
+	{
+		//rotation axis
+		rotAxis[0] = fromVec[1]*toVec[2] - fromVec[2]*toVec[1];
+		rotAxis[1] = fromVec[2]*toVec[0] - fromVec[0]*toVec[2];
+		rotAxis[2] = fromVec[0]*toVec[1] - fromVec[1]*toVec[0];
+
+		//normalized rotation axis
+		final double rotAxisLen = Math.sqrt(rotAxis[0]*rotAxis[0] + rotAxis[1]*rotAxis[1] + rotAxis[2]*rotAxis[2]);
+		rotAxis[0] /= rotAxisLen;
+		rotAxis[1] /= rotAxisLen;
+		rotAxis[2] /= rotAxisLen;
+
+		//rotation angle
+		return getRotationAngle(fromVec,toVec);
+	}
+
+	double getRotationAngle(final double[] fromVec, final double[] toVec)
+	{
+		double dotProd = fromVec[0]*toVec[0] + fromVec[1]*toVec[1] + fromVec[2]*toVec[2];
+		dotProd /= Math.sqrt(fromVec[0]*fromVec[0] + fromVec[1]*fromVec[1] + fromVec[2]*fromVec[2]);
+		dotProd /= Math.sqrt(  toVec[0]*  toVec[0] +   toVec[1]*  toVec[1] +   toVec[2]*  toVec[2]);
+		return Math.acos(dotProd);
+	}
+
+	void rotateVector(final double[] vec, final double[] rotAxis, final double rotAng)
+	{
+		if (Math.abs(rotAng) < 0.05) //smaller than 3 deg
+		{
+			rotMatrix[0] = 1; rotMatrix[1] = 0; rotMatrix[2] = 0;
+			rotMatrix[3] = 0; rotMatrix[4] = 1; rotMatrix[5] = 0;
+			rotMatrix[6] = 0; rotMatrix[7] = 0; rotMatrix[8] = 1;
+		}
+		else
+		{
+			//quaternion params
+			final double rAng = rotAng / 2.0;
+			final double q0 = Math.cos(rAng);
+			final double q1 = Math.sin(rAng) * rotAxis[0];
+			final double q2 = Math.sin(rAng) * rotAxis[1];
+			final double q3 = Math.sin(rAng) * rotAxis[2];
+
+			//rotation matrix from the quaternion
+			//        row col
+			rotMatrix[0*3 +0] = q0*q0 + q1*q1 - q2*q2 - q3*q3;
+			rotMatrix[0*3 +1] = 2 * (q1*q2 - q0*q3);
+			rotMatrix[0*3 +2] = 2 * (q1*q3 + q0*q2);
+
+			//this is the 2nd row of the matrix...
+			rotMatrix[1*3 +0] = 2 * (q2*q1 + q0*q3);
+			rotMatrix[1*3 +1] = q0*q0 - q1*q1 + q2*q2 - q3*q3;
+			rotMatrix[1*3 +2] = 2 * (q2*q3 - q0*q1);
+
+			rotMatrix[2*3 +0] = 2 * (q3*q1 - q0*q2);
+			rotMatrix[2*3 +1] = 2 * (q3*q2 + q0*q1);
+			rotMatrix[2*3 +2] = q0*q0 - q1*q1 - q2*q2 + q3*q3;
+		}
+
+		//rotate the input vector
+		double x = rotMatrix[0]*vec[0] + rotMatrix[1]*vec[1] + rotMatrix[2]*vec[2];
+		double y = rotMatrix[3]*vec[0] + rotMatrix[4]*vec[1] + rotMatrix[5]*vec[2];
+		  vec[2] = rotMatrix[6]*vec[0] + rotMatrix[7]*vec[1] + rotMatrix[8]*vec[2];
+		  vec[0] = x;
+		  vec[1] = y;
+	}
+	private double[] rotMatrix = new double[9];
+
+	private String printVector(final double[] vec)
+	{
+		return new String("("+vec[0]+","+vec[1]+","+vec[2]+")");
 	}
 }
