@@ -447,7 +447,7 @@ extends DynamicCommand
 	}
 	private double[] rotMatrix = new double[9];
 
-	private String printVector(final double[] vec)
+	public static String printVector(final double[] vec)
 	{
 		return new String("("+vec[0]+","+vec[1]+","+vec[2]+")");
 	}

@@ -30,6 +30,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private static final String CTC_IMPORT = "CTC-import-all";
 	private static final String CTC_EXPORT = "CTC-export-all";
 	private static final String CTC_TRA_CHECKER = "CTC-reviewTRA";
+	private static final String CTC_TRA_ADJUSTER = "CTC-adjustTRA";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -62,6 +63,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private final AbstractNamedAction actionImport;
 	private final AbstractNamedAction actionExport;
 	private final AbstractNamedAction actionTRAreview;
+	private final AbstractNamedAction actionTRAadjust;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public CTC_Plugins()
@@ -69,6 +71,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionImport = new RunnableAction( CTC_IMPORT, this::importer );
 		actionExport = new RunnableAction( CTC_EXPORT, this::exporter );
 		actionTRAreview = new RunnableAction( CTC_TRA_CHECKER, this::TRAreviewer );
+		actionTRAadjust = new RunnableAction( CTC_TRA_ADJUSTER, this::TRAadjuster );
 		updateEnabledActions();
 	}
 
@@ -79,7 +82,8 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		final String[] noShortCut = new String[] { "not mapped" };
 		actions.namedAction( actionImport, noShortCut );
 		actions.namedAction( actionExport, noShortCut );
-		actions.namedAction( actionTRAreview, noShortCut );
+		actions.namedAction( actionTRAreview, "ctrl P" );
+		actions.namedAction( actionTRAadjust, "ctrl O" );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -101,6 +105,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionImport.setEnabled( appModel != null );
 		actionExport.setEnabled( appModel != null );
 		actionTRAreview.setEnabled( appModel != null );
+		actionTRAadjust.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
 
@@ -148,11 +153,20 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	}
 
 
-	/** opens ...  */
+	/** TODO */
 	private void TRAreviewer()
 	{
 		this.getContext().getService(CommandService.class).run(
 			TRAreviewPlugin.class, true,
+			"appModel", pluginAppModel.getAppModel(),
+			"logService", this.getContext().getService(LogService.class));
+	}
+
+	/** TODO */
+	private void TRAadjuster()
+	{
+		this.getContext().getService(CommandService.class).run(
+			TRAadjustPlugin.class, true,
 			"appModel", pluginAppModel.getAppModel(),
 			"logService", this.getContext().getService(LogService.class));
 	}
