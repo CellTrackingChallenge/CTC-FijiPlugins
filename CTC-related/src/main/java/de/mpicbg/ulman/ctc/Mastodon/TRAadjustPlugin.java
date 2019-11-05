@@ -77,6 +77,11 @@ extends DynamicCommand
 		final int[] cntsPerDist = new int[20];
 		final int[] cntsPerIter = new int[safetyMaxIters+1];
 
+		//"progress bar"
+		final long pbSize = appModel.getSelectionModel().getSelectedVertices().size();
+		final long pbReportChunk = Math.max( pbSize / 10, 1 );
+		long pbDone = 0;
+
 		//scan over all selected spots
 		for (Spot spot : appModel.getSelectionModel().getSelectedVertices())
 		{
@@ -170,6 +175,10 @@ extends DynamicCommand
 			//convert the best obtained px image coord into real world coord
 			coordTransImg2World.apply(posUm,posUm);
 			spot.setPosition(posUm);
+
+			++pbDone;
+			if ((pbDone % pbReportChunk) == 0)
+				logService.info((100*pbDone/pbSize)+" % adjusted");
 		}
 
 		logService.info("Histogram with bins of 1px distance:");
