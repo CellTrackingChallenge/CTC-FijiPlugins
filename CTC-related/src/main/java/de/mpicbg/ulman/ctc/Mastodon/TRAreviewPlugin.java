@@ -238,24 +238,46 @@ extends DynamicCommand
 		{
 			//find how many back-references (time-wise) this spot has
 			int countBackwardLinks = 0;
+			int countForwardLinks = 0;
 			for (int n=0; n < spot.incomingEdges().size(); ++n)
 			{
 				spot.incomingEdges().get(n, linkRef).getSource( oSpot );
 				if (oSpot.getTimepoint() < timePoint && oSpot.getTimepoint() >= timeFrom) ++countBackwardLinks;
+				if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill) ++countForwardLinks;
 			}
 			for (int n=0; n < spot.outgoingEdges().size(); ++n)
 			{
 				spot.outgoingEdges().get(n, linkRef).getTarget( oSpot );
 				if (oSpot.getTimepoint() < timePoint && oSpot.getTimepoint() >= timeFrom) ++countBackwardLinks;
+				if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill) ++countForwardLinks;
 			}
-			if (countBackwardLinks != 1)
+			if (countBackwardLinks == 0)
 			{
-				rootsList.add( spot);
-				if (countBackwardLinks == 0 && reviewRoots)
-					enlistProblemSpot( spot, "root");
-
-				if (countBackwardLinks > 1 && reviewDaughters)
-					enlistProblemSpot( spot, "daughter with "+countBackwardLinks+" predecessors" );
+				rootsList.add(spot);
+				if (reviewRoots) enlistProblemSpot(spot, "root");
+			}
+			if (countForwardLinks > 1)
+			{
+				for (int n=0; n < spot.incomingEdges().size(); ++n)
+				{
+					spot.incomingEdges().get(n, linkRef).getSource( oSpot );
+					if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill)
+					{
+						rootsList.add(oSpot);
+						if (reviewDaughters)
+							enlistProblemSpot(oSpot, "daughter");
+					}
+				}
+				for (int n=0; n < spot.outgoingEdges().size(); ++n)
+				{
+					spot.outgoingEdges().get(n, linkRef).getTarget( oSpot );
+					if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill)
+					{
+						rootsList.add(oSpot);
+						if (reviewDaughters)
+							enlistProblemSpot(oSpot, "daughter");
+					}
+				}
 			}
 
 			pbar.setProgress(timePoint+1);
@@ -277,10 +299,10 @@ extends DynamicCommand
 
 		for (int n=0; n < rootsList.size(); ++n) {
 			final Spot spot = rootsList.get(n);
-			if (getLastFollower(spot, nSpot) != 1) break;
-			if (getLastFollower(nSpot, oSpot) != 1) break;
+			if (getLastFollower(spot, nSpot) != 1) continue;
+			if (getLastFollower(nSpot, oSpot) != 1) continue;
 
-			if (f != null) f.write("# from spot: "+spot.getLabel()+"\n");
+			if (f != null) f.write("# from spot: "+spot.getLabel()+" @ tp "+spot.getTimepoint()+"\n");
 
 			//so, we have a chain here: spot -> nSpot -> oSpot
 			 spot.localize(vec1);
@@ -308,7 +330,7 @@ extends DynamicCommand
 			if (f != null) f.write("# debug check: test ang = "+getRotationAngle(vec1,vec3)+" (should be close to 0.0)\n");
 
 			if (f != null) f.write("# abs. angle test at spot "+oSpot.getLabel()+": "+(angle*toDeg)+" (seen) vs. "+maxToleratedAbsoluteAngle+" (tolerated)\n");
-			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot, spot label at this time\n");
+			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot[, distances to neighbors], spot label at this time\n");
 
 			//neighbors test: initialization
 			if (neighbrCnt > 0)
@@ -443,7 +465,7 @@ extends DynamicCommand
 		double dotProd = fromVec[0]*toVec[0] + fromVec[1]*toVec[1] + fromVec[2]*toVec[2];
 		dotProd /= Math.sqrt(fromVec[0]*fromVec[0] + fromVec[1]*fromVec[1] + fromVec[2]*fromVec[2]);
 		dotProd /= Math.sqrt(  toVec[0]*  toVec[0] +   toVec[1]*  toVec[1] +   toVec[2]*  toVec[2]);
-		return Math.acos(dotProd);
+		return Math.min( Math.acos(dotProd), 3.14159 ); //limit to PI to fight numerical inaccuracies
 	}
 
 	void rotateVector(final double[] vec, final double[] rotAxis, final double rotAng)
