@@ -68,7 +68,7 @@ extends DynamicCommand
 	float maxToleratedAbsoluteAngle = 180;
 
 	@Parameter(label = "NN: How many nearest neighbors to consider:",
-	           description = "Set to 0 to disable this test.",
+	           description = "Set to 0 to disable this suite of tests.",
 	           min="0")
 	int neighbrCnt = 0;
 
@@ -76,8 +76,12 @@ extends DynamicCommand
 	float neighbrDistDelta = 5.0f;
 
 	@Parameter(label = "NN: Minimum count of alarms for a spot to review it:", min="1",
-	           description = "Set between 1 and number of considered neighbors.")
+	           description = "Set between 1 and number of considered neighbors, set above to effectively disable this test.")
 	int neighbrAlarmsCnt = 5;
+
+	@Parameter(label = "NN: Minimum distance to nearest spot to review it (um):", min="0",
+	           description = "Set to 0 to disable this test.")
+	float neighbrAlarmMinDist = 6.0f;
 
 	@Parameter(label = "Save trajectory stats:", description="Leave empty to disable this.")
 	String statsFile = "";
@@ -294,7 +298,7 @@ extends DynamicCommand
 
 			double angle = getRotationAngleAndAxis(vec2, vec3, axis);
 			if (angle*toDeg > maxToleratedAbsoluteAngle)
-				enlistProblemSpot(oSpot, "3rd spot: angle "+(angle*toDeg)+" too much");
+				enlistProblemSpot(oSpot, "3rd spot: angle "+(angle*toDeg)+" deg too much");
 
 			//logService.info("rot params: "+(angle*toDeg)+" deg around "+printVector(axis));
 
@@ -307,7 +311,8 @@ extends DynamicCommand
 			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot, spot label at this time\n");
 
 			//neighbors test: initialization
-			findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances);
+			if (neighbrCnt > 0)
+				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances);
 
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
@@ -331,16 +336,21 @@ extends DynamicCommand
 				rotateVector(vec1, axis,angle);
 				angle = getRotationAngle(vec1, vec3);
 				if (angle*toDeg > maxToleratedRelativeAngle)
-					enlistProblemSpot(nSpot, "relative angle "+(angle*toDeg)+" too much");
+					enlistProblemSpot(nSpot, "relative angle "+(angle*toDeg)+" deg too much");
 
 				if ((getRotationAngle(vec2,vec3)*toDeg) > maxToleratedAbsoluteAngle)
-					enlistProblemSpot(nSpot, "absolute angle "+(getRotationAngle(vec2,vec3)*toDeg)+" too much");
+					enlistProblemSpot(nSpot, "absolute angle "+(getRotationAngle(vec2,vec3)*toDeg)+" deg too much");
 
 				//neighbors test
-				findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances);
-				final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
-				if (alarms >= neighbrAlarmsCnt)
-					enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
+				if (neighbrCnt > 0)
+				{
+					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances);
+					final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
+					if (alarms >= neighbrAlarmsCnt)
+						enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
+					if (neighbrAlarmMinDist > 0 && testDistances[0] < neighbrAlarmMinDist)
+						enlistProblemSpot(nSpot, "too close ("+testDistances[0]+" um) to other spot");
+				}
 
 				if (f != null)
 				{
@@ -388,7 +398,7 @@ extends DynamicCommand
 	private void enlistProblemSpot(final Spot spot, final String reason)
 	{
 		problemList.add( spot );
-		problemDesc.add( reason );
+		problemDesc.add( spot.getLabel()+": "+reason );
 	}
 
 	/** returns the number of detected followers and returns
