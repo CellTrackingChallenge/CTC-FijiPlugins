@@ -3,6 +3,7 @@ package de.mpicbg.ulman.ctc.Mastodon;
 import java.awt.*;
 import javax.swing.*;
 
+import mpicbg.spim.data.sequence.VoxelDimensions;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.awt.event.WindowAdapter;
@@ -65,6 +66,18 @@ extends DynamicCommand
 	           description = "Absolute = direction observed now - direction observed previously. Set to 180 to (effectively) disable.",
 	           min="0", max="180")
 	float maxToleratedAbsoluteAngle = 180;
+
+	@Parameter(label = "NN: How many nearest neighbors to consider:",
+	           description = "Set to 0 to disable this test.",
+	           min="0")
+	int neighbrCnt = 0;
+
+	@Parameter(label = "NN: Magnitude of distance change to trigger alarm (um):", min="0")
+	float neighbrDistDelta = 5.0f;
+
+	@Parameter(label = "NN: Minimum count of alarms for a spot to review it:", min="1",
+	           description = "Set between 1 and number of considered neighbors.")
+	int neighbrAlarmsCnt = 5;
 
 	@Parameter(label = "Save trajectory stats:", description="Leave empty to disable this.")
 	String statsFile = "";
@@ -254,6 +267,10 @@ extends DynamicCommand
 		final double vec1[] = new double[3];
 		final double vec2[] = new double[3];
 		final double vec3[] = new double[3];
+
+		final double[] referenceDistances = new double[neighbrCnt];
+		final double[] testDistances = new double[neighbrCnt];
+
 		for (int n=0; n < rootsList.size(); ++n) {
 			final Spot spot = rootsList.get(n);
 			if (getLastFollower(spot, nSpot) != 1) break;
@@ -289,6 +306,9 @@ extends DynamicCommand
 			if (f != null) f.write("# abs. angle test at spot "+oSpot.getLabel()+": "+(angle*toDeg)+" (seen) vs. "+maxToleratedAbsoluteAngle+" (tolerated)\n");
 			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot, spot label at this time\n");
 
+			//neighbors test: initialization
+			findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances);
+
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
 				//BTW: oSpot -> nSpot
@@ -316,16 +336,27 @@ extends DynamicCommand
 				if ((getRotationAngle(vec2,vec3)*toDeg) > maxToleratedAbsoluteAngle)
 					enlistProblemSpot(nSpot, "absolute angle "+(getRotationAngle(vec2,vec3)*toDeg)+" too much");
 
-				if (f != null) f.write(nSpot.getTimepoint()+"\t"
-					+(angle*toDeg)+"\t"
-					+(getRotationAngle(vec2,vec3)*toDeg)+"\t"
-					+Math.sqrt(vec3[0]*vec3[0] + vec3[1]*vec3[1] + vec3[2]*vec3[2])+"\t"
-					+printVector(vec1)+"\t"
-					+printVector(vec3)+"\t"
-					+nSpot.getLabel()+"\n");
+				//neighbors test
+				findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances);
+				final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
+				if (alarms >= neighbrAlarmsCnt)
+					enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
 
-				//update the rot params, and move to the next spot
+				if (f != null)
+				{
+					f.write(nSpot.getTimepoint()+"\t"
+						+(angle*toDeg)+"\t"
+						+(getRotationAngle(vec2,vec3)*toDeg)+"\t"
+						+Math.sqrt(vec3[0]*vec3[0] + vec3[1]*vec3[1] + vec3[2]*vec3[2])+"\t"
+						+printVector(vec1)+"\t"
+						+printVector(vec3)+"\t");
+					for (int i=0; i < testDistances.length; ++i) f.write(testDistances[i]+"\t");
+					f.write(nSpot.getLabel()+"\n");
+				}
+
+				//update the rot params, reference distances, and move to the next spot
 				angle = getRotationAngleAndAxis(vec2, vec3, axis);
+				for (int i=0; i < referenceDistances.length; ++i) referenceDistances[i] = testDistances[i];
 				oSpot.refTo( nSpot );
 			}
 
@@ -450,5 +481,58 @@ extends DynamicCommand
 	public static String printVector(final double[] vec)
 	{
 		return new String("("+vec[0]+","+vec[1]+","+vec[2]+")");
+	}
+
+	/** fills the full array 'nearestDistances' */
+	private void findNearestNeighbors(final Spot aroundThisSpot,
+	                                  final SpatioTemporalIndex< Spot > allSpots,
+	                                  final VoxelDimensions resolution,
+	                                  final double[] nearestDistances)
+	{
+		aroundThisSpot.localize(neigPosA);
+
+		allNeighDistances.clear();
+		for ( final Spot spot : allSpots.getSpatialIndex( aroundThisSpot.getTimepoint() ) )
+		{
+			//skip over the same spot
+			if (spot.getInternalPoolIndex() == aroundThisSpot.getInternalPoolIndex()) continue;
+
+			//enlist the squared distance of the current spot to the reference one
+			spot.localize(neigPosB);
+			neigPosB[0] -= neigPosA[0]; //px distance
+			neigPosB[1] -= neigPosA[1];
+			neigPosB[2] -= neigPosA[2];
+			neigPosB[0] *= resolution.dimension(0); //um distance
+			neigPosB[1] *= resolution.dimension(1);
+			neigPosB[2] *= resolution.dimension(2);
+			neigPosB[0] *= neigPosB[0]; //um squared distance
+			neigPosB[1] *= neigPosB[1];
+			neigPosB[2] *= neigPosB[2];
+			allNeighDistances.add( neigPosB[0]+neigPosB[1]+neigPosB[2] );
+		}
+
+		double bestLastDist = 0, bestCurrDist;
+		for (int i=0; i < nearestDistances.length; ++i)
+		{
+			bestCurrDist = 999999999;
+			for (double dist : allNeighDistances)
+				if (dist > bestLastDist && dist < bestCurrDist) bestCurrDist = dist;
+
+			nearestDistances[i] = Math.sqrt(bestCurrDist);
+			bestLastDist = bestCurrDist;
+		}
+	}
+	final ArrayList<Double> allNeighDistances = new ArrayList<>(1000);
+	final double[] neigPosA = new double[3];
+	final double[] neigPosB = new double[3];
+
+	private int noOfDifferentArrayElems(final double[] testArray, final double[] referenceArray,
+	                                    final double threshold)
+	{
+		int alarmsCnt = 0;
+		for (int i=0; i < referenceArray.length; ++i)
+			if (Math.abs(referenceArray[i]-testArray[i]) > threshold) ++alarmsCnt;
+
+		return alarmsCnt;
 	}
 }
