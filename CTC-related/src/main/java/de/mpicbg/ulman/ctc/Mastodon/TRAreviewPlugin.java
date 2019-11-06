@@ -202,7 +202,16 @@ extends DynamicCommand
 		final JPanel pbtnPanel = new JPanel();
 		pbtnPanel.setLayout(new BoxLayout(pbtnPanel, BoxLayout.X_AXIS));
 
-		Button pbtn = new Button("Previous issue");
+		Button pbtn = new Button("Select all issues");
+		pbtn.addActionListener( (action) ->
+			{
+				appModel.getSelectionModel().clearSelection();
+				for (final Spot s : problemList)
+					appModel.getSelectionModel().setSelected(s,true);
+			} );
+		pbtnPanel.add(pbtn);
+
+		pbtn = new Button("Previous issue");
 		pbtn.addActionListener( (action) -> { --currentProblemIdx; navToProblem(); } );
 		pbtnPanel.add(pbtn);
 
