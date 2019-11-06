@@ -41,6 +41,10 @@ extends DynamicCommand
 	@Parameter(label = "With every search iteration, multiply the search box size by:", stepSize = "0.1")
 	double repeatBoxSizeFact = 1.0;
 
+	@Parameter(label = "Report statistics about the adjustments made:",
+	           description = "This is useful mainly only when many spots are adjusted in one go.")
+	boolean reportStats = false;
+
 	@Override
 	public void run()
 	{
@@ -181,13 +185,16 @@ extends DynamicCommand
 				logService.info((100*pbDone/pbSize)+" % adjusted");
 		}
 
-		logService.info("Histogram with bins of 1px distance:");
-		for (int i=0; i < cntsPerDist.length; ++i)
-			logService.info(i+" px:\t"+cntsPerDist[i]);
+		if (reportStats)
+		{
+			logService.info("Histogram with bins of 1px distance:");
+			for (int i=0; i < cntsPerDist.length; ++i)
+				logService.info(i+" px:\t"+cntsPerDist[i]);
 
-		logService.info("Histogram with bins of 1 iteration:");
-		for (int i=0; i < cntsPerIter.length; ++i)
-			logService.info(i+" iters:\t"+cntsPerIter[i]);
+			logService.info("Histogram with bins of 1 iteration:");
+			for (int i=0; i < cntsPerIter.length; ++i)
+				logService.info(i+" iters:\t"+cntsPerIter[i]);
+		}
 	}
 
 	//determine effective pixel ranges - half box size in px along every image axis

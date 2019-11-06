@@ -198,6 +198,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 			"boxSizeUM", boxSize,
 			"repeatUntilNoChange", repeat,
 			"safetyMaxIters", maxIters,
-			"repeatBoxSizeFact", changeFactor);
+			"repeatBoxSizeFact", changeFactor,
+			"reportStats", false);
 	}
 }
