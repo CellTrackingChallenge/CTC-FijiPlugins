@@ -314,7 +314,7 @@ extends DynamicCommand
 					enlistProblemSpot(nSpot, "relative angle "+(angle*toDeg)+" too much");
 
 				if ((getRotationAngle(vec2,vec3)*toDeg) > maxToleratedAbsoluteAngle)
-					enlistProblemSpot(nSpot, "absolute angle "+(angle*toDeg)+" too much");
+					enlistProblemSpot(nSpot, "absolute angle "+(getRotationAngle(vec2,vec3)*toDeg)+" too much");
 
 				if (f != null) f.write(nSpot.getTimepoint()+"\t"
 					+(angle*toDeg)+"\t"
