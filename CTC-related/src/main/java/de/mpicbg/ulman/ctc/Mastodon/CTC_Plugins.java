@@ -31,6 +31,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private static final String CTC_EXPORT = "CTC-export-all";
 	private static final String CTC_TRA_CHECKER = "CTC-reviewTRA";
 	private static final String CTC_TRA_ADJUSTER = "CTC-adjustTRA";
+	private static final String CTC_TRA_ADJUSTER_NQ = "CTC-adjustTRA-noQuestions";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -63,7 +64,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private final AbstractNamedAction actionImport;
 	private final AbstractNamedAction actionExport;
 	private final AbstractNamedAction actionTRAreview;
-	private final AbstractNamedAction actionTRAadjust;
+	private final AbstractNamedAction actionTRAadjust, actionTRAadjustNQ;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public CTC_Plugins()
@@ -72,6 +73,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionExport = new RunnableAction( CTC_EXPORT, this::exporter );
 		actionTRAreview = new RunnableAction( CTC_TRA_CHECKER, this::TRAreviewer );
 		actionTRAadjust = new RunnableAction( CTC_TRA_ADJUSTER, this::TRAadjuster );
+		actionTRAadjustNQ = new RunnableAction( CTC_TRA_ADJUSTER_NQ, this::TRAadjusterNQ );
 		updateEnabledActions();
 	}
 
@@ -84,6 +86,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actions.namedAction( actionExport, noShortCut );
 		actions.namedAction( actionTRAreview, "ctrl P" );
 		actions.namedAction( actionTRAadjust, "ctrl O" );
+		actions.namedAction( actionTRAadjustNQ, "ctrl shift O" );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -106,6 +109,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionExport.setEnabled( appModel != null );
 		actionTRAreview.setEnabled( appModel != null );
 		actionTRAadjust.setEnabled( appModel != null );
+		actionTRAadjustNQ.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
 
@@ -169,5 +173,31 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 			TRAadjustPlugin.class, true,
 			"appModel", pluginAppModel.getAppModel(),
 			"logService", this.getContext().getService(LogService.class));
+	}
+
+	/** the same as TRAadjuster except that choices are hard-coded and
+	    so the operation runs directly without poping up any dialog */
+	private void TRAadjusterNQ()
+	{
+		//answers to what the questions would be...
+		final double boxSize = 1.5;
+		final boolean repeat = true;
+		final int maxIters = 10;
+		final double changeFactor = 1.0;
+
+		//report the answers
+		final LogService logService = this.getContext().getService(LogService.class);
+		logService.info("Running spot position adjuster with these params: "
+			+boxSize+", "+repeat+", "+maxIters+", "+changeFactor);
+
+		//just do the job...
+		this.getContext().getService(CommandService.class).run(
+			TRAadjustPlugin.class, true,
+			"appModel", pluginAppModel.getAppModel(),
+			"logService", logService,
+			"boxSizeUM", boxSize,
+			"repeatUntilNoChange", repeat,
+			"safetyMaxIters", maxIters,
+			"repeatBoxSizeFact", changeFactor);
 	}
 }
