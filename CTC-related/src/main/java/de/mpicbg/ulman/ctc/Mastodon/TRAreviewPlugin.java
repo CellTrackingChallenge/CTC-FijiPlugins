@@ -67,10 +67,15 @@ extends DynamicCommand
 	           min="0", max="180")
 	float maxToleratedAbsoluteAngle = 180;
 
-	@Parameter(label = "NN: How many nearest neighbors to consider:",
-	           description = "Set to 0 to disable this suite of tests.",
+	@Parameter(label = "NN: How many nearest neighbors to consider maximally:",
+	           description = "Set to 0 to formally disable this suite of tests.",
 	           min="0")
-	int neighbrCnt = 0;
+	int neighbrMaxCnt = 0;
+
+	@Parameter(label = "NN: Maximum distance to neighbors to consider them (um):",
+	           description = "Set to 0 to effectively disable this suite of tests.",
+	           min="0")
+	float neighbrMaxDist = 12.0f;
 
 	@Parameter(label = "NN: Magnitude of distance change to trigger alarm (um):", min="0")
 	float neighbrDistDelta = 5.0f;
@@ -303,8 +308,8 @@ extends DynamicCommand
 		final double vec2[] = new double[3];
 		final double vec3[] = new double[3];
 
-		final double[] referenceDistances = new double[neighbrCnt];
-		final double[] testDistances = new double[neighbrCnt];
+		final double[] referenceDistances = new double[neighbrMaxCnt];
+		final double[] testDistances = new double[neighbrMaxCnt];
 
 		for (int n=0; n < rootsList.size(); ++n) {
 			final Spot spot = rootsList.get(n);
@@ -342,7 +347,7 @@ extends DynamicCommand
 			if (f != null) f.write("# time, predicted-observed diff angle (deg), observed now-prev diff angle (deg), displacement length, expected dir to this spot, observed dir to this spot[, distances to neighbors], spot label at this time\n");
 
 			//neighbors test: initialization
-			if (neighbrCnt > 0)
+			if (neighbrMaxCnt > 0)
 				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances);
 
 			while (getLastFollower(oSpot, nSpot) == 1)
@@ -373,7 +378,7 @@ extends DynamicCommand
 					enlistProblemSpot(nSpot, "absolute angle "+(getRotationAngle(vec2,vec3)*toDeg)+" deg too much");
 
 				//neighbors test
-				if (neighbrCnt > 0)
+				if (neighbrMaxCnt > 0)
 				{
 					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances);
 					final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
@@ -560,6 +565,7 @@ extends DynamicCommand
 				if (dist > bestLastDist && dist < bestCurrDist) bestCurrDist = dist;
 
 			nearestDistances[i] = Math.sqrt(bestCurrDist);
+			if (nearestDistances[i] > neighbrMaxDist) nearestDistances[i] = inftyDistanceConstant;
 			bestLastDist = bestCurrDist;
 		}
 	}
