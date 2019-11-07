@@ -555,7 +555,7 @@ extends DynamicCommand
 		double bestLastDist = 0, bestCurrDist;
 		for (int i=0; i < nearestDistances.length; ++i)
 		{
-			bestCurrDist = 999999999;
+			bestCurrDist = inftyDistanceConstant;
 			for (double dist : allNeighDistances)
 				if (dist > bestLastDist && dist < bestCurrDist) bestCurrDist = dist;
 
@@ -566,13 +566,17 @@ extends DynamicCommand
 	final ArrayList<Double> allNeighDistances = new ArrayList<>(1000);
 	final double[] neigPosA = new double[3];
 	final double[] neigPosB = new double[3];
+	final double inftyDistanceConstant = 999999999;
 
 	private int noOfDifferentArrayElems(final double[] testArray, final double[] referenceArray,
 	                                    final double threshold)
 	{
 		int alarmsCnt = 0;
 		for (int i=0; i < referenceArray.length; ++i)
+		{
+			if (referenceArray[i] == inftyDistanceConstant || testArray[i] == inftyDistanceConstant) continue;
 			if (Math.abs(referenceArray[i]-testArray[i]) > threshold) ++alarmsCnt;
+		}
 
 		return alarmsCnt;
 	}
