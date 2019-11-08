@@ -339,6 +339,8 @@ extends DynamicCommand
 
 		final double[] referenceDistances = new double[neighbrMaxCnt];
 		final double[] testDistances = new double[neighbrMaxCnt];
+		final double[] referenceLabels = new double[neighbrMaxCnt]; //could be int, but type issues with noOfDifferentArrayElems()
+		final double[] testLabels = new double[neighbrMaxCnt];
 
 		for (int n=0; n < rootsList.size(); ++n) {
 			final Spot spot = rootsList.get(n);
@@ -377,7 +379,7 @@ extends DynamicCommand
 
 			//neighbors test: initialization
 			if (neighbrMaxCnt > 0)
-				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances);
+				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances,referenceLabels);
 
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
@@ -409,7 +411,7 @@ extends DynamicCommand
 				//neighbors test
 				if (neighbrMaxCnt > 0)
 				{
-					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances);
+					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances,testLabels);
 					final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
 					if (alarms >= neighbrAlarmsCnt)
 						enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
@@ -426,12 +428,14 @@ extends DynamicCommand
 						+printVector(vec1)+"\t"
 						+printVector(vec3)+"\t");
 					for (int i=0; i < testDistances.length; ++i) f.write(testDistances[i]+"\t");
+					for (int i=0; i < testLabels.length; ++i) f.write(testLabels[i]+"\t");
 					f.write(nSpot.getLabel()+"\n");
 				}
 
 				//update the rot params, reference distances, and move to the next spot
 				angle = getRotationAngleAndAxis(vec2, vec3, axis);
 				for (int i=0; i < referenceDistances.length; ++i) referenceDistances[i] = testDistances[i];
+				for (int i=0; i < referenceLabels.length; ++i)    referenceLabels[i]    = testLabels[i];
 				oSpot.refTo( nSpot );
 			}
 
@@ -558,14 +562,18 @@ extends DynamicCommand
 		return new String("("+vec[0]+","+vec[1]+","+vec[2]+")");
 	}
 
-	/** fills the full array 'nearestDistances' */
+	/** fills the full arrays 'nearestDistances' and 'nearestLabels' */
 	private void findNearestNeighbors(final Spot aroundThisSpot,
 	                                  final SpatioTemporalIndex< Spot > allSpots,
 	                                  final VoxelDimensions resolution,
-	                                  final double[] nearestDistances)
+	                                  final double[] nearestDistances,
+	                                  final double[] nearestLabels)
 	{
+		//fixed position of the investigated spot
 		aroundThisSpot.localize(neigPosA);
 
+		//compute all distances to all other spots,
+		//and remember its track label to every distance
 		allNeighDistances.clear();
 		for ( final Spot spot : allSpots.getSpatialIndex( aroundThisSpot.getTimepoint() ) )
 		{
@@ -584,17 +592,40 @@ extends DynamicCommand
 			neigPosB[1] *= neigPosB[1];
 			neigPosB[2] *= neigPosB[2];
 			allNeighDistances.add( neigPosB[0]+neigPosB[1]+neigPosB[2] );
+			allNeighLabels[allNeighDistances.size()-1] = spot2track.get(spot);
 		}
 
-		double bestLastDist = 0, bestCurrDist;
+		//NB: designation of invalid index value
+		allNeighLabels[999] = -1;
+
+		//fill the output arrays
+		double bestCurrDist, bestLastDist = 0, dist;
+		int    bestCurrIdx;
 		for (int i=0; i < nearestDistances.length; ++i)
 		{
 			bestCurrDist = inftyDistanceConstant;
-			for (double dist : allNeighDistances)
-				if (dist > bestLastDist && dist < bestCurrDist) bestCurrDist = dist;
+			bestCurrIdx  = 999;
+			for (int j=0; j < allNeighDistances.size(); ++j)
+			{
+				dist = allNeighDistances.get(j);
+				if (dist > bestLastDist && dist < bestCurrDist)
+				{
+					bestCurrDist = dist;
+					bestCurrIdx  = j;
+				}
+			}
 
 			nearestDistances[i] = Math.sqrt(bestCurrDist);
-			if (nearestDistances[i] > neighbrMaxDist) nearestDistances[i] = inftyDistanceConstant;
+			nearestLabels[i]    = allNeighLabels[bestCurrIdx];
+
+			//"erase"/disable any element that is associated with a spot
+			//that is beyond the search threshold
+			if (nearestDistances[i] > neighbrMaxDist)
+			{
+				nearestDistances[i] = inftyDistanceConstant;
+				nearestLabels[i]    = -1;
+			}
+
 			bestLastDist = bestCurrDist;
 		}
 	}
@@ -604,6 +635,7 @@ extends DynamicCommand
 	final double inftyDistanceConstant = 999999999;
 
 	//track labeling business
+	final int[] allNeighLabels = new int[1000]; //hopefully there'll be no more spots per time point
 	RefIntMap< Spot > spot2track, parentalTracks;
 
 	private int noOfDifferentArrayElems(final double[] testArray, final double[] referenceArray,
