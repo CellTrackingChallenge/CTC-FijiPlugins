@@ -84,7 +84,11 @@ extends DynamicCommand
 
 	@Parameter(label = "NN: Minimum count of alarms for a spot to review it:", min="1",
 	           description = "Set between 1 and number of considered neighbors, set above to effectively disable this test.")
-	int neighbrAlarmsCnt = 5;
+	int neighbrDistAlarmsCnt = 5;
+
+	@Parameter(label = "NN: Minimum count of neighboring track changes around a spot to review it:", min="1",
+	           description = "Set between 1 and number of considered neighbors, set above to effectively disable this test.")
+	int neighbrLabelAlarmsCnt = 5;
 
 	@Parameter(label = "NN: Minimum distance to nearest spot to review it (um):", min="0",
 	           description = "Set to 0 to disable this test.")
@@ -342,7 +346,9 @@ extends DynamicCommand
 		final double[] referenceLabels = new double[neighbrMaxCnt]; //could be int, but type issues with noOfDifferentArrayElems()
 		final double[] testLabels = new double[neighbrMaxCnt];
 
-		for (int n=0; n < rootsList.size(); ++n) {
+		//finally, process the tracks and search for anomalies
+		for (int n=0; n < rootsList.size(); ++n)
+		{
 			final Spot spot = rootsList.get(n);
 			if (getLastFollower(spot, nSpot) != 1) continue;
 			if (getLastFollower(nSpot, oSpot) != 1) continue;
@@ -412,11 +418,16 @@ extends DynamicCommand
 				if (neighbrMaxCnt > 0)
 				{
 					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances,testLabels);
-					final int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
-					if (alarms >= neighbrAlarmsCnt)
+					int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
+					if (alarms >= neighbrDistAlarmsCnt)
 						enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
 					if (neighbrAlarmMinDist > 0 && testDistances[0] < neighbrAlarmMinDist)
 						enlistProblemSpot(nSpot, "too close ("+testDistances[0]+" um) to other spot");
+
+					//TODO replace daughters' labels with mother's label
+					alarms = noOfDifferentArrayElems(testLabels,referenceLabels,0);
+					if (alarms >= neighbrLabelAlarmsCnt)
+						enlistProblemSpot(nSpot, alarms+" neighboring tracks are now different");
 				}
 
 				if (f != null)
@@ -650,4 +661,21 @@ extends DynamicCommand
 
 		return alarmsCnt;
 	}
+	/*
+	private <N extends Number>
+	int noOfDifferentArrayElems(final N[] testArray, final N[] referenceArray,
+	                            final double threshold)
+	{
+		int alarmsCnt = 0;
+		for (int i=0; i < referenceArray.length; ++i)
+		{
+			final double rVal = referenceArray[i].doubleValue();
+			final double tVal = testArray[i].doubleValue();
+			if (rVal == inftyDistanceConstant || tVal == inftyDistanceConstant) continue;
+			if (Math.abs(rVal-tVal) > threshold) ++alarmsCnt;
+		}
+
+		return alarmsCnt;
+	}
+	*/
 }
