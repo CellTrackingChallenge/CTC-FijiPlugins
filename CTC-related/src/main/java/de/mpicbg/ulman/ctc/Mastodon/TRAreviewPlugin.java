@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.mastodon.collection.RefCollections;
+import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefList;
+import org.mastodon.collection.RefMaps;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
@@ -244,6 +246,11 @@ extends DynamicCommand
 		pbar.setMinimum(timeFrom);
 		pbar.setMaximum(timeTill);
 
+		//track labeling business
+		spot2track = RefMaps.createRefIntMap( modelGraph.vertices(), -1, 1000 );
+		parentalTracks = RefMaps.createRefIntMap( modelGraph.vertices(), -1, 500 );
+		int lastTrackId = 0;
+
 		final SpatioTemporalIndex< Spot > spots = model.getSpatioTemporalIndex();
 		final RefList< Spot > rootsList = RefCollections.createRefList( appModel.getModel().getGraph().vertices(),1000);
 
@@ -268,6 +275,7 @@ extends DynamicCommand
 			if (countBackwardLinks == 0)
 			{
 				rootsList.add(spot);
+				spot2track.put(spot,++lastTrackId);
 				if (reviewRoots) enlistProblemSpot(spot, "root");
 			}
 			if (countForwardLinks > 1)
@@ -278,6 +286,8 @@ extends DynamicCommand
 					if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill)
 					{
 						rootsList.add(oSpot);
+						spot2track.put(oSpot,++lastTrackId);
+						parentalTracks.put(oSpot, spot2track.get(spot));
 						if (reviewDaughters)
 							enlistProblemSpot(oSpot, "daughter");
 					}
@@ -288,6 +298,8 @@ extends DynamicCommand
 					if (oSpot.getTimepoint() > timePoint && oSpot.getTimepoint() <= timeTill)
 					{
 						rootsList.add(oSpot);
+						spot2track.put(oSpot,++lastTrackId);
+						parentalTracks.put(oSpot, spot2track.get(spot));
 						if (reviewDaughters)
 							enlistProblemSpot(oSpot, "daughter");
 					}
@@ -295,6 +307,23 @@ extends DynamicCommand
 			}
 
 			pbar.setProgress(timePoint+1);
+		}
+
+		logService.info("Found "+rootsList.size()+" tracks, "+parentalTracks.size()
+		                +" out of which are daughter tracks (twice the amount of divisions...)");
+
+		//label all tracks first
+		for (int n=0; n < rootsList.size(); ++n)
+		{
+			//cache the label of the current track
+			rootsList.get(n,oSpot);
+			lastTrackId = spot2track.get(oSpot);
+
+			while (getLastFollower(oSpot, nSpot) == 1)
+			{
+				spot2track.put(nSpot, lastTrackId);
+				oSpot.refTo( nSpot );
+			}
 		}
 
 		try {
@@ -573,6 +602,9 @@ extends DynamicCommand
 	final double[] neigPosA = new double[3];
 	final double[] neigPosB = new double[3];
 	final double inftyDistanceConstant = 999999999;
+
+	//track labeling business
+	RefIntMap< Spot > spot2track, parentalTracks;
 
 	private int noOfDifferentArrayElems(final double[] testArray, final double[] referenceArray,
 	                                    final double threshold)
