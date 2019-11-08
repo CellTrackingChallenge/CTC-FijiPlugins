@@ -425,7 +425,7 @@ extends DynamicCommand
 						enlistProblemSpot(nSpot, "too close ("+testDistances[0]+" um) to other spot");
 
 					//TODO replace daughters' labels with mother's label
-					alarms = noOfDifferentArrayElems(testLabels,referenceLabels,0);
+					alarms = noOfDifferentSetElems(testLabels,referenceLabels,0);
 					if (alarms >= neighbrLabelAlarmsCnt)
 						enlistProblemSpot(nSpot, alarms+" neighboring tracks are now different");
 				}
@@ -678,4 +678,35 @@ extends DynamicCommand
 		return alarmsCnt;
 	}
 	*/
+
+	private int noOfTestSetElemsNotInRefSet(final double[] testArray, final double[] referenceArray,
+	                                        final double threshold)
+	{
+		int alarmsCnt = 0;
+
+		//for every sensible element from the test set...
+		for (int i=0; i < testArray.length; ++i)
+		if (testArray[i] != inftyDistanceConstant)
+		{
+			boolean foundMatch = false;
+			//... we check whether it is included anywhere in the reference set
+			// (again, anywhere within the subset of sensible content only)
+			for (int j=0; j < referenceArray.length && !foundMatch; ++j)
+			if (referenceArray[j] != inftyDistanceConstant
+			 && Math.abs(referenceArray[j]-testArray[i]) <= threshold) foundMatch = true;
+
+			if (!foundMatch) ++alarmsCnt;
+		}
+
+		return alarmsCnt;
+	}
+
+	private int noOfDifferentSetElems(final double[] testArray, final double[] referenceArray,
+	                                  final double threshold)
+	{
+		//how many test set elems are not present in the reference set,
+		//and the same in the switched-role case
+		return ( noOfTestSetElemsNotInRefSet(testArray,referenceArray,threshold)
+		       + noOfTestSetElemsNotInRefSet(referenceArray,testArray,threshold) );
+	}
 }
