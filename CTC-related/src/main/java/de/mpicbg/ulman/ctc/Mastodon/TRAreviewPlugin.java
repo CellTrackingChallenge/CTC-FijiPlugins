@@ -385,7 +385,7 @@ extends DynamicCommand
 
 			//neighbors test: initialization
 			if (neighbrMaxCnt > 0)
-				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances,referenceLabels);
+				findNearestNeighbors(oSpot,spots,imgSource.getDimensionOfOneUnitOfWorldCoordinates(), referenceDistances,referenceLabels);
 
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
@@ -417,7 +417,7 @@ extends DynamicCommand
 				//neighbors test
 				if (neighbrMaxCnt > 0)
 				{
-					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances,testLabels);
+					findNearestNeighbors(nSpot,spots,imgSource.getDimensionOfOneUnitOfWorldCoordinates(), testDistances,testLabels);
 					int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
 					if (alarms >= neighbrDistAlarmsCnt)
 						enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
@@ -576,7 +576,7 @@ extends DynamicCommand
 	/** fills the full arrays 'nearestDistances' and 'nearestLabels' */
 	private void findNearestNeighbors(final Spot aroundThisSpot,
 	                                  final SpatioTemporalIndex< Spot > allSpots,
-	                                  final VoxelDimensions resolution,
+	                                  final double pxSize,
 	                                  final double[] nearestDistances,
 	                                  final double[] nearestLabels)
 	{
@@ -593,12 +593,12 @@ extends DynamicCommand
 
 			//enlist the squared distance of the current spot to the reference one
 			spot.localize(neigPosB);
-			neigPosB[0] -= neigPosA[0]; //px distance
+			neigPosB[0] -= neigPosA[0]; //isotropic px distance
 			neigPosB[1] -= neigPosA[1];
 			neigPosB[2] -= neigPosA[2];
-			neigPosB[0] *= resolution.dimension(0); //um distance
-			neigPosB[1] *= resolution.dimension(1);
-			neigPosB[2] *= resolution.dimension(2);
+			neigPosB[0] *= pxSize;      //um distance
+			neigPosB[1] *= pxSize;
+			neigPosB[2] *= pxSize;
 			neigPosB[0] *= neigPosB[0]; //um squared distance
 			neigPosB[1] *= neigPosB[1];
 			neigPosB[2] *= neigPosB[2];
