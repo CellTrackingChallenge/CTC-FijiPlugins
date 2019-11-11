@@ -1,17 +1,25 @@
 package de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkers;
 
+import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
-import net.imglib2.util.Util;
-import net.imglib2.RealLocalizable;
 import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkersProvider;
 
 @Plugin( type = SpheresWithFixedRadius.class, visible = false,
          name = "Specify the sphere radius in the image units (e.g. in microns):" )
 public class SpheresWithFixedRadius implements TRAMarkersProvider.intersectionDecidable, Command
 {
+	@Parameter(visibility = ItemVisibility.MESSAGE, required = false, initializer = "setResHint")
+	String resolutionMsg = "Unknown resolution of the image";
+	//
+	void setResHint()
+	{ resolutionMsg = resolutionHint; }
+	//
+	@Parameter(visibility = ItemVisibility.INVISIBLE, required = false)
+	String resolutionHint = "Unknown resolution of the image";
+
 	@Parameter(min = "0", stepSize = "1")
 	double fixedRadius = 0;
 

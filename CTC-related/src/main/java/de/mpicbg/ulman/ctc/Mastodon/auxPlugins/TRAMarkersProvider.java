@@ -48,9 +48,9 @@ public class TRAMarkersProvider
 		try
 		{
 			if (choice.startsWith("Boxes"))
-				markerShape = (intersectionDecidable)cs.run(BoxesWithFixedShape.class,true).get().getCommand();
+				markerShape = (intersectionDecidable)cs.run(BoxesWithFixedShape.class,true,"resolutionHint",resHint).get().getCommand();
 			else if (choice.contains("fixed"))
-				markerShape = (intersectionDecidable)cs.run(SpheresWithFixedRadius.class,true).get().getCommand();
+				markerShape = (intersectionDecidable)cs.run(SpheresWithFixedRadius.class,true,"resolutionHint",resHint).get().getCommand();
 			else
 				markerShape = new SpheresWithFloatingRadius();
 
