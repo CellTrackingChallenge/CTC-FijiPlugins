@@ -172,7 +172,7 @@ extends DynamicCommand
 		if (imgSource == null) return;
 
 		//obtain the output marker's shape...
-		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, this.getContext().getService(CommandService.class));
+		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, imgSource.getVoxelDimensions(), this.getContext().getService(CommandService.class));
 		if (markerShape == null) return;
 		//
 		logService.info("Output marker is      : "+markerShape.printInfo()+", in "+imgSource.getVoxelDimensions().unit());
