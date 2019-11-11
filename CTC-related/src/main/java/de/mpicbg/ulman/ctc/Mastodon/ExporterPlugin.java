@@ -478,7 +478,7 @@ extends DynamicCommand
 
 	//some shortcut variables worth remembering
 	private int outImgDims = -1;
-	private double[] resLen;        //aux 1px lengths
+	private double[] resLen;        //aux 1px lengths (in some physical unit)
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
@@ -495,16 +495,20 @@ extends DynamicCommand
 		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 
-		//project the spot's centre into the output image, and setup a sweeping bbox around it
-		transform.apply(spot, coord);                   //coord in pixel units
-		markerShape.setHalfBBoxInterval(radii, radius); //fills in image's some real units
+		//project the spot's centre into the output image (coord in pixel units)
+		transform.apply(spot, coord);
+
+		//setup a sweeping bbox around it: define half-width (aka radius) in some physical unit
+		markerShape.setHalfBBoxInterval(radii, radius);
+
+		//finalize the bbox parameters, per dimension....
 		for (int d=0; d < outImgDims; ++d)
 		{
 			//round centre position to the nearest pixel coord
 			coord.setPosition( Math.round(coord.getDoublePosition(d)), d );
 
 			//define the sweeping interval around this rounded centre
-			final double R = radii[d]*resLen[d];         //radius to pixel units
+			final double R = radii[d]/resLen[d];         //half-width in pixel units
 			radii[d           ] = coord.getDoublePosition(d) - R;
 			radii[d+outImgDims] = coord.getDoublePosition(d) + R;
 		}
@@ -542,7 +546,7 @@ extends DynamicCommand
 
 			//get it's (pixel) image coordinate, and convert to image-units distance vector
 			for (int d=0; d < outImgDims; ++d)
-				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))/resLen[d];
+				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))*resLen[d];
 
 			//if close to the spot's center, draw into this voxel
 			if (markerShape.isInside(radii, radius)) voxelAtP.setReal(label);
