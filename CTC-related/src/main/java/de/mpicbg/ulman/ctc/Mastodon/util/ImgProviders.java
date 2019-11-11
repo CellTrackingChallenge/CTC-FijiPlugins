@@ -40,9 +40,20 @@ public class ImgProviders
 		            most of the time the return value is 3 */
 		int numDimensions();
 
-		/** Returns a reference calibration data.
-		    @return Structure that describes resolution of the output images */
+		/** Returns a reference calibration data, typically for every
+		    axis as physical-unit per image-unit, e.g. microns per pixel.
+		    Consider this only when you have raw image coordinates.
+		    @return Structure that describes physical-unit sizes of image voxels */
 		VoxelDimensions getVoxelDimensions();
+
+		/** Returns the size, in physical-units of the image, along one grid-unit
+		    from Mastodon's world coordinate system. Recall that Mastodon's coordinates
+		    map 1:1 to original pixel coordinates only along axis (or axes) of the finest
+		    original resolution. Pixels along any other axes are adequately stretched to
+		    maintain the original data aspect ratio in the Mastodon's world coordinates.
+		    Consider this only when you have world coordinates obtained from Mastodon.
+		    @return Physical-unit size of one unit from Mastodon's world coordinates */
+		double getDimensionOfOneUnitOfWorldCoordinates();
 
 		/** Returns a reference image-to-world transformation.
 		    @param transform output param to be filled with the actual transform */
@@ -60,16 +71,17 @@ public class ImgProviders
 	{
 		final String fileTemplate;
 		final VoxelDimensions vd;
+		double mastodonPxSize;
 		final AffineTransform3D resHonouringTransform = new AffineTransform3D();
 
 		void defineResHonouringTransform()
 		{
 		    if (vd.numDimensions() != 3) return;
 
-			final double maxDPI = Math.max( vd.dimension(0), Math.max(vd.dimension(1),vd.dimension(2))) ;
-			resHonouringTransform.set(vd.dimension(0)/maxDPI,0,0,0,
-			                          0,vd.dimension(1)/maxDPI,0,0,
-			                          0,0,vd.dimension(2)/maxDPI,0);
+			mastodonPxSize = Math.min( vd.dimension(0), Math.min(vd.dimension(1),vd.dimension(2)) );
+			resHonouringTransform.set(vd.dimension(0)/mastodonPxSize,0,0,0,
+			                          0,vd.dimension(1)/mastodonPxSize,0,0,
+			                          0,0,vd.dimension(2)/mastodonPxSize,0);
 		}
 
 		public ImgProviderFromDisk(final String fullPathFileTemplate, final VoxelDimensions vd)
@@ -158,6 +170,12 @@ public class ImgProviders
 		}
 
 		@Override
+		public double getDimensionOfOneUnitOfWorldCoordinates()
+		{
+			return mastodonPxSize;
+		}
+
+		@Override
 		public void getSourceTransform(final AffineTransform3D transform)
 		{
 			transform.set(resHonouringTransform);
@@ -209,6 +227,13 @@ public class ImgProviders
 		public VoxelDimensions getVoxelDimensions()
 		{
 			return imgSource.getVoxelDimensions();
+		}
+
+		@Override
+		public double getDimensionOfOneUnitOfWorldCoordinates()
+		{
+			final VoxelDimensions vd = imgSource.getVoxelDimensions();
+			return Math.min( vd.dimension(0), Math.min(vd.dimension(1),vd.dimension(2)) );
 		}
 
 		@Override
