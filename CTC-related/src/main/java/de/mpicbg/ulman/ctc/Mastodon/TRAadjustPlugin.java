@@ -68,7 +68,7 @@ extends DynamicCommand
 		logService.info("Considering resolution: "+imgSource.getVoxelDimensions().dimension(0)
 		               +" x "+imgSource.getVoxelDimensions().dimension(1)
 		               +" x "+imgSource.getVoxelDimensions().dimension(2)
-		               +" px/"+imgSource.getVoxelDimensions().unit());
+		               +" "+imgSource.getVoxelDimensions().unit()+"/px");
 		logService.info("Considering px radius: "+radiusPx[0]
 		               +" x "+radiusPx[1]
 		               +" x "+radiusPx[2]);
@@ -198,10 +198,10 @@ extends DynamicCommand
 	}
 
 	//determine effective pixel ranges - half box size in px along every image axis
-	void getPxHalfBoxSize(final int[] radiusPx, final double boxSize, final VoxelDimensions resolution)
+	void getPxHalfBoxSize(final int[] radiusPx, final double boxSize, final VoxelDimensions pixelSize)
 	{
 		for (int d = 0; d < radiusPx.length; ++d)
-			radiusPx[d] = (int)Math.ceil( 0.5 * boxSize / resolution.dimension(d) );
+			radiusPx[d] = (int)Math.ceil( 0.5 * boxSize / pixelSize.dimension(d) );
 			//NB: we actually ignore image units here....
 	}
 }

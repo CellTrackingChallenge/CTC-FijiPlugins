@@ -3,7 +3,6 @@ package de.mpicbg.ulman.ctc.Mastodon;
 import java.awt.*;
 import javax.swing.*;
 
-import mpicbg.spim.data.sequence.VoxelDimensions;
 import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 
 import java.awt.event.WindowAdapter;
@@ -23,8 +22,6 @@ import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
 import org.scijava.plugin.Plugin;
 import org.scijava.plugin.Parameter;
-
-import net.imglib2.realtransform.AffineTransform3D;
 
 import org.mastodon.revised.mamut.MamutAppModel;
 import org.mastodon.revised.model.mamut.Spot;
@@ -141,7 +138,7 @@ extends DynamicCommand
 		logService.info("Considering resolution: "+imgSource.getVoxelDimensions().dimension(0)
 		               +" x "+imgSource.getVoxelDimensions().dimension(1)
 		               +" x "+imgSource.getVoxelDimensions().dimension(2)
-		               +" px/"+imgSource.getVoxelDimensions().unit());
+		               +" "+imgSource.getVoxelDimensions().unit()+"/px");
 
 		//define some shortcut variables
 		final Model model = appModel.getModel();
@@ -149,25 +146,6 @@ extends DynamicCommand
 
 		//debug report
 		logService.info("Time points span is   : "+timeFrom+"-"+timeTill);
-
-		//transformation used
-		final AffineTransform3D coordTransImg2World = new AffineTransform3D();
-
-		//some more dimensionality-based attributes
-		final int inImgDims = imgSource.numDimensions();
-		final int[] position = new int[inImgDims];
-
-		//volume and squared lengths of one voxel along all axes
-		final double[] resSqLen  = new double[inImgDims];
-		imgSource.getVoxelDimensions().dimensions(resSqLen);
-		double resArea   = resSqLen[0] * resSqLen[1]; //NB: lengths are yet before squaring
-		double resVolume = 1;
-		for (int i=0; i < inImgDims; ++i)
-		{
-			resVolume *= resSqLen[i];
-			resSqLen[i] *= resSqLen[i];
-		}
-
 
 		//allocate the shared proxy objects
 		linkRef = modelGraph.edgeRef();
@@ -335,11 +313,11 @@ extends DynamicCommand
 			= statsFile.length() > 0 ? new BufferedWriter( new FileWriter(statsFile) ) : null;
 
 		final double toDeg = 180.0 / 3.14159;
-		final double axis[] = new double[3];
+		final double[] axis = new double[3];
 
-		final double vec1[] = new double[3];
-		final double vec2[] = new double[3];
-		final double vec3[] = new double[3];
+		final double[] vec1 = new double[3];
+		final double[] vec2 = new double[3];
+		final double[] vec3 = new double[3];
 
 		final double[] referenceDistances = new double[neighbrMaxCnt];
 		final double[] testDistances = new double[neighbrMaxCnt];
@@ -385,7 +363,7 @@ extends DynamicCommand
 
 			//neighbors test: initialization
 			if (neighbrMaxCnt > 0)
-				findNearestNeighbors(oSpot,spots,imgSource.getVoxelDimensions(), referenceDistances,referenceLabels);
+				findNearestNeighbors(oSpot,spots,imgSource.getDimensionOfOneUnitOfWorldCoordinates(), referenceDistances,referenceLabels);
 
 			while (getLastFollower(oSpot, nSpot) == 1)
 			{
@@ -417,7 +395,7 @@ extends DynamicCommand
 				//neighbors test
 				if (neighbrMaxCnt > 0)
 				{
-					findNearestNeighbors(nSpot,spots,imgSource.getVoxelDimensions(), testDistances,testLabels);
+					findNearestNeighbors(nSpot,spots,imgSource.getDimensionOfOneUnitOfWorldCoordinates(), testDistances,testLabels);
 					int alarms = noOfDifferentArrayElems(testDistances,referenceDistances,neighbrDistDelta);
 					if (alarms >= neighbrDistAlarmsCnt)
 						enlistProblemSpot(nSpot, alarms+" neighbors have different distance");
@@ -570,13 +548,13 @@ extends DynamicCommand
 
 	public static String printVector(final double[] vec)
 	{
-		return new String("("+vec[0]+","+vec[1]+","+vec[2]+")");
+		return ("("+vec[0]+","+vec[1]+","+vec[2]+")");
 	}
 
 	/** fills the full arrays 'nearestDistances' and 'nearestLabels' */
 	private void findNearestNeighbors(final Spot aroundThisSpot,
 	                                  final SpatioTemporalIndex< Spot > allSpots,
-	                                  final VoxelDimensions resolution,
+	                                  final double pxSize,
 	                                  final double[] nearestDistances,
 	                                  final double[] nearestLabels)
 	{
@@ -593,12 +571,12 @@ extends DynamicCommand
 
 			//enlist the squared distance of the current spot to the reference one
 			spot.localize(neigPosB);
-			neigPosB[0] -= neigPosA[0]; //px distance
+			neigPosB[0] -= neigPosA[0]; //isotropic px distance
 			neigPosB[1] -= neigPosA[1];
 			neigPosB[2] -= neigPosA[2];
-			neigPosB[0] *= resolution.dimension(0); //um distance
-			neigPosB[1] *= resolution.dimension(1);
-			neigPosB[2] *= resolution.dimension(2);
+			neigPosB[0] *= pxSize;      //um distance
+			neigPosB[1] *= pxSize;
+			neigPosB[2] *= pxSize;
 			neigPosB[0] *= neigPosB[0]; //um squared distance
 			neigPosB[1] *= neigPosB[1];
 			neigPosB[2] *= neigPosB[2];
