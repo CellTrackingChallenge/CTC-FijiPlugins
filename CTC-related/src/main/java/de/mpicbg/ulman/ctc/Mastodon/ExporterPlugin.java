@@ -211,7 +211,7 @@ extends DynamicCommand
 		imgSource.getVoxelDimensions().dimensions(resLen);
 		logService.info("Considering resolution: "+resLen[0]
 		               +" x "+resLen[1]+" x "+resLen[2]
-		               +" px/"+imgSource.getVoxelDimensions().unit());
+		               +" "+imgSource.getVoxelDimensions().unit()+"/px");
 
 		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
 		final int outputTimeCorrection = resetTimePointNumbers? timeFrom : 0;

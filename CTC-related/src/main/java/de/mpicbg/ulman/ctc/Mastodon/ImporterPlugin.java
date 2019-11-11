@@ -177,7 +177,7 @@ extends DynamicCommand
 		logService.info("Considering resolution: "+imgSource.getVoxelDimensions().dimension(0)
 		               +" x "+imgSource.getVoxelDimensions().dimension(1)
 		               +" x "+imgSource.getVoxelDimensions().dimension(2)
-		               +" px/"+imgSource.getVoxelDimensions().unit());
+		               +" "+imgSource.getVoxelDimensions().unit()+"/px");
 
 		//define some shortcut variables
 		final Model model = appModel.getModel();
