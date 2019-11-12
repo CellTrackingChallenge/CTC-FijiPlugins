@@ -126,7 +126,8 @@ extends DynamicCommand
 	           choices = {
 	              "Everything: raw (cell) images, tracking markers images, lineage .txt file",
 	              "Tracking: tracking markers images, lineage .txt file",
-	              "Lineage: only .txt file and produce no images"
+	              "Lineage: only .txt file and produce no images",
+	              "Raw: only raw (cell) images and no markers images and no lineage .txt file"
 	           })
 	String outputLevel = "";
 
@@ -165,7 +166,8 @@ extends DynamicCommand
 	{
 		//decode exporting regime -> setup exporting flags
 		final boolean doOutputOnlyTXTfile = outputLevel.startsWith("Lineage") ? true : false;
-		final boolean doOutputRawImages = outputLevel.startsWith("Everything") ? true : false;
+		final boolean doOutputTRAImages = outputLevel.startsWith("Everything") || outputLevel.startsWith("Tracking") ? true : false;
+		final boolean doOutputRawImages = outputLevel.startsWith("Everything") || outputLevel.startsWith("Raw") ? true : false;
 
 		final int viewMipLevel = 0; //NB: use always the highest resolution
 		final Source<?> imgSource = decodeImgSourceChoices();
@@ -270,11 +272,12 @@ extends DynamicCommand
 			{
 				if (doOutputRawImages)
 					logService.info("Populating image: "+outRawImgFilename);
-				logService.info("Populating image: "+outImgFilename);
+				if (doOutputTRAImages)
+					logService.info("Populating image: "+outImgFilename);
 			}
 
 			final Img<T> outImg
-				= doOutputOnlyTXTfile? null : outImgFactory.create(outImgTemplate);
+				= doOutputTRAImages? outImgFactory.create(outImgTemplate) : null;
 
 			//over all spots in the current time point
 			for ( final Spot spot : spots.getSpatialIndex( time ) )
@@ -414,7 +417,7 @@ extends DynamicCommand
 				}
 
 				//finally, render the spot into the current image with its CTC's trackID
-				if (!doOutputOnlyTXTfile)
+				if (doOutputTRAImages)
 					renderSpot( outImg, coordTransWorld2Img, spot, knownTracks.get(spot) );
 
 				//forget the currently closed track
@@ -428,19 +431,17 @@ extends DynamicCommand
 			}
 
 			//save the image
-			if (!doOutputOnlyTXTfile)
+			//add, or wait until the list of images to be saved is small
+			try
 			{
-				//add, or wait until the list of images to be saved is small
-				try
-				{
-					if (doOutputRawImages)
-						saver.addImgSaveRequestOrBlockUntilLessThan(2,
-							(RandomAccessibleInterval)imgSource.getSource(time,0),outRawImgFilename);
+				if (doOutputRawImages)
+					saver.addImgSaveRequestOrBlockUntilLessThan(2,
+						(RandomAccessibleInterval)imgSource.getSource(time,0),outRawImgFilename);
+				if (doOutputTRAImages)
 					saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename);
-				}
-				catch (InterruptedException e) {
-					this.cancel("cancel requested");
-				}
+			}
+			catch (InterruptedException e) {
+				this.cancel("cancel requested");
 			}
 
 			pbar.setProgress(time+1-timeFrom);
@@ -453,9 +454,12 @@ extends DynamicCommand
 		}
 
 		//finish the export by creating the supplementary .txt file
-		tracks.exportToFile(
-		    String.format("%s%s%s", outputFolder.getAbsolutePath(),File.separator,filenameTXT),
-		    -outputTimeCorrection );
+		if (doOutputOnlyTXTfile || doOutputTRAImages)
+		{
+			tracks.exportToFile(
+			    String.format("%s%s%s", outputFolder.getAbsolutePath(),File.separator,filenameTXT),
+			    -outputTimeCorrection );
+		}
 
 		}
 		catch (InterruptedException e) {
