@@ -553,7 +553,14 @@ extends DynamicCommand
 				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))*resLen[d];
 
 			//if close to the spot's center, draw into this voxel
-			if (markerShape.isInside(radii, radius)) voxelAtP.setReal(label);
+			if (markerShape.isInside(radii, radius))
+			{
+				if (voxelAtP.getRealDouble() > 0)
+					logService.warn("spot "+spot.getLabel()+" with label "+label
+					               +" is overwriting label "+voxelAtP.getRealDouble()
+					               +" at "+Util.printCoordinates(p));
+				voxelAtP.setReal(label);
+			}
 		}
 	}
 
