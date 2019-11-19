@@ -18,6 +18,8 @@ import org.mastodon.collection.RefList;
 import org.mastodon.collection.RefMaps;
 import org.mastodon.model.FocusListener;
 import org.mastodon.spatial.SpatioTemporalIndex;
+import org.mastodon.grouping.GroupHandle;
+import org.mastodon.app.ui.GroupLocksPanel;
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
 import org.scijava.command.DynamicCommand;
@@ -108,6 +110,10 @@ extends DynamicCommand
 	/** the currently investigated spot */
 	private int currentProblemIdx = -1;
 
+	/** this, essentially, gives access to the current view grouping configuration;
+	    and allows to notify the other views (TrackScheme or BDV) to show the `currentProblemIdx` */
+	private GroupHandle myGroupHandle = null;
+
 	private void navToProblem()
 	{
 		if (problemList == null || problemDesc == null) return;
@@ -115,10 +121,9 @@ extends DynamicCommand
 		if (currentProblemIdx >= problemList.size()) currentProblemIdx = problemList.size()-1;
 
 		problemList.get( currentProblemIdx, oSpot );
-		//appModel.getFocusModel().focusVertex(oSpot);
-		appModel.getSelectionModel().clearSelection();
-		appModel.getSelectionModel().setSelected(oSpot,true);
 		appModel.getHighlightModel().highlightVertex(oSpot);
+		if (myGroupHandle != null)
+			myGroupHandle.getModel(appModel.NAVIGATION).notifyNavigateToVertex(oSpot);
 
 		if (pbar != null) pbar.setProgress(currentProblemIdx);
 		if (pMsg != null) pMsg.setText( problemDesc.get(currentProblemIdx) );
@@ -177,6 +182,7 @@ extends DynamicCommand
 			fSpot = modelGraph.vertices().createRef();
 			appModel.getFocusModel().listeners().add( tryToNavToProblem );
 		}
+		myGroupHandle = appModel.getGroupManager().createGroupHandle();
 
 		//release the shared proxy objects
 		class MyWindowAdapter extends WindowAdapter
@@ -189,6 +195,7 @@ extends DynamicCommand
 
 			public void windowClosing(final JFrame closeThisFrameToo)
 			{
+				appModel.getGroupManager().removeGroupHandle( myGroupHandle );
 				if (navigateToClickedSpot)
 				{
 					appModel.getFocusModel().listeners().remove( tryToNavToProblem );
@@ -210,6 +217,8 @@ extends DynamicCommand
 		//populate the bar and show it
 		final JFrame pbframe = new JFrame("CTC TRA Reviewer Progress Bar @ Mastodon");
 		pbframe.setLayout(new BoxLayout(pbframe.getContentPane(), BoxLayout.Y_AXIS));
+
+		pbframe.add( new GroupLocksPanel( myGroupHandle ) );
 
 		pbar = new ProgressIndicator("Issues reviewed: ", "", 0, 1, false);
 		pbframe.add(pbar);
@@ -245,7 +254,7 @@ extends DynamicCommand
 		pbframe.add(pbtnPanel);
 
 		pbframe.addWindowListener(releaseRoutine);
-		pbframe.setMinimumSize(new Dimension(300, 140));
+		pbframe.setMinimumSize(new Dimension(300, 180));
 		pbframe.pack();
 		pbframe.setLocationByPlatform(true);
 		pbframe.setVisible(true);
