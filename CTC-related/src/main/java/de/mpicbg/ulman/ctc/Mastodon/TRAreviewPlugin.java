@@ -16,6 +16,7 @@ import org.mastodon.collection.RefCollections;
 import org.mastodon.collection.RefIntMap;
 import org.mastodon.collection.RefList;
 import org.mastodon.collection.RefMaps;
+import org.mastodon.model.FocusListener;
 import org.mastodon.spatial.SpatioTemporalIndex;
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
@@ -91,6 +92,9 @@ extends DynamicCommand
 	           description = "Set to 0 to disable this test.")
 	float neighbrAlarmMinDist = 6.0f;
 
+	@Parameter(label = "Find and (re)navigate to a just selected spot:")
+	boolean navigateToClickedSpot = false;
+
 	@Parameter(label = "Save trajectory stats:", description="Leave empty to disable this.")
 	String statsFile = "";
 
@@ -111,7 +115,7 @@ extends DynamicCommand
 		if (currentProblemIdx >= problemList.size()) currentProblemIdx = problemList.size()-1;
 
 		problemList.get( currentProblemIdx, oSpot );
-		appModel.getFocusModel().focusVertex(oSpot);
+		//appModel.getFocusModel().focusVertex(oSpot);
 		appModel.getSelectionModel().clearSelection();
 		appModel.getSelectionModel().setSelected(oSpot,true);
 		appModel.getHighlightModel().highlightVertex(oSpot);
@@ -120,11 +124,28 @@ extends DynamicCommand
 		if (pMsg != null) pMsg.setText( problemDesc.get(currentProblemIdx) );
 	}
 
+	private FocusListener tryToNavToProblem = new FocusListener()
+	{
+		@Override
+		public void focusChanged()
+		{
+			appModel.getFocusModel().getFocusedVertex(fSpot);
+			//System.out.println("clicked on "+fSpot.getLabel());
+
+			int newIdx = problemList.lastIndexOf(fSpot);
+			if (newIdx > -1)
+			{
+				currentProblemIdx = newIdx;
+				navToProblem();
+			}
+		}
+	};
+
 	private ProgressIndicator pbar = null;
 	private JLabel pMsg = null;
 
 	//shared "proxy" objects, allocated and released in run()
-	private Spot nSpot,oSpot;
+	private Spot nSpot,oSpot,fSpot;
 	private Link linkRef;
 
 	// ----------------- how to read data in -----------------
@@ -151,6 +172,11 @@ extends DynamicCommand
 		linkRef = modelGraph.edgeRef();
 		nSpot = modelGraph.vertices().createRef();
 		oSpot = modelGraph.vertices().createRef();
+		if (navigateToClickedSpot)
+		{
+			fSpot = modelGraph.vertices().createRef();
+			appModel.getFocusModel().listeners().add( tryToNavToProblem );
+		}
 
 		//release the shared proxy objects
 		class MyWindowAdapter extends WindowAdapter
@@ -163,6 +189,11 @@ extends DynamicCommand
 
 			public void windowClosing(final JFrame closeThisFrameToo)
 			{
+				if (navigateToClickedSpot)
+				{
+					appModel.getFocusModel().listeners().remove( tryToNavToProblem );
+					modelGraph.vertices().releaseRef(fSpot);
+				}
 				modelGraph.vertices().releaseRef(oSpot);
 				modelGraph.vertices().releaseRef(nSpot);
 				modelGraph.releaseRef(linkRef);
