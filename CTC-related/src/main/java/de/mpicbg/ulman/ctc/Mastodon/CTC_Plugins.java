@@ -32,6 +32,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private static final String CTC_TRA_CHECKER = "CTC-reviewTRA";
 	private static final String CTC_TRA_ADJUSTER = "CTC-adjustTRA";
 	private static final String CTC_TRA_ADJUSTER_NQ = "CTC-adjustTRA-noQuestions";
+	private static final String CTC_TRA_ADJUSTER_NQ2 = "CTC-adjustTRA-noQuestionsToo";
 	//------------------------------------------------------------------------
 
 	@Override
@@ -64,7 +65,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 	private final AbstractNamedAction actionImport;
 	private final AbstractNamedAction actionExport;
 	private final AbstractNamedAction actionTRAreview;
-	private final AbstractNamedAction actionTRAadjust, actionTRAadjustNQ;
+	private final AbstractNamedAction actionTRAadjust, actionTRAadjustNQ, actionTRAadjustNQ2;
 
 	/** default c'tor: creates Actions available from this plug-in */
 	public CTC_Plugins()
@@ -73,7 +74,8 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionExport = new RunnableAction( CTC_EXPORT, this::exporter );
 		actionTRAreview = new RunnableAction( CTC_TRA_CHECKER, this::TRAreviewer );
 		actionTRAadjust = new RunnableAction( CTC_TRA_ADJUSTER, this::TRAadjuster );
-		actionTRAadjustNQ = new RunnableAction( CTC_TRA_ADJUSTER_NQ, this::TRAadjusterNQ );
+		actionTRAadjustNQ  = new RunnableAction( CTC_TRA_ADJUSTER_NQ, this::TRAadjusterNQ );
+		actionTRAadjustNQ2 = new RunnableAction( CTC_TRA_ADJUSTER_NQ2, this::TRAadjusterNQ );
 		updateEnabledActions();
 	}
 
@@ -86,7 +88,8 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actions.namedAction( actionExport, noShortCut );
 		actions.namedAction( actionTRAreview, "ctrl P" );
 		actions.namedAction( actionTRAadjust, "ctrl O" );
-		actions.namedAction( actionTRAadjustNQ, "ctrl shift O" );
+		actions.namedAction( actionTRAadjustNQ , "ctrl shift O" );
+		actions.namedAction( actionTRAadjustNQ2, "ctrl shift S" );
 	}
 
 	/** reference to the currently available project in Mastodon */
@@ -110,6 +113,7 @@ public class CTC_Plugins extends AbstractContextual implements MastodonPlugin
 		actionTRAreview.setEnabled( appModel != null );
 		actionTRAadjust.setEnabled( appModel != null );
 		actionTRAadjustNQ.setEnabled( appModel != null );
+		actionTRAadjustNQ2.setEnabled( appModel != null );
 	}
 	//------------------------------------------------------------------------
 
