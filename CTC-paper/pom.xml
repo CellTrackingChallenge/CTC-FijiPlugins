@@ -12,7 +12,7 @@
 
 	<groupId>de.mpicbg.ulman</groupId>
 	<artifactId>CTC-paper-FijiPlugins</artifactId>
-	<version>1.4.2</version>
+	<version>1.4.3</version>
 
 	<organization>
 		<name>MPI-CBG</name>
