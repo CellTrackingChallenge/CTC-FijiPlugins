@@ -369,7 +369,7 @@ public class plugin_GTviaMarkers implements Command
 
 			//should there be the weight column on this line?
 			//are we still on lines where weight column should be handled?
-			if (lineNo < job.size())
+			if (lineNo < (job.size()-1))
 			{
 				if (weightAvail)
 				{
