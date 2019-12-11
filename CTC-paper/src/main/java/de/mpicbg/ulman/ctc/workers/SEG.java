@@ -36,6 +36,9 @@ public class SEG
 	///shortcuts to some Fiji services
 	private final LogService log;
 
+	///specifies how many digits are to be expected in the input filenames
+	public int noOfDigits = 3;
+
 	///a constructor requiring connection to Fiji report/log services
 	public SEG(final LogService _log)
 	{
@@ -89,6 +92,7 @@ public class SEG
 
 		//instantiate the cache because it has functions we will use
 		final TrackDataCache cache = new TrackDataCache(log);
+		cache.noOfDigits = noOfDigits;
 
 		//do the bottom stage
 		//DEBUG//log.info("Computing the SEG completely...");
@@ -148,7 +152,7 @@ public class SEG
 				= cache.ReadImageG16(file.toString());
 
 			RandomAccessibleInterval<UnsignedShortType> res_img
-				= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
+				= cache.ReadImageG16(String.format("%s/mask%0"+noOfDigits+"d.tif",resPath,time));
 
 			//check that slice "extracting" can make sense (the 3rd dim must be present)
 			if (slice > -1 && res_img.numDimensions() <= 2)
@@ -301,13 +305,14 @@ public class SEG
 	                                  final List<Integer> FP, //LIST of bad RES hits
 	                                  final int[] FN)         //COUNT of missed GT ones
 	{
-		//always use the same slot (that represents the first time point) in the cache
-		final int fakeTimePoint = 0;
-		cache.levels.clear();
-
 		//if no cache is given, create one
 		if (cache == null)
 			cache = new TrackDataCache(log);
+
+		//always use the same slot (that represents the first time point) in the cache
+		final int fakeTimePoint = 0;
+		cache.levels.clear();
+		cache.noOfDigits = noOfDigits;
 
 		//does the overlap-based pairing of GT and RES segments
 		cache.ClassifyLabels(gt_img, res_img, doStopOnEmptyImages, fakeTimePoint, overlapRatio);
