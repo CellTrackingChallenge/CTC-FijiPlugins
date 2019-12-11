@@ -45,6 +45,10 @@ public class plugin_DETmeasure implements Command
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif")
 	private File gtPath;
 
+	@Parameter(label = "Number of digits used in the image filenames:", min = "1",
+		description = "Set to 3 if your files are, e.g., t000.tif, or to 5 if your files are, e.g., t00021.tif")
+	public int noOfDigits = 3;
+
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
@@ -116,6 +120,7 @@ public class plugin_DETmeasure implements Command
 			final DET det = new DET(log);
 			det.doLogReports      = doLogReports;
 			det.doMatchingReports = doMatchingReports;
+			det.noOfDigits        = noOfDigits;
 
 			Set<Integer> timePoints = NumberSequenceHandler.toSet(fileIdxStr);
 			if (timePoints.size() > 0)

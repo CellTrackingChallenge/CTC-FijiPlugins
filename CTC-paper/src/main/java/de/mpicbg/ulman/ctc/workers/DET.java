@@ -64,6 +64,7 @@ public class DET extends TRA
 		{
 			//do the upper stage
 			cache = new TrackDataCache(log);
+			cache.noOfDigits = noOfDigits;
 
 			log.info(" GT path: "+gtPath+"/TRA");
 			log.info("RES path: "+resPath);
@@ -94,7 +95,7 @@ public class DET extends TRA
 				{
 					if (sampler == null)
 						return Files.isReadable(
-							new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time+1)).toPath() );
+							new File(String.format("%s/TRA/man_track%0"+noOfDigits+"d.tif",gtPath,time+1)).toPath() );
 					else
 						return sampler.hasNext();
 				}
@@ -110,10 +111,10 @@ public class DET extends TRA
 
 				//read the image pair
 				Img<UnsignedShortType> gt_img
-					= cache.ReadImageG16(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
+					= cache.ReadImageG16(String.format("%s/TRA/man_track%0"+noOfDigits+"d.tif",gtPath,time));
 
 				Img<UnsignedShortType> res_img
-					= cache.ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
+					= cache.ReadImageG16(String.format("%s/mask%0"+noOfDigits+"d.tif",resPath,time));
 
 				cache.ClassifyLabels(gt_img, res_img, time);
 

@@ -49,6 +49,9 @@ public class TrackDataCache
 		log = _log;
 	}
 
+	///specifies how many digits are to be expected in the input filenames
+	public int noOfDigits = 3;
+
 	///GT and RES paths combination for which this cache is valid, null means invalid
 	private String gtPath = null;
 	///GT and RES paths combination for which this cache is valid, null means invalid
@@ -724,14 +727,14 @@ public class TrackDataCache
 		//and call ClassifyLabels() for every such pair
 		int time = 0;
 		while (Files.isReadable(
-			new File(String.format("%s/TRA/man_track%03d.tif",gtPath,time)).toPath()))
+			new File(String.format("%s/TRA/man_track%0"+noOfDigits+"d.tif",gtPath,time)).toPath()))
 		{
 			//read the image pair
 			Img<UnsignedShortType> gt_img
-				= ReadImageG16(String.format("%s/TRA/man_track%03d.tif",gtPath,time));
+				= ReadImageG16(String.format("%s/TRA/man_track%0"+noOfDigits+"d.tif",gtPath,time));
 
 			Img<UnsignedShortType> res_img
-				= ReadImageG16(String.format("%s/mask%03d.tif",resPath,time));
+				= ReadImageG16(String.format("%s/mask%0"+noOfDigits+"d.tif",resPath,time));
 
 			ClassifyLabels(gt_img, res_img);
 			++time;

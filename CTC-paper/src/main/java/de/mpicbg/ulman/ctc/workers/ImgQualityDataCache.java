@@ -49,6 +49,9 @@ public class ImgQualityDataCache
 	///flag to notify extractFGObjectStats() if to bother itself with surface mesh
 	public boolean doShapePrecalculation = false;
 
+	///specifies how many digits are to be expected in the input filenames
+	public int noOfDigits = 3;
+
 	///a constructor requiring connection to Fiji report/log services
 	public ImgQualityDataCache(final LogService _log)
 	{
@@ -761,17 +764,17 @@ public class ImgQualityDataCache
 		//
 		int time = 0;
 		while (Files.isReadable(
-			new File(String.format("%s/t%03d.tif",imgPath,time)).toPath()))
+			new File(String.format("%s/t%0"+noOfDigits+"d.tif",imgPath,time)).toPath()))
 		{
 			//read the image tripple (raw image, FG labels, BG label)
 			Img<?> img
-				= tCache.ReadImage(String.format("%s/t%03d.tif",imgPath,time));
+				= tCache.ReadImage(String.format("%s/t%0"+noOfDigits+"d.tif",imgPath,time));
 
 			Img<UnsignedShortType> imgFG
-				= tCache.ReadImageG16(String.format("%s/TRA/man_track%03d.tif",annPath,time));
+				= tCache.ReadImageG16(String.format("%s/TRA/man_track%0"+noOfDigits+"d.tif",annPath,time));
 
 			Img<UnsignedByteType> imgBG
-				= tCache.ReadImageG8(String.format("%s/BG/mask%03d.tif",annPath,time));
+				= tCache.ReadImageG8(String.format("%s/BG/mask%0"+noOfDigits+"d.tif",annPath,time));
 
 			//time to allocate helper variables?
 			if (time == 0)

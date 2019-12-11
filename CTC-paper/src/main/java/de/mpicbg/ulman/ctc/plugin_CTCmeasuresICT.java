@@ -44,6 +44,10 @@ public class plugin_CTCmeasuresICT implements Command
 		description = "Path should contain folders SEG, TRA and files: SEG/man_seg*.tif, TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
+	@Parameter(label = "Number of digits used in the image filenames:", min = "1",
+		description = "Set to 3 if your files are, e.g., t000.tif, or to 5 if your files are, e.g., t00021.tif")
+	public int noOfDigits = 3;
+
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
@@ -118,6 +122,7 @@ public class plugin_CTCmeasuresICT implements Command
 			try {
 				final SEG seg = new SEG(log);
 				seg.doLogReports = optionVerboseLogging;
+				seg.noOfDigits = noOfDigits;
 				SEG = seg.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {
@@ -134,6 +139,7 @@ public class plugin_CTCmeasuresICT implements Command
 				final TRA tra = new TRA(log);
 				tra.doConsistencyCheck = optionConsistency;
 				tra.doLogReports = optionVerboseLogging;
+				tra.noOfDigits = noOfDigits;
 				TRA = tra.calculate(GTdir, RESdir);
 			}
 			catch (RuntimeException e) {

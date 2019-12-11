@@ -30,6 +30,9 @@ public class TRA
 	///shortcuts to some Fiji services
 	protected final LogService log;
 
+	///specifies how many digits are to be expected in the input filenames
+	public int noOfDigits = 3;
+
 	///a constructor requiring connection to Fiji report/log services
 	public TRA(final LogService _log)
 	{
@@ -528,6 +531,7 @@ public class TRA
 		{
 			//do the upper stage
 			cache = new TrackDataCache(log);
+			cache.noOfDigits = noOfDigits;
 			cache.calculate(gtPath,resPath);
 		}
 
