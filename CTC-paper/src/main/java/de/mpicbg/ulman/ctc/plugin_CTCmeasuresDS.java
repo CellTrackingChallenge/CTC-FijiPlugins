@@ -52,6 +52,10 @@ public class plugin_CTCmeasuresDS implements Command
 		description = "Path should contain cell image files directly: t???.tif")
 	private File imgPath;
 
+	@Parameter(label = "Number of digits used in the image filenames:", min = "1",
+		description = "Set to 3 if your files are, e.g., t000.tif, or to 5 if your files are, e.g., t00021.tif")
+	public int noOfDigits = 3;
+
 	@Parameter(label = "Resolution (um/px) of the images, x-axis:",
 		min = "0.0001", stepSize = "0.1",
 		description = "Size of single pixel/voxel along the x-axis in micrometers.")
@@ -221,6 +225,7 @@ public class plugin_CTCmeasuresDS implements Command
 		ImgQualityDataCache cache = new ImgQualityDataCache(log);
 		if (calcDen) cache.doDensityPrecalculation = true;
 		if (calcSha) cache.doShapePrecalculation = true;
+		cache.noOfDigits = noOfDigits;
 
 		//do the calculation and retrieve updated cache afterwards
 		if (calcSNR)
