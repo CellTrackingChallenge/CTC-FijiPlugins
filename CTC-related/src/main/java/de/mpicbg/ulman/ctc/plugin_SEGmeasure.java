@@ -70,6 +70,10 @@ public class plugin_SEGmeasure implements Command
 		description = "The output report normally reviews only all ground-truth labels. If enabled, information about all result labels is given too.")
 	private boolean optionReportAllResultLabels = false;
 
+	@Parameter(label = "Report (and stop) on empty images",
+		description = "The calculation stops whenever an empty (only pixels with zero value) image is found either among the ground-truth or result images.")
+	private boolean optionStopOnEmptyImages = false;
+
 
 	//citation footer...
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false, label = "Please, cite us:")
@@ -115,6 +119,7 @@ public class plugin_SEGmeasure implements Command
 			final SEG seg = new SEG(log);
 			seg.doLogReports = optionVerboseLogging;
 			seg.doAllResReports = optionReportAllResultLabels;
+			seg.doStopOnEmptyImages = optionStopOnEmptyImages;
 
 			Set<Integer> timePoints = NumberSequenceHandler.toSet(fileIdxStr);
 			if (timePoints.size() > 0)

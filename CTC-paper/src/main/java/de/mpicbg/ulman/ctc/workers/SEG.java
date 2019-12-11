@@ -66,6 +66,10 @@ public class SEG
 	    time points, and this when this attribute becomes useful. */
 	public Set<Integer> doOnlyTheseTimepoints = null;
 
+	/** This switches SEG to complain (and stop calculating)
+	    if empty ground-truth or result image was found. */
+	public boolean doStopOnEmptyImages = false;
+
 	// ----------- the SEG essentially starts here -----------
 	//auxiliary data:
 
@@ -171,7 +175,7 @@ public class SEG
 					throw new IllegalArgumentException("Image pair at time"+time
 						+" does not consist of images of the same size.");
 
-			cache.ClassifyLabels(gt_img, res_img);
+			cache.ClassifyLabels(gt_img, res_img, doStopOnEmptyImages);
 			++imgCounter;
 
 			//after ClassifyLabels(), the voxel-matching info is here:
@@ -306,7 +310,7 @@ public class SEG
 			cache = new TrackDataCache(log);
 
 		//does the overlap-based pairing of GT and RES segments
-		cache.ClassifyLabels(gt_img, res_img, false, fakeTimePoint, overlapRatio);
+		cache.ClassifyLabels(gt_img, res_img, doStopOnEmptyImages, fakeTimePoint, overlapRatio);
 
 		//retrieve the "pointer" on the pairing information
 		final TemporalLevel level = cache.levels.lastElement();
