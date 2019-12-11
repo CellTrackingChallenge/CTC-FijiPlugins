@@ -44,7 +44,10 @@ public class plugin_AOGMconsistency implements Command
 	private File resPath;
 
 	@Parameter(label = "Path contains GT or result data:",
-		choices = {"RES: mask???.tif and res_track.txt" , "GT: TRA/man_track???.tif and TRA/man_track.txt"},
+		choices = {"RES: mask???.tif and res_track.txt",
+		           "RES: mask????.tif and res_track.txt",
+		           "GT: TRA/man_track???.tif and TRA/man_track.txt",
+		           "GT: TRA/man_track????.tif and TRA/man_track.txt"},
 		description = "Choose what naming convention is implemented in the data folder.")
 	private String resPathType;
 
@@ -65,7 +68,9 @@ public class plugin_AOGMconsistency implements Command
 
 	static private
 	final String[] inputNames = { "/res_track.txt",     "%s/mask%03d.tif",
-	                              "/TRA/man_track.txt", "%s/TRA/man_track%03d.tif" };
+	                              "/res_track.txt",     "%s/mask%04d.tif",
+	                              "/TRA/man_track.txt", "%s/TRA/man_track%03d.tif",
+	                              "/TRA/man_track.txt", "%s/TRA/man_track%04d.tif" };
 
 	//the GUI path entry function:
 	@Override
@@ -76,7 +81,9 @@ public class plugin_AOGMconsistency implements Command
 
 			final TrackDataCache cache = new TrackDataCache(log);
 			final TRA tra = new TRA(log);
-			final int inputNamesChooser = resPathType.startsWith("RES") ? 0 : 2;
+			final int inputNamesChooser = ( resPathType.startsWith("RES") ?
+			                (resPathType.indexOf("????") == -1 ? 0 : 1)
+			              : (resPathType.indexOf("????") == -1 ? 2 : 3) )*2;
 
 			//load metadata with the lineages
 			cache.LoadTrackFile(resPath+inputNames[inputNamesChooser], cache.res_tracks);
@@ -103,7 +110,7 @@ public class plugin_AOGMconsistency implements Command
 
 			consistent = true;
 			try {
-				tra.CheckConsistency(cache.levels, cache.res_tracks, (inputNamesChooser == 2));
+				tra.CheckConsistency(cache.levels, cache.res_tracks, (inputNamesChooser == 4 || inputNamesChooser == 6));
 			}
 			catch (IllegalArgumentException e)
 			{
