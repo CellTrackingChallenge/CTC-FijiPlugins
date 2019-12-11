@@ -47,6 +47,10 @@ public class plugin_CTCmeasuresBIO implements Command
 		description = "Path should contain folder TRA and files: TRA/man_track???.tif and TRA/man_track.txt")
 	private File gtPath;
 
+	@Parameter(label = "Number of digits used in the image filenames:", min = "1",
+		description = "Set to 3 if your files are, e.g., t000.tif, or to 5 if your files are, e.g., t00021.tif")
+	public int noOfDigits = 3;
+
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false)
 	private final String pathFooterA
 		= "Note that folders has to comply with certain data format, please see";
@@ -123,7 +127,8 @@ public class plugin_CTCmeasuresBIO implements Command
 
 		//reference on a shared object that does
 		//pre-fetching of data and some common pre-calculation
-		TrackDataCache cache = null;
+		TrackDataCache cache = new TrackDataCache(log);
+		cache.noOfDigits = noOfDigits;
 
 		if (calcCT )
 		{
