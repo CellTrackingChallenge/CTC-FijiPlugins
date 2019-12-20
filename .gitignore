@@ -35,9 +35,12 @@ CTC-*/.project
 CTC-*/.settings/
 
 # IntelliJ #
-CTC-*/.idea/
 /.idea/
 /*.iml
+/*.Iml
+CTC-*/.idea/
+CTC-*/*.iml
+CTC-*/*.Iml
 
 # Apple #
 .DS_Store
