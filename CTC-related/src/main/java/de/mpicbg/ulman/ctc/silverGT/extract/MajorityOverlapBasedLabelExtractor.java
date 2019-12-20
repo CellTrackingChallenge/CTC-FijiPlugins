@@ -13,12 +13,23 @@ import java.util.Iterator;
 public class MajorityOverlapBasedLabelExtractor<IT extends RealType<IT>, LT extends IntegerType<LT>, ET extends RealType<ET>>
 implements LabelExtractor<IT,LT,ET>
 {
+	/** convenience (alias) method to set the this.minFractionOfMarker attribute */
+	public
+	void setMinOverlapRatio(final float minFractionOfMarker)
+	{
+		this.minFractionOfMarker = minFractionOfMarker;
+	}
+
+	public
+	float minFractionOfMarker = 0.5f;
+
 	/**
 	 * Sweeps over 'markerValue' labelled voxels inside the marker image
 	 * 'markerII', checks labels found in the corresponding voxels in the
-	 * input image 'inII', and returns the most frequently occuring such label
-	 * (provided also it occurs more than half of the marker size).
-	 * The functions returns -1 if no such label is found.
+	 * input image 'inII', and returns the most frequently occuring such
+	 * label provided that the overlap of this label is more than marker's
+	 * size times this.minFractionOfMarker.
+	 * The function returns -1 if no such label is found.
 	 */
 	@Override
 	public
@@ -66,7 +77,7 @@ implements LabelExtractor<IT,LT,ET>
 
 		//check if the most frequent one also spans at least half
 		//of the input marker volume
-		return ( (2*bestCount > markerSize)? bestLabel : -1 );
+		return ( (bestCount > minFractionOfMarker*markerSize) ? bestLabel : -1 );
 	}
 
 
