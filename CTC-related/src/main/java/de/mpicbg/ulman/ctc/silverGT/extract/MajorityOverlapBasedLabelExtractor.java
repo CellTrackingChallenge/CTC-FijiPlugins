@@ -90,4 +90,54 @@ implements LabelExtractor<IT,LT,ET>
 	{
 		LoopBuilder.setImages(sourceRAI,outputRAI).forEachPixel( (i,o) -> { if (i.getRealFloat() == wantedLabel) o.add(addThisLabel); } );
 	}
+
+
+	/**
+	 * Determines the minimal AABB (axes-aligned bounding box) around the marker
+	 * found at the cursor position. It is assumed that the cursor points on the first
+	 * occurence of such marker. The object of the input cursor is not modified at all.
+	 *
+	 * @param mCursor   Position of the first occurence of the marker (will not be changed)
+	 * @param minBound  Output "lower-left" corner of the box (must be preallocated)
+	 * @param maxBound  Output "upper-right" corner of the box (must be preallocated)
+	 * @return number of voxels occupied by this marker
+	 */
+	public static <LT extends IntegerType<LT>>
+	long findAABB(final Cursor<LT> mCursor,
+	              final long[] minBound, final long[] maxBound)
+	{
+		//time-saver: the marker we search for, and the current position array
+		final int marker = mCursor.get().getInteger();
+		final long[] pos = new long[minBound.length];
+
+		//init the output variables
+		long size = 0; //nothing seen yet since we reset() below
+		mCursor.localize(minBound); //BB spans this one pixel yet
+		mCursor.localize(maxBound);
+
+		//working copy of the input cursor
+		final Cursor<LT> cursor = mCursor.copyCursor();
+		cursor.reset();
+		//NB: for some reason we cannot continue from the mCursor's place, in which case
+		//the cursor does not see the original image content (until we cursor.reset() it)
+
+		//scan the rest of the image
+		while (cursor.hasNext())
+		{
+			//the same marker?
+			if (cursor.next().getInteger() == marker)
+			{
+				//yes, update the box corners
+				cursor.localize(pos);
+				for (int d = 0; d < minBound.length; ++d)
+				{
+					if (pos[d] < minBound[d]) minBound[d] = pos[d];
+					if (pos[d] > maxBound[d]) maxBound[d] = pos[d];
+				}
+				++size;
+			}
+		}
+
+		return size;
+	}
 }
