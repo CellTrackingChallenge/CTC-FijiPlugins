@@ -9,6 +9,7 @@
  */
 package de.mpicbg.ulman.ctc;
 
+import net.imglib2.type.numeric.RealType;
 import org.scijava.ItemVisibility;
 import org.scijava.widget.FileWidget;
 import org.scijava.command.Command;
@@ -17,7 +18,7 @@ import org.scijava.plugin.Plugin;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
 import org.scijava.ui.UIService;
-import net.imagej.ops.OpService;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,18 +39,17 @@ import de.mpicbg.ulman.ctc.Mastodon.util.ButtonHandler;
 import java.awt.Button;
 import java.awt.Dimension;
 
-import de.mpicbg.ulman.ctc.workers.machineGTViaMarkers_Worker;
+import de.mpicbg.ulman.ctc.silverGT.WeightedVotingFusionFeeder;
+import de.mpicbg.ulman.ctc.silverGT.WeightedVotingFusionAlgorithm;
+import de.mpicbg.ulman.ctc.silverGT.BIC;
+import de.mpicbg.ulman.ctc.silverGT.SIMPLE;
 import de.mpicbg.ulman.ctc.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
 public class plugin_GTviaMarkers implements Command
 {
-
 	@Parameter
 	private LogService log;
-
-	@Parameter
-	private OpService ops;
 
 	@Parameter
 	private StatusService statusService;
@@ -69,8 +69,8 @@ public class plugin_GTviaMarkers implements Command
 	@Parameter(label = "Merging model:",
 			choices = {"Threshold - flat weights",
 			           "Threshold - user weights",
-			           "Majority - flat weights"},
-			           //"SIMPLE","STAPLE"},
+			           "Majority - flat weights",
+			           "SIMPLE"}, //,"STAPLE"},
 			callback = "mergeModelChanged")
 	private String mergeModel;
 
@@ -344,7 +344,7 @@ public class plugin_GTviaMarkers implements Command
 			return;
 		}
 
-		//parses job file (which we know is sane for sure) to prepare an array of strings (an imagej-ops job description)
+		//parses job file (which we know is sane for sure) to prepare an array of strings
 		//is there additional column with weights?
 		final boolean weightAvail = mergeModel.startsWith("Threshold - user");
 
@@ -420,14 +420,17 @@ public class plugin_GTviaMarkers implements Command
 		ProgressIndicator pbar = null;
 		ButtonHandler pbtnHandler = null;
 
+		//start up the worker class
+		final WeightedVotingFusionAlgorithm<? extends RealType<?>, UnsignedShortType> fuser
+			= mergeModel.startsWith("SIMPLE") ? new SIMPLE(log) : new BIC(log);
+
+		final WeightedVotingFusionFeeder<?, UnsignedShortType> feeder
+			= new WeightedVotingFusionFeeder(log).setAlgorithm(fuser);
+
 		try {
 			//parse out the list of timepoints
 			TreeSet<Integer> fileIdxList = new TreeSet<>();
 			NumberSequenceHandler.parseSequenceOfNumbers(fileIdxStr,fileIdxList);
-
-			//start up the worker class
-			final machineGTViaMarkers_Worker Worker
-				= new machineGTViaMarkers_Worker(ops,log);
 
 			//prepare a progress bar:
 			//init the components of the bar
@@ -476,7 +479,7 @@ public class plugin_GTviaMarkers implements Command
 
 
 				long time = System.currentTimeMillis();
-				Worker.work(args);
+				feeder.processJob(args);
 				time -= System.currentTimeMillis();
 				System.out.println("ELAPSED TIME: "+(-time/1000)+" seconds");
 			}
