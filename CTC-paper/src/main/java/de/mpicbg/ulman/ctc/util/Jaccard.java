@@ -6,6 +6,7 @@ import net.imglib2.Cursor;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.view.Views;
+import net.imglib2.loops.LoopBuilder;
 
 public class Jaccard {
 	/** label-free, aka binary, variant of the Jaccard similarity coefficient */
@@ -80,6 +81,43 @@ public class Jaccard {
 			unionSize += isFGA || isFGB ? 1 : 0;
 		}
 
+		//System.out.println("intersection = " + interSize + ", union = " + unionSize);
 		return ( (double)interSize / (double)unionSize );
+	}
+
+
+	/** Jaccard similarity coefficient for the two labels
+	    (e.g. for all pixels with value of 'labelA' in the image 'imgA'),
+	    implemented via the LoopBuilder */
+	static public < T extends IntegerType<T> >
+	double JaccardLB( final RandomAccessibleInterval<T> imgA, final int labelA,
+	                  final RandomAccessibleInterval<T> imgB, final int labelB )
+	{
+		//NB: LoopBuilder checks the dimensions of imgA and imgB,
+		//    so we don't do it here...
+
+		//Jaccard is size of an intersection over size of an union
+		//
+		//here we need 'final' references in order to be able to use them inside
+		//the lambda function below (inside the LoopBuilder),
+		final long[] sizes = new long[2];
+		final int interCntIdx = 0;
+		final int unionCntIdx = 1;
+
+		LoopBuilder.setImages(imgA,imgB).forEachPixel( (A, B) ->
+		{
+			final boolean isFGA = A.getInteger() == labelA;
+			final boolean isFGB = B.getInteger() == labelB;
+
+			if (isFGA || isFGB)
+			{
+				//NB: LoopBuilder is not multithreaded -> no race issues on 'sizes'
+				sizes[interCntIdx] += isFGA && isFGB ? 1 : 0;
+				sizes[unionCntIdx]++;
+			}
+		} );
+
+		//System.out.println("intersection = " + sizes[interCntIdx] + ", union = " + sizes[unionCntIdx]);
+		return ( (double)sizes[interCntIdx] / (double)sizes[unionCntIdx] );
 	}
 }
