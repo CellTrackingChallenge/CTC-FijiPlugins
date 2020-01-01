@@ -28,9 +28,11 @@ import java.util.Vector;
 public
 interface FusionAlgorithm <IT extends RealType<IT>, LT extends RealType<LT>>
 {
-	/** The workhorse method to fuse 'inImgs' synchronized over the 'markerImg'
-	    with a default 'minFractionOfMarker' appropriate for the underlying algorithm.
-	    Typically, the minimum requested overlap is 0.5. */
+	/** The workhorse method to fuse 'inImgs' synchronized over the 'markerImg',
+	    that is, it fuses together all labels from every image from 'inImgs' that,
+	    typically, coincide with a marker label from the 'markerImg'. The marker
+	    labels from the 'markerImg' can then be understood that they "choose"
+	    relevant labels from the 'inImgs'. */
 	Img<LT> fuse(final Vector<RandomAccessibleInterval<IT>> inImgs,
 	             final Img<LT> markerImg);
 }

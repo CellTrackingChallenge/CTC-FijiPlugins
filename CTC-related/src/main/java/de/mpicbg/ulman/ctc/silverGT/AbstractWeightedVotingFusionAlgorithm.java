@@ -57,6 +57,13 @@ implements WeightedVotingFusionAlgorithm<IT,LT>
 	}
 
 
+	//setup extract, fuse, insert, postprocess (clean up)
+	LabelExtractor<IT,LT,DoubleType> labelExtractor = null;
+	LabelFuser<IT,DoubleType> labelFuser = null;
+	CollisionsAwareLabelInsertor<LT,DoubleType> labelInsertor = null;
+	LabelPostprocessor<LT> labelCleaner = null;
+
+
 	protected Vector<Double> inWeights;
 	protected double threshold;
 
@@ -74,12 +81,6 @@ implements WeightedVotingFusionAlgorithm<IT,LT>
 		threshold = minSumOfWeights;
 	}
 
-
-	//setup extract, fuse, insert, postprocess (clean up)
-	LabelExtractor<IT,LT,DoubleType> labelExtractor = null;
-	LabelFuser<IT,DoubleType> labelFuser = null;
-	CollisionsAwareLabelInsertor<LT,DoubleType> labelInsertor = null;
-	LabelPostprocessor<LT> labelCleaner = null;
 
 
 	/// Flag the "operational mode" regarding labels touching image boundary
