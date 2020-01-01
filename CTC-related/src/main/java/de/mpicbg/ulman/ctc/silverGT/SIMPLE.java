@@ -29,7 +29,12 @@ extends AbstractWeightedVotingFusionAlgorithm<IT,LT>
 	SIMPLE(final LogService _log)
 	{
 		super(_log);
+	}
 
+	@Override
+	protected
+	void setFusionComponents()
+	{
 		//setup the individual stages
 		final MajorityOverlapBasedLabelExtractor<IT,LT,DoubleType> e = new MajorityOverlapBasedLabelExtractor<>();
 		e.minFractionOfMarker = 0.5f;

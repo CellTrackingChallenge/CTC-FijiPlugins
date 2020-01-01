@@ -35,7 +35,7 @@ import de.mpicbg.ulman.ctc.silverGT.postprocess.LabelPostprocessor;
  * and finally cleans up the results after all of them are inserted (using some
  * method from the 'postprocess' folder).
  */
-public
+public abstract
 class AbstractWeightedVotingFusionAlgorithm<IT extends RealType<IT>, LT extends IntegerType<LT>>
 implements WeightedVotingFusionAlgorithm<IT,LT>
 {
@@ -54,8 +54,41 @@ implements WeightedVotingFusionAlgorithm<IT,LT>
 			throw new RuntimeException("Please, give me existing LogService.");
 
 		log = _log;
+
+		//setup the required components
+		setFusionComponents();
+
+		//inevitable sanity test to see if the user has
+		//implemented the setFusionComponents() correctly
+		testFusionComponents();
 	}
 
+
+	private
+	void testFusionComponents()
+	{
+		if (labelExtractor == null)
+			throw new RuntimeException("this.labelExtractor must be set");
+		/*
+		if (labelExtractor instanceof LabelExtractor)
+			throw new RuntimeException("this.labelExtractor must implement LabelExtractor");
+		*/
+
+		if (labelFuser == null)
+			throw new RuntimeException("this.labelFuser must be set");
+
+		if (labelInsertor == null)
+			throw new RuntimeException("this.labelInsertor must be set");
+
+		if (labelCleaner == null)
+			throw new RuntimeException("this.labelCleaner must be set");
+	}
+
+	/** Any class that extends this one must implement this method.
+	    The purpose of this method is to define this.labelExtractor,
+	    this.labelFuser, this.labelInsertor and this.labelCleaner. */
+	protected abstract
+	void setFusionComponents();
 
 	//setup extract, fuse, insert, postprocess (clean up)
 	LabelExtractor<IT,LT,DoubleType> labelExtractor = null;
