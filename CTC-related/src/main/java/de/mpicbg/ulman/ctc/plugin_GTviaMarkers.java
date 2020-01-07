@@ -334,6 +334,7 @@ public class plugin_GTviaMarkers implements Command
 
 			return;
 		}
+		/*
 		if (!mergeModel.startsWith("Threshold")
 		 && !mergeModel.startsWith("Majority"))
 		{
@@ -343,6 +344,7 @@ public class plugin_GTviaMarkers implements Command
 
 			return;
 		}
+		*/
 
 		//parses job file (which we know is sane for sure) to prepare an array of strings
 		//is there additional column with weights?
