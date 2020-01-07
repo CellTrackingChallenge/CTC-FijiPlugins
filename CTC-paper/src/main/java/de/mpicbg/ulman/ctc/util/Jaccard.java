@@ -10,7 +10,7 @@ import net.imglib2.loops.LoopBuilder;
 
 public class Jaccard {
 	/** label-free, aka binary, variant of the Jaccard similarity coefficient */
-	static public < T extends RealType<T>>
+	static public <T extends RealType<T>>
 	double Jaccard( final RandomAccessibleInterval<T> imgA, final RandomAccessibleInterval<T> imgB )
 	{
 		//sanity checks first: images must be of the same size
@@ -47,7 +47,46 @@ public class Jaccard {
 	}
 
 
-	static public < T extends IntegerType<T>>
+	static public <TA extends RealType<TA>, TB extends RealType<TB>>
+	double Jaccard( final RandomAccessibleInterval<TA> imgA, final double labelA,
+	                final RandomAccessibleInterval<TB> imgB, final double labelB )
+	{
+		//sanity checks first: images must be of the same size
+		if (imgA.numDimensions() != imgB.numDimensions())
+			throw new IllegalArgumentException("Both input images have to be of the same dimension.");
+
+		final int n = imgA.numDimensions();
+		int i = 0;
+		while ( i < n && imgA.dimension(i) ==  imgB.dimension(i) ) ++i;
+		if (i < n)
+			throw new IllegalArgumentException("Images differ in size in dimension "+i+".");
+
+		//Jaccard is size of an intersection over size of an union,
+		//and we consider binary images...
+		long interSize = 0;
+		long unionSize = 0;
+
+		//sweeping stuff
+		final Cursor<TA> cA = Views.iterable(imgA).localizingCursor();
+		final RandomAccess<TB> cB = imgB.randomAccess();
+
+		while (cA.hasNext())
+		{
+			final boolean isFGA = cA.next().getRealDouble() == labelA;
+
+			cB.setPosition( cA );
+			final boolean isFGB = cB.get().getRealDouble() == labelB;
+
+			interSize += isFGA && isFGB ? 1 : 0;
+			unionSize += isFGA || isFGB ? 1 : 0;
+		}
+
+		//System.out.println("intersection = " + interSize + ", union = " + unionSize);
+		return ( (double)interSize / (double)unionSize );
+	}
+
+
+	static public <T extends IntegerType<T>>
 	double Jaccard( final RandomAccessibleInterval<T> imgA, final int labelA,
 	                final RandomAccessibleInterval<T> imgB, final int labelB )
 	{
@@ -89,7 +128,7 @@ public class Jaccard {
 	/** Jaccard similarity coefficient for the two labels
 	    (e.g. for all pixels with value of 'labelA' in the image 'imgA'),
 	    implemented via the LoopBuilder */
-	static public < T extends IntegerType<T> >
+	static public <T extends IntegerType<T> >
 	double JaccardLB( final RandomAccessibleInterval<T> imgA, final int labelA,
 	                  final RandomAccessibleInterval<T> imgB, final int labelB )
 	{
