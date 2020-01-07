@@ -109,7 +109,7 @@ implements LabelFuser<IT,ET>
 	{
 		System.out.print("weights: ");
 		for (int i=0; i < inImgs.size(); ++i)
-			System.out.print((inImgs.get(i) != null ? inWeights.get(i) : -1)+"\t");
+			System.out.printf("%+.3f\t",inImgs.get(i) != null ? inWeights.get(i).floatValue() : -1.f);
 		System.out.println();
 	}
 }
