@@ -86,6 +86,13 @@ implements LabelInsertor<LT,ET>
 				{
 					a.setZero();
 					//System.out.println("cleaning: collision intersection");
+
+					//TODO: copy out the INTERSECTION voxels into a separate (initially empty) image;
+					//      after this method is finished (i.e. after all too-much-intersecting labels
+					//      are gone) iteratively "dilate" labels only within the area of the INTERSECTION
+					//      voxels, which mimics a morphological watershed, but do not "dilate" boundary
+					//      voxels; and keep iteraring until no change; copy back the "converted (into
+					//      labels)" but originally INTERSECTION voxels
 				}
 				else if (mColliding.contains(label))
 				{
