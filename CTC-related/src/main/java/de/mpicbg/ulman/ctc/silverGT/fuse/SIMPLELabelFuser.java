@@ -31,6 +31,10 @@ implements LabelFuser<IT,ET>
 		// inputs that get below the quality threshold will be "erased" by
 		//   setting their respective inImgs[i] to null
 
+		//DEBUG
+		System.out.print("it: 0 ");
+		reportCurrentWeights(inImgs,inWeights);
+
 		//make sure the majorityFuser is available
 		if (majorityFuser == null) majorityFuser = new WeightedVotingLabelFuser<>();
 
@@ -38,14 +42,10 @@ implements LabelFuser<IT,ET>
 		majorityFuser.minAcceptableWeight = getMajorityThreshold(inImgs,inWeights);
 		majorityFuser.fuseMatchingLabels(inImgs,inLabels, le, inWeights,outImg);
 
-		//DEBUG
-		System.out.print("it: 0 ");
-		reportCurrentWeights(inImgs,inWeights);
-
 		//own copy of the weights
 		final Vector<Double> myWeights = new Vector<>(inWeights);
 		double currentQualityThreshold = 0.7;
-		int iterationCnt = 0;
+		int iterationCnt = 1;
 
 		while (iterationCnt < 5)
 		{
@@ -64,7 +64,7 @@ implements LabelFuser<IT,ET>
 			}
 
 			//DEBUG
-			System.out.print("it: "+(iterationCnt+1)+" ");
+			System.out.print("it: "+iterationCnt+" ");
 			reportCurrentWeights(inImgs,myWeights);
 
 			//create a new candidate
