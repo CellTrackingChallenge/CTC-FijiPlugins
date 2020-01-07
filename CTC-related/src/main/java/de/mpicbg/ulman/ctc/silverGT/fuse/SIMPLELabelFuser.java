@@ -47,7 +47,7 @@ implements LabelFuser<IT,ET>
 		double currentQualityThreshold = 0.7;
 		int iterationCnt = 1;
 
-		while (iterationCnt < 5)
+		while (iterationCnt < 4)
 		{
 			//update weights of the inputs that still pass the quality threshold
 			for (int i=0; i < inImgs.size(); ++i)
@@ -59,8 +59,8 @@ implements LabelFuser<IT,ET>
 				final double newWeight = Jaccard.Jaccard(inImgs.get(i),inLabels.get(i), outImg,1.0);
 				myWeights.set(i,newWeight);
 
-				//filter out low-weighted ones
-				//if (newWeight < currentQualityThreshold) inImgs.set(i,null);
+				//filter out low-weighted ones (only after the initial settle-down phase)
+				if (iterationCnt >= 2 && newWeight < currentQualityThreshold) inImgs.set(i,null);
 			}
 
 			//DEBUG
@@ -75,7 +75,7 @@ implements LabelFuser<IT,ET>
 
 			//update the quality threshold
 			++iterationCnt;
-			currentQualityThreshold = Math.max(currentQualityThreshold - 0.1*iterationCnt, 0.3);
+			//currentQualityThreshold = Math.max(currentQualityThreshold - 0.1*iterationCnt, 0.3);
 		}
 	}
 
