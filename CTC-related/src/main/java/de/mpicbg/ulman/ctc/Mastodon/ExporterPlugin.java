@@ -9,6 +9,8 @@ import org.jhotdraw.samples.svg.gui.ProgressIndicator;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.scijava.log.LogService;
 import org.scijava.command.Command;
@@ -47,6 +49,7 @@ import de.mpicbg.ulman.ctc.Mastodon.util.ButtonHandler;
 import de.mpicbg.ulman.ctc.Mastodon.util.ParallelImgSaver;
 import de.mpicbg.ulman.ctc.Mastodon.auxPlugins.TRAMarkersProvider;
 import de.mpicbg.ulman.ctc.workers.TrackRecords;
+import de.mpicbg.ulman.ctc.util.NumberSequenceHandler;
 
 @Plugin( type = Command.class, name = "CTC format exporter @ Mastodon" )
 public class ExporterPlugin <T extends NativeType<T> & RealType<T>>
@@ -84,6 +87,10 @@ extends DynamicCommand
 
 	@Parameter(label = "Export till this time point:", min="0")
 	Integer timeTill;
+
+	@Parameter(label = "Skip over these time points:",
+	           description="Leave empty or provide, e.g., as 1,3,5-7,9-11")
+	String skipStr = "";
 
 	final ArrayList<String> choices = new ArrayList<>(20);
 	void encodeImgSourceChoices()
@@ -261,11 +268,24 @@ extends DynamicCommand
 		try
 		{
 
+		//read the set of TPs that ought to be skipped over
+		final Set<Integer> skipSet = new HashSet<>();
+		NumberSequenceHandler.toSet(skipStr, skipSet);
+		int skipCnt = 0;
+		logService.info("Note that "+skipSet.size()+" time points is considered to be skipped.");
+
 		//over all time points
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
-			final String outImgFilename    = String.format(outImgFilenameFormat,    time-outputTimeCorrection);
-			final String outRawImgFilename = String.format(outRawImgFilenameFormat, time-outputTimeCorrection);
+			if (skipSet.contains(time))
+			{
+				logService.info("Skipping over the time point: "+time);
+				++skipCnt;
+				continue;
+			}
+
+			final String outImgFilename    = String.format(outImgFilenameFormat,    time-outputTimeCorrection-skipCnt);
+			final String outRawImgFilename = String.format(outRawImgFilenameFormat, time-outputTimeCorrection-skipCnt);
 			if (doOutputOnlyTXTfile)
 				logService.info("Processing time point: "+time);
 			else
@@ -360,13 +380,13 @@ extends DynamicCommand
 				if (countBackwardLinks == 0)
 				{
 					//start a new track
-					knownTracks.put( spot, tracks.startNewTrack(time) );
+					knownTracks.put( spot, tracks.startNewTrack(time-skipCnt) );
 					logService.trace(spot.getLabel()+": started track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 				else //countBackwardLinks == 1
 				{
 					//prolong the existing track
-					tracks.updateTrack( knownTracks.get(spot), time );
+					tracks.updateTrack( knownTracks.get(spot), time-skipCnt );
 					logService.trace(spot.getLabel()+": updated track ID "+knownTracks.get(spot)+" at time "+spot.getTimepoint());
 				}
 
@@ -381,7 +401,7 @@ extends DynamicCommand
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
 						{
-							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint()-skipCnt-howManyTPsBetweenNowAndFuture(time,sRef.getTimepoint(),skipSet), knownTracks.get(spot) ) );
 							logService.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
 						}
 					}
@@ -391,7 +411,7 @@ extends DynamicCommand
 						if (sRef.getTimepoint() > time && sRef.getTimepoint() <= timeTill)
 						if (knownTracks.get(sRef) == -1)
 						{
-							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint(), knownTracks.get(spot) ) );
+							knownTracks.put(sRef, tracks.startNewTrack( sRef.getTimepoint()-skipCnt-howManyTPsBetweenNowAndFuture(time,sRef.getTimepoint(),skipSet), knownTracks.get(spot) ) );
 							logService.trace(sRef.getLabel()+": started track ID "+knownTracks.get(sRef)+" at time "+sRef.getTimepoint());
 						}
 					}
@@ -399,7 +419,8 @@ extends DynamicCommand
 				else if (countForwardLinks == 1)
 				{
 					//just one follower, is he right in the next frame?
-					if (fRef.getTimepoint() == time+1)
+					//or, are there "skipFrames" between us?
+					if (fRef.getTimepoint() == time+1 || areBetweenUsOnlyTPsFromTheSet(time,fRef.getTimepoint(),skipSet))
 					{
 						//yes, just replace myself in the map
 						if (knownTracks.get(fRef) == -1)
@@ -410,7 +431,7 @@ extends DynamicCommand
 						//no, start a new track for the follower
 						if (knownTracks.get(fRef) == -1)
 						{
-							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint(), (setParentAfterGap ? knownTracks.get(spot) : 0) ) );
+							knownTracks.put( fRef, tracks.startNewTrack( fRef.getTimepoint()-skipCnt-howManyTPsBetweenNowAndFuture(time,fRef.getTimepoint(),skipSet), (setParentAfterGap ? knownTracks.get(spot) : 0) ) );
 							logService.trace(fRef.getLabel()+": started track ID "+knownTracks.get(fRef)+" at time "+fRef.getTimepoint());
 						}
 					}
@@ -569,5 +590,23 @@ extends DynamicCommand
 	String printRealInterval(final RealInterval ri)
 	{
 		return "["+ri.realMin(0)+","+ri.realMin(1)+","+ri.realMin(2)+"] <-> ["+ri.realMax(0)+","+ri.realMax(1)+","+ri.realMax(2)+"]";
+	}
+
+
+	private
+	boolean areBetweenUsOnlyTPsFromTheSet(final int tpFrom, final int tpTo, final Set<Integer> tpSkipSet)
+	{
+		for (int i = tpFrom+1; i < tpTo; ++i)
+		if (!tpSkipSet.contains(i)) return false;
+
+		return true;
+	}
+
+	private
+	int howManyTPsBetweenNowAndFuture(final int tpNow, final int tpFuture, final Set<Integer> tpSkipSet)
+	{
+		int cnt=0;
+		for (int i = tpNow; i <= tpFuture; ++i) if (tpSkipSet.contains(i)) ++cnt;
+		return cnt;
 	}
 }
