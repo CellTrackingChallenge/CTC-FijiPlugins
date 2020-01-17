@@ -20,14 +20,14 @@ public class ParallelImgSaver
 	/** the array of workers -- each takes one image from
 	    the list and makes sure to save it */
 	private
-	final Thread[] workersQueue;
+	final Worker[] workersQueue;
 
 	/** setups initially the crowd of savers,
 	    see the Worker inner class */
 	public
 	ParallelImgSaver(final int noOfWriterThreads)
 	{
-		workersQueue = new Thread[noOfWriterThreads];
+		workersQueue = new Worker[noOfWriterThreads];
 
 		for (int i=0; i < noOfWriterThreads; i++)
 		{
@@ -118,7 +118,9 @@ public class ParallelImgSaver
 				if (ipp != null)
 				{
 					//save it
+					savingInProgress = true;
 					IJ.save( ipp.img, ipp.path );
+					savingInProgress = false;
 				}
 				else
 				{
@@ -131,6 +133,19 @@ public class ParallelImgSaver
 				}
 			}
 		}
+
+		boolean savingInProgress = false;
+	}
+
+
+	/** inspection method to see if there is at least one worker
+	    that is currently saving some image */
+	public
+	boolean isSomeSavingInProgress()
+	{
+		for (Worker t : workersQueue)
+			if (t.savingInProgress) return true;
+		return false;
 	}
 
 
@@ -164,7 +179,31 @@ public class ParallelImgSaver
 	throws InterruptedException
 	{
 		boolean shouldStopWaiting = false;
+
+		//first, make sure the queue is empty...
 		while (imgQueue.size() > 0 && !shouldStopWaiting)
+		{
+			//wait 10 secs
+			try { Thread.sleep(clientPollingMillis); }
+			catch (InterruptedException e)
+			{
+				//no matter what is in the queue, we're closing...
+				shouldStopWaiting = true;
+			}
+		}
+
+		//just to make sure that it takes a lot longer from the queue test above
+		//to isSomeSavingInProgress() test below than it takes to Worker.run() from
+		//its imgQueue.remove() to savingInProgress=true;
+		if (!shouldStopWaiting)
+		{
+			try { Thread.sleep(500); }
+			catch (InterruptedException e) {}
+		}
+
+		//...and, then that no saving is still in progress
+		//(assuming no one would add a new job again)
+		while (isSomeSavingInProgress() && !shouldStopWaiting)
 		{
 			//wait 10 secs
 			try { Thread.sleep(clientPollingMillis); }
