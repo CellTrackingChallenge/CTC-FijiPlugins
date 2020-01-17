@@ -12,7 +12,7 @@
 
 	<groupId>de.mpicbg.ulman</groupId>
 	<artifactId>CTC-related-FijiPlugins</artifactId>
-	<version>1.4.4</version>
+	<version>1.4.5</version>
 
 	<build>
 		<plugins>
@@ -156,7 +156,7 @@
 		<dependency>
 			<groupId>de.mpicbg.ulman</groupId>
 			<artifactId>CTC-paper-FijiPlugins</artifactId>
-			<version>1.4.4</version>
+			<version>1.4.5</version>
 		</dependency>
 
 		<!-- 3rd party dependency (not sure where it comes from) -->
