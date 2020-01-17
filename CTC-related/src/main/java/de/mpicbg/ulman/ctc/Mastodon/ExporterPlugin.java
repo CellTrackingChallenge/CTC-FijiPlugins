@@ -122,14 +122,24 @@ extends DynamicCommand
 	}
 
 	// ----------------- how to store products -----------------
-	@Parameter(label = "Export only .txt file and produce no images:")
-	boolean doOutputOnlyTXTfile = false;
+	@Parameter(label = "What everything should be exported:",
+	           choices = {
+	              "Everything: raw (cell) images, tracking markers images, lineage .txt file",
+	              "Tracking: tracking markers images, lineage .txt file",
+	              "Lineage: only .txt file and produce no images",
+	              "Raw: only raw (cell) images and no markers images and no lineage .txt file"
+	           })
+	String outputLevel = "";
 
-	@Parameter(label = "Splash markers into one slice along z-axis:")
+	@Parameter(label = "Template for raw (cell) image file names:",
+	           description = "Use %d or %04d in the template to denote where numbers or 4-digits-zero-padded numbers will appear.")
+	String filenameTemplateRaw = "t%03d.tif";
+
+	@Parameter(label = "Squash markers along z-axis into one xy-slice:")
 	boolean doOneZslicePerMarker = false;
 
 	@Parameter(label = "Shape of the output markers:",
-	           description = "Splashing of markers affects this option: spheres (boxes) are decimated to circles (rectangles).",
+	           description = "Squashing of markers affects this option: spheres/boxes are decimated to circles/rectangles.",
 	           choices = {}, initializer = "initOutMarkerShape")
 	String outMarkerShape = "";
 
@@ -154,12 +164,17 @@ extends DynamicCommand
 	@Override
 	public void run()
 	{
+		//decode exporting regime -> setup exporting flags
+		final boolean doOutputOnlyTXTfile = outputLevel.startsWith("Lineage") ? true : false;
+		final boolean doOutputTRAImages = outputLevel.startsWith("Everything") || outputLevel.startsWith("Tracking") ? true : false;
+		final boolean doOutputRawImages = outputLevel.startsWith("Everything") || outputLevel.startsWith("Raw") ? true : false;
+
 		final int viewMipLevel = 0; //NB: use always the highest resolution
 		final Source<?> imgSource = decodeImgSourceChoices();
 		if (imgSource == null) return;
 
 		//obtain the output marker's shape...
-		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, this.getContext().getService(CommandService.class));
+		markerShape = TRAMarkersProvider.TRAMarkerFactory(outMarkerShape, imgSource.getVoxelDimensions(), this.getContext().getService(CommandService.class));
 		if (markerShape == null) return;
 		//
 		logService.info("Output marker is      : "+markerShape.printInfo()+", in "+imgSource.getVoxelDimensions().unit());
@@ -177,6 +192,9 @@ extends DynamicCommand
 		final String outImgFilenameFormat = outputFolder.getAbsolutePath()
 		                                  + File.separator
 		                                  + filenameTemplate;
+		final String outRawImgFilenameFormat = outputFolder.getAbsolutePath()
+		                                     + File.separator
+		                                     + filenameTemplateRaw;
 
 		//some more shortcuts to template image params
 		final RandomAccessibleInterval<?> outImgTemplate = imgSource.getSource(timeFrom,viewMipLevel);
@@ -195,7 +213,7 @@ extends DynamicCommand
 		imgSource.getVoxelDimensions().dimensions(resLen);
 		logService.info("Considering resolution: "+resLen[0]
 		               +" x "+resLen[1]+" x "+resLen[2]
-		               +" px/"+imgSource.getVoxelDimensions().unit());
+		               +" "+imgSource.getVoxelDimensions().unit()+"/px");
 
 		final ParallelImgSaver saver = new ParallelImgSaver(writerThreads);
 		final int outputTimeCorrection = resetTimePointNumbers? timeFrom : 0;
@@ -246,14 +264,20 @@ extends DynamicCommand
 		//over all time points
 		for (int time = timeFrom; time <= timeTill && isCanceled() == false && !pbtnHandler.buttonPressed(); ++time)
 		{
-			final String outImgFilename = String.format(outImgFilenameFormat, time-outputTimeCorrection);
+			final String outImgFilename    = String.format(outImgFilenameFormat,    time-outputTimeCorrection);
+			final String outRawImgFilename = String.format(outRawImgFilenameFormat, time-outputTimeCorrection);
 			if (doOutputOnlyTXTfile)
 				logService.info("Processing time point: "+time);
 			else
-				logService.info("Populating image: "+outImgFilename);
+			{
+				if (doOutputRawImages)
+					logService.info("Populating image: "+outRawImgFilename);
+				if (doOutputTRAImages)
+					logService.info("Populating image: "+outImgFilename);
+			}
 
 			final Img<T> outImg
-				= doOutputOnlyTXTfile? null : outImgFactory.create(outImgTemplate);
+				= doOutputTRAImages? outImgFactory.create(outImgTemplate) : null;
 
 			//over all spots in the current time point
 			for ( final Spot spot : spots.getSpatialIndex( time ) )
@@ -393,7 +417,7 @@ extends DynamicCommand
 				}
 
 				//finally, render the spot into the current image with its CTC's trackID
-				if (!doOutputOnlyTXTfile)
+				if (doOutputTRAImages)
 					renderSpot( outImg, coordTransWorld2Img, spot, knownTracks.get(spot) );
 
 				//forget the currently closed track
@@ -407,13 +431,17 @@ extends DynamicCommand
 			}
 
 			//save the image
-			if (!doOutputOnlyTXTfile)
+			//add, or wait until the list of images to be saved is small
+			try
 			{
-				//add, or wait until the list of images to be saved is small
-				try { saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename); }
-				catch (InterruptedException e) {
-					this.cancel("cancel requested");
-				}
+				if (doOutputRawImages)
+					saver.addImgSaveRequestOrBlockUntilLessThan(2,
+						(RandomAccessibleInterval)imgSource.getSource(time,0),outRawImgFilename);
+				if (doOutputTRAImages)
+					saver.addImgSaveRequestOrBlockUntilLessThan(2, outImg,outImgFilename);
+			}
+			catch (InterruptedException e) {
+				this.cancel("cancel requested");
 			}
 
 			pbar.setProgress(time+1-timeFrom);
@@ -426,9 +454,12 @@ extends DynamicCommand
 		}
 
 		//finish the export by creating the supplementary .txt file
-		tracks.exportToFile(
-		    String.format("%s%s%s", outputFolder.getAbsolutePath(),File.separator,filenameTXT),
-		    -outputTimeCorrection );
+		if (doOutputOnlyTXTfile || doOutputTRAImages)
+		{
+			tracks.exportToFile(
+			    String.format("%s%s%s", outputFolder.getAbsolutePath(),File.separator,filenameTXT),
+			    -outputTimeCorrection );
+		}
 
 		}
 		catch (InterruptedException e) {
@@ -451,7 +482,7 @@ extends DynamicCommand
 
 	//some shortcut variables worth remembering
 	private int outImgDims = -1;
-	private double[] resLen;        //aux 1px lengths
+	private double[] resLen;        //aux 1px lengths (in some physical unit)
 	private long[] spotMin,spotMax; //image coordinates (in voxel units)
 	private double[] radii;         //BBox corners relative to spot's center
 	private RealPoint coord;        //aux tmp coordinate
@@ -468,16 +499,20 @@ extends DynamicCommand
 		  +" with label "+label+", at "+Util.printCoordinates(spot)
 		  +" with radius="+radius);
 
-		//project the spot's centre into the output image, and setup a sweeping bbox around it
-		transform.apply(spot, coord);                   //coord in pixel units
-		markerShape.setHalfBBoxInterval(radii, radius); //fills in image's some real units
+		//project the spot's centre into the output image (coord in pixel units)
+		transform.apply(spot, coord);
+
+		//setup a sweeping bbox around it: define half-width (aka radius) in some physical unit
+		markerShape.setHalfBBoxInterval(radii, radius);
+
+		//finalize the bbox parameters, per dimension....
 		for (int d=0; d < outImgDims; ++d)
 		{
 			//round centre position to the nearest pixel coord
 			coord.setPosition( Math.round(coord.getDoublePosition(d)), d );
 
 			//define the sweeping interval around this rounded centre
-			final double R = radii[d]*resLen[d];         //radius to pixel units
+			final double R = radii[d]/resLen[d];         //half-width in pixel units
 			radii[d           ] = coord.getDoublePosition(d) - R;
 			radii[d+outImgDims] = coord.getDoublePosition(d) + R;
 		}
@@ -515,10 +550,17 @@ extends DynamicCommand
 
 			//get it's (pixel) image coordinate, and convert to image-units distance vector
 			for (int d=0; d < outImgDims; ++d)
-				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))/resLen[d];
+				radii[d] = (p.getDoublePosition(d) - coord.getDoublePosition(d))*resLen[d];
 
 			//if close to the spot's center, draw into this voxel
-			if (markerShape.isInside(radii, radius)) voxelAtP.setReal(label);
+			if (markerShape.isInside(radii, radius))
+			{
+				if (voxelAtP.getRealDouble() > 0)
+					logService.warn("spot "+spot.getLabel()+" with label "+label
+					               +" is overwriting label "+voxelAtP.getRealDouble()
+					               +" at "+Util.printCoordinates(p));
+				voxelAtP.setReal(label);
+			}
 		}
 	}
 
