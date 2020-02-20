@@ -18,6 +18,8 @@ import org.scijava.plugin.Plugin;
 import org.scijava.app.StatusService;
 import org.scijava.log.LogService;
 import org.scijava.ui.UIService;
+import org.scijava.command.CommandService;
+import org.scijava.command.CommandModule;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import java.io.File;
@@ -27,6 +29,7 @@ import java.nio.file.Paths;
 
 import io.scif.img.ImgIOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import java.util.TreeSet;
 import java.text.ParseException;
@@ -43,6 +46,7 @@ import de.mpicbg.ulman.ctc.silverGT.WeightedVotingFusionFeeder;
 import de.mpicbg.ulman.ctc.silverGT.WeightedVotingFusionAlgorithm;
 import de.mpicbg.ulman.ctc.silverGT.BIC;
 import de.mpicbg.ulman.ctc.silverGT.SIMPLE;
+import de.mpicbg.ulman.ctc.silverGT.SIMPLE_params;
 import de.mpicbg.ulman.ctc.util.NumberSequenceHandler;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Annotations Merging Tool")
@@ -53,6 +57,9 @@ public class plugin_GTviaMarkers implements Command
 
 	@Parameter
 	private StatusService statusService;
+
+	@Parameter
+	private CommandService commandService;
 
 	@Parameter
 	private UIService uiService;
@@ -148,7 +155,7 @@ public class plugin_GTviaMarkers implements Command
 		if (mergeModel.startsWith("SIMPLE"))
 		{
 			fileInfoA = " ";
-			fileInfoB = "Don't know yet how to use this model.";
+			fileInfoB = "This model has own configuration dialog.";
 			fileInfoC = " ";
 			fileInfoD = " ";
 		}
@@ -334,9 +341,9 @@ public class plugin_GTviaMarkers implements Command
 
 			return;
 		}
-		/*
 		if (!mergeModel.startsWith("Threshold")
-		 && !mergeModel.startsWith("Majority"))
+		 && !mergeModel.startsWith("Majority")
+		 && !mergeModel.startsWith("SIMPLE"))
 		{
 			log.error("plugin_GTviaMarkers error: Unsupported merging model.");
 			if (!uiService.isHeadless())
@@ -344,7 +351,6 @@ public class plugin_GTviaMarkers implements Command
 
 			return;
 		}
-		*/
 
 		//parses job file (which we know is sane for sure) to prepare an array of strings
 		//is there additional column with weights?
@@ -423,8 +429,37 @@ public class plugin_GTviaMarkers implements Command
 		ButtonHandler pbtnHandler = null;
 
 		//start up the worker class
-		final WeightedVotingFusionAlgorithm<? extends RealType<?>, UnsignedShortType> fuser
-			= mergeModel.startsWith("SIMPLE") ? new SIMPLE(log) : new BIC(log);
+		final WeightedVotingFusionAlgorithm<? extends RealType<?>, UnsignedShortType> fuser;
+		if (mergeModel.startsWith("SIMPLE"))
+		{
+			//yield additional SIMPLE-specific parameters
+			CommandModule fuserParamsObj;
+			try {
+				fuserParamsObj = commandService.run(SIMPLE_params.class, true).get();
+			} catch (ExecutionException | InterruptedException e) {
+				fuserParamsObj = null;
+			}
+
+			final SIMPLE fuser_SIMPLE = new SIMPLE(log);
+
+			if (fuserParamsObj != null)
+			{
+				if (fuserParamsObj.isCanceled())
+					throw new RuntimeException("User requested not to run the SIMPLE merger.");
+
+				//forward the parameters values
+				fuser_SIMPLE.getFuserReference().maxIters = (int)fuserParamsObj.getInput("maxIters");
+				fuser_SIMPLE.getFuserReference().noOfNoUpdateIters = (int)fuserParamsObj.getInput("noOfNoUpdateIters");
+				fuser_SIMPLE.getFuserReference().initialQualityThreshold = (double)fuserParamsObj.getInput("initialQualityThreshold");
+				fuser_SIMPLE.getFuserReference().stepDownInQualityThreshold = (double)fuserParamsObj.getInput("stepDownInQualityThreshold");
+				fuser_SIMPLE.getFuserReference().minimalQualityThreshold = (double)fuserParamsObj.getInput("minimalQualityThreshold");
+			}
+
+			log.info("SIMPLE alg params: "+fuser_SIMPLE.getFuserReference().reportSettings());
+			fuser = fuser_SIMPLE;
+		}
+		else
+			fuser = new BIC(log);
 
 		final WeightedVotingFusionFeeder<?, UnsignedShortType> feeder
 			= new WeightedVotingFusionFeeder(log).setAlgorithm(fuser);
