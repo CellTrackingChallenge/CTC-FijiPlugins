@@ -12,6 +12,20 @@ import net.imglib2.type.operators.SetZero;
 public class SIMPLELabelFuser<IT extends RealType<IT>, ET extends RealType<ET>>
 implements LabelFuser<IT,ET>
 {
+	// explicit params of this particular fuser
+	public int maxIters = 4;
+	public int noOfNoUpdateIters = 2;
+	public double initialQualityThreshold = 0.7;
+	public double stepDownInQualityThreshold = 0.1;
+	public double minimalQualityThreshold = 0.3;
+
+	public
+	String reportSettings()
+	{
+		return String.format("maxIters = %d, noOfNoUpdateIters = %d, initialQualityThreshold = %f, stepDownInQualityThreshold = %f, minimalQualityThreshold = %f",
+			maxIters,noOfNoUpdateIters, initialQualityThreshold, stepDownInQualityThreshold, minimalQualityThreshold);
+	}
+
 	/**
 	 * Values in the output image are binary: 0 - background, 1 - fused segment.
 	 * Note that the output may not necessarily be a single connected component.
@@ -44,10 +58,10 @@ implements LabelFuser<IT,ET>
 
 		//own copy of the weights
 		final Vector<Double> myWeights = new Vector<>(inWeights);
-		double currentQualityThreshold = 0.7;
+		double currentQualityThreshold = initialQualityThreshold;
 		int iterationCnt = 1;
 
-		while (iterationCnt < 4)
+		while (iterationCnt < maxIters)
 		{
 			//update weights of the inputs that still pass the quality threshold
 			for (int i=0; i < inImgs.size(); ++i)
@@ -60,11 +74,11 @@ implements LabelFuser<IT,ET>
 				myWeights.set(i,newWeight);
 
 				//filter out low-weighted ones (only after the initial settle-down phase)
-				if (iterationCnt >= 2 && newWeight < currentQualityThreshold) inImgs.set(i,null);
+				if (iterationCnt >= noOfNoUpdateIters && newWeight < currentQualityThreshold) inImgs.set(i,null);
 			}
 
 			//DEBUG
-			System.out.print("it: "+iterationCnt+" ");
+			System.out.print("it: "+iterationCnt+", thres: "+currentQualityThreshold+" ");
 			reportCurrentWeights(inImgs,myWeights);
 
 			//create a new candidate
@@ -75,7 +89,9 @@ implements LabelFuser<IT,ET>
 
 			//update the quality threshold
 			++iterationCnt;
-			//currentQualityThreshold = Math.max(currentQualityThreshold - 0.1*iterationCnt, 0.3);
+			if (iterationCnt > noOfNoUpdateIters) currentQualityThreshold = Math.max(
+				currentQualityThreshold - stepDownInQualityThreshold*(iterationCnt-noOfNoUpdateIters),
+				minimalQualityThreshold );
 		}
 	}
 
