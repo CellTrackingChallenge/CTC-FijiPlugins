@@ -51,5 +51,13 @@ extends AbstractWeightedVotingFusionAlgorithm<IT,LT>
 		this.labelCleaner   = p;
 	}
 
+	/** returns a reference on the specific, internal label fusion object so that
+	    caller can communicate to it any potential change of its parameters */
+	public
+	SIMPLELabelFuser getFuserReference()
+	{
+		return (SIMPLELabelFuser) this.labelFuser;
+	}
+
 	private String dbgImgFileName;
 }
