@@ -1,0 +1,52 @@
+[INFO] new job:
+// this recalls what is being calculated: the particular input image together with its weight
+[INFO] 0: /home/akbas/STAPLE_onCTC/CTC_3D_Training_Results_3rdEd/CUNI-CZ/Fluo-C3DH-H157/01_RES//mask000.tif  1.0
+//the last one is the particular image with TRA markers
+[INFO] 2: /home/akbas/STAPLE_onCTC/CTC_TrainingGT_Annotators_3rdEd/Fluo-C3DH-H157/01_GT//TRA/man_track000.tif
+//the threshold used..
+[INFO] 3: 1.0
+//the particular output file that shall be created
+[INFO] 4: /home/akbas/STAPLE_onCTC/CTC_3D_Training_Results_3rdEd/CUNI-CZ/Fluo-C3DH-H157/01_RES_preprocessed/merged_Fluo-C3DH-H157_01_00001_T=1/mask000.tif
+
+//now repeating what is being loaded
+[INFO] Reading pair: /home/akbas/STAPLE_onCTC/CTC_3D_Training_Results_3rdEd/CUNI-CZ/Fluo-C3DH-H157/01_RES//mask000.tif 1.0
+[INFO] Reading pair: /home/akbas/STAPLE_onCTC/CTC_TrainingGT_Annotators_3rdEd/Fluo-C3DH-H157/01_GT//TRA/man_track000.tif 1.0
+calling CombineGTsViaMarkers with threshold=1.0
+
+//processing marker one by one from the TRA marker image
+//the marker/label
+//                 how many segments that match the marker were found
+//                                      after thresholding, did the algorithm manage to place the fused segment into the output image?
+//                                       secured means - placing went easy, no collision/overlap was discovered
+TRA marker: 4 , images matching: 1 , secured for now
+TRA marker: 3 , images matching: 1 , secured for now
+TRA marker: 2 , images matching: 1 , secured for now
+TRA marker: 1 , images matching: 1 , secured for now
+//her's the info from the post-processing part, for marker four, the fused segment was composed of 7 connected components... and only the largest one was kept
+CCA for marker 4: choosing one from 7 components
+CCA for marker 4: chosen component no. 1 which constitutes 0.9996036 % of the original size
+
+//here the job is done, just reports on how things went:
+//reports sizes of the overlapping segments, ideally you want to see everything in the 0-9% category (0% means no overlap)
+reporting colliding markers:
+HIST: 0 %- 9 % collision area happened 4 times
+HIST: 10 %- 19 % collision area happened 0 times
+HIST: 20 %- 29 % collision area happened 0 times
+HIST: 30 %- 39 % collision area happened 0 times
+HIST: 40 %- 49 % collision area happened 0 times
+HIST: 50 %- 59 % collision area happened 0 times
+HIST: 60 %- 69 % collision area happened 0 times
+HIST: 70 %- 79 % collision area happened 0 times
+HIST: 80 %- 89 % collision area happened 0 times
+HIST: 90 %- 99 % collision area happened 0 times
+HIST: 100 %- 100 % collision area happened 0 times
+
+//here's info w.r.t. to input TRA markers, for how many no segment was created, how many created segments were removed because of touching boundary,
+//                                             how were removed due to severe (>10%) collision, and how many were created in the end (how many we should find in the output image)
+not found markers    = 0 = 0.0 %
+markers at boundary  = 0 = 0.0 %
+markers in collision = 0 = 0.0 %
+secured markers      = 4 = 100.0 %
+//this log says, the fusion/re-labeling went very well... 100% of TRA markers were "replaced" with some fused/output segment
+[INFO] Saving file: /home/akbas/STAPLE_onCTC/CTC_3D_Training_Results_3rdEd/CUNI-CZ/Fluo-C3DH-H157/01_RES_preprocessed/merged_Fluo-C3DH-H157_01_00001_T=1/mask000.tif
+ELAPSED TIME: 11 seconds
