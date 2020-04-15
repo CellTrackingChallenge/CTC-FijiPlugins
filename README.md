@@ -1,3 +1,5 @@
+![build status](https://api.travis-ci.com/CellTrackingChallenge/CTC-FijiPlugins.svg?branch=master)
+
 Welcome
 -------
 This is a repository with Java source codes of the [Fiji](http://fiji.sc) tools related to the [Cell Tracking Challenge](http://www.celltrackingchallenge.net), and to the quantitative evaluation of biomedical tracking in general. In particular, one can find here:
