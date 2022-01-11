@@ -1,4 +1,9 @@
-![build status](https://api.travis-ci.com/CellTrackingChallenge/CTC-FijiPlugins.svg?branch=master)
+**Note:** This repository is now (Jan 2022) considered obsolete by its autors, and is replaced with the following repos:
+
+- [CTC measures](https://github.com/CellTrackingChallenge/measures) - technically a library with the tracking measures,
+- [CTC Fiji plugins](https://github.com/CellTrackingChallenge/fiji-plugins) - GUI wrappers to operate the measures from Fiji,
+- [label fusion](https://github.com/CellTrackingChallenge/label-fusion-ng) - GUI and algorithms to combine multiple segmentation results into (hopefully) a superior one (aka *silver GT*),
+- [Mastodon plugins](https://github.com/mastodon-sc/mastodon-ctc) - algorithms to connect the CTC world with [the beautiful Mastodon tracking software](https://github.com/mastodon-sc/mastodon).
 
 Welcome
 -------
